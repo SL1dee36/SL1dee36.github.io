@@ -16,47 +16,6 @@ button {
   border-color: transparent;
 }
 
-.embla__button,
-.carousel-control {
-  background-color: #edefea !important;
-  opacity: 0.8 !important;
-  color: #464845 !important;
-  border-color: #edefea !important;
-}
-
-.carousel .close,
-.modalWindow .close {
-  background-color: #edefea !important;
-  color: #464845 !important;
-  border-color: #edefea !important;
-  opacity: 0.8 !important;
-}
-
-.carousel .close:hover,
-.modalWindow .close:hover {
-  opacity: 1 !important;
-}
-
-.carousel-indicators li {
-  background-color: #edefea !important;
-  border: 2px solid #464845 !important;
-}
-
-.carousel-indicators li:hover,
-.carousel-indicators li:active {
-  opacity: 0.8 !important;
-}
-
-.embla__button:hover,
-.carousel-control:hover {
-  background-color: #edefea !important;
-  opacity: 1 !important;
-}
-
-.modalWindow-video-container {
-  height: 80%;
-}
-
 section,
 .container,
 .container-fluid {
@@ -289,9 +248,11 @@ iframe {
   .media-size-item {
     width: auto !important;
   }
+
   .media {
     width: auto;
   }
+
   .mbr-figure {
     width: 100% !important;
   }
@@ -474,7 +435,8 @@ nav .mbr-section-btn {
   display: inline-block;
   text-decoration: none;
   outline-style: none;
-  animation: arrowdown 1.7s ease-in-out infinite;
+  -webkit-animation: arrowdown 1.7s ease-in-out infinite;
+          animation: arrowdown 1.7s ease-in-out infinite;
   color: #ffffff;
 }
 .mbr-arrow > a > i {
@@ -508,6 +470,17 @@ nav .mbr-section-btn {
     transform: translateY(0px);
   }
 }
+@-webkit-keyframes arrowdown {
+  0% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-5px);
+  }
+  100% {
+    transform: translateY(0px);
+  }
+}
 @media (max-width: 500px) {
   .mbr-arrow-up {
     left: 0;
@@ -519,11 +492,25 @@ nav .mbr-section-btn {
 @keyframes gradient-animation {
   from {
     background-position: 0% 100%;
-    animation-timing-function: ease-in-out;
+    -webkit-animation-timing-function: ease-in-out;
+            animation-timing-function: ease-in-out;
   }
   to {
     background-position: 100% 0%;
-    animation-timing-function: ease-in-out;
+    -webkit-animation-timing-function: ease-in-out;
+            animation-timing-function: ease-in-out;
+  }
+}
+@-webkit-keyframes gradient-animation {
+  from {
+    background-position: 0% 100%;
+    -webkit-animation-timing-function: ease-in-out;
+            animation-timing-function: ease-in-out;
+  }
+  to {
+    background-position: 100% 0%;
+    -webkit-animation-timing-function: ease-in-out;
+            animation-timing-function: ease-in-out;
   }
 }
 .bg-gradient {
@@ -799,7 +786,7 @@ body {
   color: #232323;
   line-height: 1rem !important;
   height: auto;
-  padding: 1.2rem 2rem;
+  padding: 0.6rem 1.2rem;
   transition: border-color 0.25s ease 0s;
   border: 1px solid transparent !important;
   border-radius: 4px;
@@ -807,11 +794,6 @@ body {
 }
 .form-active .form-control:invalid {
   border-color: red;
-}
-
-.row > * {
-  padding-right: 1rem;
-  padding-left: 1rem;
 }
 
 form .row {
@@ -824,8 +806,15 @@ form .row [class*=col] {
 }
 
 form .mbr-section-btn {
+  margin: 0;
   padding-left: 0.6rem;
   padding-right: 0.6rem;
+}
+
+form .btn {
+  display: flex;
+  padding: 0.6rem 1.2rem;
+  margin: 0;
 }
 
 form .form-check-input {
@@ -892,39 +881,46 @@ blockquote {
   margin-bottom: 2rem !important;
 }
 
-.container,
-.container-fluid {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
-.row {
-  margin-left: -16px;
-  margin-right: -16px;
-}
-.row > [class*=col] {
-  padding-left: 16px;
-  padding-right: 16px;
-}
-
 @media (min-width: 992px) {
+  .container {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+
+  .row {
+    margin-left: -16px;
+    margin-right: -16px;
+  }
+  .row > [class*=col] {
+    padding-left: 16px;
+    padding-right: 16px;
+  }
+}
+@media (min-width: 768px) {
   .container-fluid {
     padding-left: 32px;
     padding-right: 32px;
   }
 }
-@media (max-width: 991px) {
+@media (min-width: 768px) and (max-width: 991px) {
+  .mbr-container {
+    padding-left: 32px;
+    padding-right: 32px;
+  }
+}
+@media (max-width: 767px) {
   .mbr-container {
     padding-left: 16px;
     padding-right: 16px;
   }
 }
-.app-video-wrapper > img {
-  opacity: 1;
+.card-wrapper,
+.item-wrapper {
+  overflow: hidden;
 }
 
-.app-video-wrapper {
-  background: transparent;
+.app-video-wrapper > img {
+  opacity: 1;
 }
 
 .item {
