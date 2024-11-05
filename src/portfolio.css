@@ -1,0 +1,127 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    background-color:#fafafa;
+    color:#333;
+}
+
+.container {
+    /* max-width: 960px; */
+    /* margin: 0 auto; */
+    padding: 0 10px;
+}
+
+header {
+    border-bottom: solid 3px #f0f0f0;
+    padding: 20px 0;
+    text-align: center;
+}
+
+h1, h2, h3 {
+    font-weight: 700;
+}
+
+h1 {
+    font-size: 2.5em;
+    margin-bottom: 0.5em;
+}
+
+section {
+    padding: 40px 0;
+}
+
+
+#projects .project {
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    background-color: #fff;
+    box-shadow: 0px 0px 5px rgba(0, 0, 0, 10%);
+}
+
+.project {
+    display: flex; /* Используем flexbox для выравнивания */
+    align-items: flex-start; /* Выравниваем элементы по верху */
+    margin-bottom: 20px; /* Добавляем отступ между проектами */
+    transition-duration: 0.2s;
+}
+
+.project:hover {
+    margin-left: 10px;
+    transition-duration: 0.3s;
+}
+
+.project-text p {
+    margin-bottom: 0px;
+}
+
+.project-content {
+    display: flex;  /* Flexbox для картинки и текста */
+}
+
+.project-image {
+    width: 128px; /* Фиксированная ширина изображения */
+    height: 128px; /* Фиксированная высота изображения */
+    margin-right: 20px; /* Отступ между картинкой и текстом */
+}
+
+.project-text h3 {
+    margin-top: 0px;
+}
+
+.project-link {
+    display: inline-block; /* Чтобы можно было задавать отступы */
+    margin-top: 10px; /* Отступ сверху для ссылки */
+}
+
+#projects img {
+    max-width: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 10px;
+
+}
+footer {
+
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    /* padding: 10px 0; */
+    border-radius: 10px;
+    margin: 10px;
+
+}
+
+.footer {
+    display: flex;
+    justify-content: space-around; /* Равномерно распределяем секции */
+    padding: 0px; /* Добавляем отступы */
+}
+
+.footer-section {
+    text-align: left;
+}
+
+.footer-section ul {
+    list-style: none; /* Убираем маркеры списка */
+    padding: 0; /* Убираем отступы списка */
+}
+
+.footer-section li {
+    margin-bottom: 5px; /* Отступы между элементами списка */
+}
+a {
+  color: #797979;
+  text-decoration: none;
+}
+
+a:hover {
+    text-decoration: underline;
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
