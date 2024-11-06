@@ -8,7 +8,6 @@ body {
 }
 
 .container {
-    /* max-width: 780px; */
     padding: 0 10px;
 }
 
@@ -75,6 +74,7 @@ section {
     margin-bottom: 20px; /* Добавляем отступ между проектами */
     transition-duration: 0.2s;
 }
+
 
 #projects .project:hover {
     border-radius: 30px;
@@ -295,6 +295,83 @@ ul {
     border: solid 1px #797979;
 }
 
+
+#documentation .project {  /* Target the documentation section's project */
+    max-width: 100%;
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    border: solid 1px #797979;
+    transition-duration: 0.2s;
+}
+
+#documentation .project:hover {
+    border-radius: 30px;
+    transition-duration: 0.3s;
+}
+
+#markdown-content {
+    overflow-x: auto; /* Essential for horizontal scrolling of wide content */
+    word-break: break-word; 
+    overflow-wrap: break-word;
+    /* Add padding to prevent content from touching the edges, especially if there's a border */
+    padding: 0 10px; /* Adjust as needed */
+}
+
+#markdown-content video,
+#markdown-content img,  /* Keep your existing image styles */
+#markdown-content .github-gif { /* New style for GitHub GIFs */
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+}
+
+.github-gif {  /* General styles for GitHub GIFs, can be combined with #markdown-content .github-gif  */
+    border-radius: 10px; /* Optional: adds rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: adds a subtle shadow */
+}
+
+#markdown-content p, 
+#markdown-content h1, 
+#markdown-content h2, 
+#markdown-content h3, 
+#markdown-content h4, 
+#markdown-content h5, 
+#markdown-content h6,
+#markdown-content ul,
+#markdown-content ol,
+#markdown-content pre, 
+#markdown-content code,  
+#markdown-content blockquote,
+#markdown-content table {
+    margin-bottom: 1em; 
+}
+
+
+#markdown-content pre {
+    background-color: #333; /* Or any other suitable background color */
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    max-width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling for long code lines */
+}
+
+#markdown-content code {  /* Style inline code */
+    /* background-color: #f0f0f0; */
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+#markdown-content blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 10px;
+    color: #888;
+    font-style: italic;
+}
+
 @media (max-width: 450px) {
     .footer {
         display: flex;
@@ -326,4 +403,37 @@ ul {
         transition-duration: 0.3s;
     }
 
+    #projects .project:hover .project-link::before {
+        opacity: 1;
+        animation-play-state: running;
+    }
+
+    /* Add these styles to specifically target images INSIDE the markdown content on small screens */
+    #markdown-content video, /* Add video to the media query */
+    #markdown-content img {
+        max-width: 100%;  /* Or adjust as needed for smaller screens */
+        width: calc(100% - 40px); /* Account for padding if needed */
+        /* margin: 0 20px; */
+        height: auto;      /* Maintain aspect ratio */
+    }
+}
+
+.project-link::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -5%;
+    width: 10%;
+    height: 200%;
+    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+    transform: translateY(-50%) skewX(-30deg);
+    animation: enchant 2s linear infinite;
+    animation-play-state: paused;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes enchant {
+    0% { left: -5%; }
+    100% { left: 105%; }
 }
