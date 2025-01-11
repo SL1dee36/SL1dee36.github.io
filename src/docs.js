@@ -9,7 +9,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const githubLink = urlParams.get('githubLink');
 
     if (projectName && githubLink) {
-        projectNameHeader.textContent = `${projectName} Documentation`;
+        projectNameHeader.textContent = `${projectName}`;
 
         // Extract username and repo name from GitHub link
         const match = githubLink.match(/github\.com\/([^\/]+)\/([^\/]+)/);
