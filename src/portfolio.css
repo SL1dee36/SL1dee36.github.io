@@ -7,7 +7,10 @@ body {
     color:#fff;
 }
 
-
+/*Убрать полосу прокрутки для всей страницы*/
+::-webkit-scrollbar {
+    width: 0;
+}
 
 .container {
     padding: 0 10px;

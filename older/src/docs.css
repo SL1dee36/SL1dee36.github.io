@@ -1,0 +1,107 @@
+/* docs.css - Styles specifically for docs.html */
+
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    background-color: #242424;
+    color: #fff;
+    box-sizing: border-box; /* Apply box-sizing globally */
+}
+
+
+header {
+    border: solid 1px #797979;
+    border-radius: 10px;
+    margin: 10px;
+    padding: 20px 0;
+    text-align: center;
+    color: #fff;
+}
+
+
+/* Markdown Content Styles */
+#markdown-content {
+    overflow-x: auto;  /* For wide tables or code blocks */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    padding: 20px; /* Add padding to the content area */
+    border: 1px solid #797979; /* Add the border here */
+    border-radius: 10px;       /* Optional: Add border radius */
+}
+
+#markdown-content img {
+    display: block;
+    margin: 0 auto; /* Center images */
+    max-width: 100%;
+    height: auto;
+}
+
+#markdown-content p,
+#markdown-content h1,
+#markdown-content h2,
+#markdown-content h3,
+#markdown-content h4,
+#markdown-content h5,
+#markdown-content h6,
+#markdown-content ul,
+#markdown-content ol,
+#markdown-content pre,
+#markdown-content code,
+#markdown-content blockquote,
+#markdown-content table {
+    margin-bottom: 1em;
+}
+
+#markdown-content pre {
+    background-color: #333;
+    padding: 10px;
+    border-radius: 5px;
+    overflow-x: auto;
+}
+
+#markdown-content code {
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+    /* background-color: #f0f0f0; */
+}
+
+#markdown-content blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 10px;
+    color: #888;
+    font-style: italic;
+}
+
+#markdown-content table {
+    width: 100%;
+    border-collapse: collapse; /* Collapse table borders */
+    margin-bottom: 1em;
+}
+
+#markdown-content th,
+#markdown-content td {
+    border: 1px solid #ddd;
+    padding: 8px;
+    text-align: left;
+}
+
+
+/* Media Queries for Responsiveness */
+@media (max-width: 450px) {  /* Adjust breakpoint as needed */
+
+    .container {
+        max-width: 100%; 
+    }
+
+    * {
+        font-size: 0.5em;
+    }
+
+    #markdown-content img {
+        width: calc(100% - 40%);
+        margin: 0 0;
+    }
+}

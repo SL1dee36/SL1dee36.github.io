@@ -1,0 +1,462 @@
+body {
+    font-family: 'Roboto', sans-serif;
+    margin: 0;
+    padding: 0;
+    line-height: 1.6;
+    background-color:#242424;
+    color:#fff;
+}
+
+
+
+.container {
+    padding: 0 10px;
+}
+
+header {
+    background-color: #333;
+    border: solid 1px #797979;
+    border-radius: 10px;
+    margin: 10px;
+    padding: 20px 0;
+    text-align: center;
+    color: #fff;
+}
+
+header h1 {
+    margin: 0px;
+    font-family: 'Unbounded', sans-serif;
+}
+
+h2, h3 {
+    font-weight: 320;
+    font-family: 'Unbounded', sans-serif;
+}
+
+h4 {
+    font-weight: 230;
+    font-family: 'Unbounded', sans-serif;
+}
+
+p,a {
+    font-weight: 180;
+    font-family: 'Unbounded', sans-serif;
+}
+
+h1 {
+    font-size: 2.5em;
+    font-weight: 700;
+    margin-bottom: 0.5em;
+    font-family: 'Unbounded', sans-serif;
+}
+
+section {
+    padding-bottom: 40px;
+}
+
+#AboutMe .project {
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    border: solid 1px #797979;
+}
+
+.hidden {
+    opacity: 0; /* Скрываем элемент, устанавливая прозрачность 0 */
+    max-height: 0; /* Уменьшаем высоту до 0 */
+    overflow: hidden; /* Скрываем содержимое, выходящее за границы элемента */
+    transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out; /* Анимация прозрачности и высоты */
+    margin-bottom: 0; /* Убираем отступ снизу, когда элемент скрыт */ /* Новое */
+}
+
+.visible {
+    opacity: 1;
+    max-height: 10000px; /* Устанавливаем достаточно большую высоту, чтобы вместить весь контент */
+    overflow: visible; /* Показываем содержимое */
+    transition: opacity 0.3s ease-in-out, max-height 0.3s ease-in-out;
+    margin-bottom: 20px; /* Возвращаем отступ снизу */ /* Новое */
+}
+
+#projects .project {
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    border: solid 1px #797979;
+}
+
+.project {
+    display: flex; /* Используем flexbox для выравнивания */
+    align-items: flex-start; /* Выравниваем элементы по верху */
+    margin-bottom: 20px; /* Добавляем отступ между проектами */
+    transition-duration: 0.2s;
+}
+
+
+#projects .project:hover {
+    border-radius: 20px;
+    transition-duration: 0.3s;
+}
+
+.project-text p {
+    margin-bottom: 0px;
+}
+
+.project-content {
+    display: flex;  /* Flexbox для картинки и текста */
+}
+
+.project-image {
+    width: 128px; /* Фиксированная ширина изображения */
+    height: 128px; /* Фиксированная высота изображения */
+    margin-right: 20px; /* Отступ между картинкой и текстом */
+    transition-duration: 0.3s;
+}
+
+.project-text h3 {
+    margin-top: 0px;
+}
+
+.project-link {
+    display: inline-block; /* Чтобы можно было задавать отступы */
+    margin-top: 10px; /* Отступ сверху для ссылки */
+}
+
+#projects img {
+    max-width: 100%;
+    object-fit: cover;
+    display: block;
+    border-radius: 20px;
+
+}
+
+.button-container {
+    display: flex;
+    justify-content: center; /* Центрируем кнопки по горизонтали */
+    align-items: center;    /* Центрируем кнопки по вертикали (опционально, если нужно) */
+    width: fit-content; /* или width: auto; или фиксированное значение */
+    margin: 0 auto;      /* Центрируем контейнер на странице */
+    margin-bottom: 20px;
+}
+
+.button-container button {
+    position: relative; /* Необходимо для позиционирования псевдоэлемента */
+    color: inherit;
+    background: transparent;
+    border: none;
+    padding: 0 10px;
+    font: inherit;
+    cursor: pointer;
+    overflow: hidden; /* Скрывает псевдоэлемент за пределами кнопки */
+    font-weight: 260;
+    font-family: 'Unbounded', sans-serif;
+    font-size: larger;
+}
+
+.button-container button::before {
+    content: "";
+    position: absolute;
+    bottom: 0;
+    left: 50%; /* Начинаем из центра */
+    transform: translateX(-50%); /* Центрируем по горизонтали */
+    width: 0; /* Начальная ширина линии 0 */
+    height: 1px;
+    background-color: #797979;
+    transition: width 0.2s ease-in-out; /* Анимация ширины */
+}
+
+.button-container button:hover::before {
+    width: 90%; /* Конечная ширина линии 100% */
+}
+
+.button-container button.active::before {  /* Стили для активной кнопки */
+    width: 90%; /* Линия отображается полностью */
+}
+
+footer {
+    border: solid 1px #797979;
+    background-color: #333;
+    color: #fff;
+    text-align: left;
+    border-radius: 10px;
+    margin: 10px;
+}
+
+.footer {
+    display: flex;
+    justify-content: space-around; /* Равномерно распределяем секции */
+    padding: 0px; /* Добавляем отступы */
+}
+
+.footer-section {
+    text-align: left;
+}
+
+.footer-section ul {
+    list-style: none; /* Убираем маркеры списка */
+    padding: 0; /* Убираем отступы списка */
+}
+
+.footer-section li {
+    margin-bottom: 5px; /* Отступы между элементами списка */
+}
+
+a {
+  color: #797979;
+  text-decoration: none;
+  position: relative;
+  overflow: hidden;
+  display: inline-block;
+  border-radius: 50px;
+  padding-left: 5px;
+  padding-right: 5px;
+}
+
+a:hover {
+  text-decoration: underline;
+}
+
+a::before {
+  content: "";
+  position: absolute;
+  top: 50%;
+  left: -5%;
+  width: 10%;
+  height: 200%;
+  background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+  transform: translateY(-50%) skewX(-30deg);
+  animation: enchant 2s linear infinite;
+  animation-play-state: paused; /* Анимация по умолчанию приостановлена */
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+a:hover::before {
+  opacity: 1;
+  animation-play-state: running; /* Запускаем анимацию при наведении */
+}
+
+@keyframes enchant {
+  0% {
+    left: -5%;
+  }
+  100% {
+    left: 105%;
+  }
+}
+
+ul {
+    list-style: none;
+    padding: 0;
+}
+
+#AboutMe {
+    margin-top: 20px;
+    flex-direction: column; /* На маленьких экранах располагаем картинку и текст вертикально */
+    
+}
+
+.content-wrapper {
+    display: flex;
+    justify-content: center; 
+    align-items: center;     
+}
+
+#AboutMe .content-wrapper .content {
+    justify-content: space-between;
+    margin-top: -64px;
+    margin-left: 10px;
+    margin-right: 10px;
+    flex-direction: column;
+    border-radius: 10px;
+    border: solid 1px #797979;
+    padding: 20px; 
+    max-width: 600px;
+    min-width: 200px;
+    min-height: 400px;
+    z-index: -10;
+}
+
+#AboutMe .content-wrapper .content .about {
+    padding: 10px;
+    margin-top: 32px;
+}
+
+#AboutMe .content-wrapper .content .skills {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center; 
+    align-items: center;     
+}
+
+#AboutMe .content-wrapper .content .skills a {
+    margin-left: 5px;
+    margin-right: 5px;
+}
+
+.AboutMe-content {
+    flex-direction: column; 
+    align-items: center;    
+}
+
+.image-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;    
+}
+
+.image-container img {
+    object-fit: cover;
+    border-radius: 50%;
+    width: 128px;
+    height: 128px;
+    border: solid 1px #797979;
+}
+
+
+#documentation .project {  /* Target the documentation section's project */
+    max-width: 100%;
+    margin-bottom: 10px;
+    padding: 20px;
+    border-radius: 10px;
+    border: solid 1px #797979;
+    transition-duration: 0.2s;
+}
+
+#documentation .project:hover {
+    border-radius: 30px;
+    transition-duration: 0.3s;
+}
+
+#markdown-content {
+    overflow-x: auto; /* Essential for horizontal scrolling of wide content */
+    word-break: break-word;
+    overflow-wrap: break-word;
+    /* Add padding to prevent content from touching the edges, especially if there's a border */
+    padding: 0 10px; /* Adjust as needed */
+}
+
+#markdown-content video,
+#markdown-content img,  /* Keep your existing image styles */
+#markdown-content .github-gif { /* New style for GitHub GIFs */
+    display: block;
+    max-width: 100%;
+    height: auto;
+    margin: 0 auto;
+    border-radius: 4.5px;
+}
+
+.github-gif {  /* General styles for GitHub GIFs, can be combined with #markdown-content .github-gif  */
+    border-radius: 10px; /* Optional: adds rounded corners */
+    box-shadow: 0 2px 5px rgba(0, 0, 0, 0.2); /* Optional: adds a subtle shadow */
+}
+
+#markdown-content p, 
+#markdown-content h1, 
+#markdown-content h2, 
+#markdown-content h3, 
+#markdown-content h4, 
+#markdown-content h5, 
+#markdown-content h6,
+#markdown-content ul,
+#markdown-content ol,
+#markdown-content pre, 
+#markdown-content code,  
+#markdown-content blockquote,
+#markdown-content table {
+    margin-bottom: 1em; 
+}
+
+#markdown-content h1 {
+    border-bottom: 1px solid #fff;
+}
+
+#markdown-content pre {
+    background-color: #333; /* Or any other suitable background color */
+    padding: 10px;
+    border-radius: 5px;
+    white-space: pre-wrap;
+    max-width: 100%;
+    overflow-x: auto; /* Enable horizontal scrolling for long code lines */
+}
+
+#markdown-content code {  /* Style inline code */
+    background-color: #333333;
+    padding: 2px 4px;
+    border-radius: 3px;
+    font-family: monospace;
+}
+
+#markdown-content blockquote {
+    border-left: 4px solid #ddd;
+    padding-left: 10px;
+    color: #888;
+    font-style: italic;
+}
+
+@media (max-width: 450px) {
+    .footer {
+        display: flex;
+        flex-direction: column; /* Располагаем элементы вертикально */
+        align-items: center; /* Выравниваем элементы по левому краю */
+        transition-duration: 0.3s;
+        /*  Или по центру, если нужно: align-items: center; */
+    }
+    .footer-section {
+        margin-bottom: 20px; /* Добавляем отступ между секциями */
+        transition-duration: 0.3s;
+       /* width: 100%;  Если хотите, чтобы секции занимали всю ширину */
+    }
+
+    #projects .project {
+        flex-direction: column; /* На маленьких экранах располагаем картинку и текст вертикально */
+        transition-duration: 0.3s;
+    }
+
+    .project-content {
+        flex-direction: column; /* Картинка над текстом */
+        align-items: center; /* Центрируем картинку */
+        transition-duration: 0.3s;
+    }
+
+    .project-image {
+        margin-right: 0; /* Убираем отступ справа, так как картинка теперь сверху */
+        margin-bottom: 10px; /* Добавляем отступ снизу от картинки до текста */
+        transition-duration: 0.3s;
+    }
+
+    #projects .project:hover .project-link::before {
+        opacity: 1;
+        animation-play-state: running;
+    }
+
+    /* Add these styles to specifically target images INSIDE the markdown content on small screens */
+    #markdown-content video, /* Add video to the media query */
+    #markdown-content img {
+        max-width: 100%;  /* Or adjust as needed for smaller screens */
+        width: calc(100% - 40px); /* Account for padding if needed */
+        /* margin: 0 20px; */
+        height: auto;      /* Maintain aspect ratio */
+        object-fit: cover;
+        border-radius: 4.5px;
+    }
+}
+
+.project-link::before {
+    content: "";
+    position: absolute;
+    top: 50%;
+    left: -5%;
+    width: 10%;
+    height: 200%;
+    background: linear-gradient(to right, rgba(255,255,255,0), rgba(255,255,255,0.5), rgba(255,255,255,0));
+    transform: translateY(-50%) skewX(-30deg);
+    animation: enchant 2s linear infinite;
+    animation-play-state: paused;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+}
+
+@keyframes enchant {
+    0% { left: -5%; }
+    100% { left: 105%; }
+}
