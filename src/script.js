@@ -11,13 +11,18 @@ buttons.forEach(button => {
       aboutMeSection.classList.add('hidden');
       aboutMeSection.classList.remove('visible');
       projectsSection.classList.remove('hidden');
-      projectsSection.classList.add('visible');
-
+      setTimeout(() => {
+         projectsSection.classList.add('visible');
+      }, 50); // Задержка для анимации
     } else if (button.textContent === 'About Me') {
       projectsSection.classList.add('hidden');
       projectsSection.classList.remove('visible');
-      aboutMeSection.classList.remove('hidden');
-      aboutMeSection.classList.add('visible');
+       aboutMeSection.classList.remove('hidden');
+       setTimeout(() => {
+           aboutMeSection.classList.add('visible');
+       }, 50); // Задержка для анимации
     }
   });
 });
+
+

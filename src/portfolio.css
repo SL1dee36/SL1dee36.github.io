@@ -7,12 +7,14 @@ body {
     color:#fff;
 }
 
+
+
 .container {
     padding: 0 10px;
 }
 
 header {
-    /* background-color: #333; */
+    background-color: #333;
     border: solid 1px #797979;
     border-radius: 10px;
     margin: 10px;
@@ -23,15 +25,29 @@ header {
 
 header h1 {
     margin: 0px;
+    font-family: 'Unbounded', sans-serif;
 }
 
-h1, h2, h3 {
-    font-weight: 700;
+h2, h3 {
+    font-weight: 320;
+    font-family: 'Unbounded', sans-serif;
+}
+
+h4 {
+    font-weight: 230;
+    font-family: 'Unbounded', sans-serif;
+}
+
+p,a {
+    font-weight: 180;
+    font-family: 'Unbounded', sans-serif;
 }
 
 h1 {
     font-size: 2.5em;
+    font-weight: 700;
     margin-bottom: 0.5em;
+    font-family: 'Unbounded', sans-serif;
 }
 
 section {
@@ -77,7 +93,7 @@ section {
 
 
 #projects .project:hover {
-    border-radius: 30px;
+    border-radius: 20px;
     transition-duration: 0.3s;
 }
 
@@ -131,7 +147,8 @@ section {
     font: inherit;
     cursor: pointer;
     overflow: hidden; /* Скрывает псевдоэлемент за пределами кнопки */
-
+    font-weight: 260;
+    font-family: 'Unbounded', sans-serif;
     font-size: larger;
 }
 
@@ -157,7 +174,7 @@ section {
 
 footer {
     border: solid 1px #797979;
-    /* background-color: #333; */
+    background-color: #333;
     color: #fff;
     text-align: left;
     border-radius: 10px;
@@ -312,7 +329,7 @@ ul {
 
 #markdown-content {
     overflow-x: auto; /* Essential for horizontal scrolling of wide content */
-    word-break: break-word; 
+    word-break: break-word;
     overflow-wrap: break-word;
     /* Add padding to prevent content from touching the edges, especially if there's a border */
     padding: 0 10px; /* Adjust as needed */
@@ -325,6 +342,7 @@ ul {
     max-width: 100%;
     height: auto;
     margin: 0 auto;
+    border-radius: 4.5px;
 }
 
 .github-gif {  /* General styles for GitHub GIFs, can be combined with #markdown-content .github-gif  */
@@ -348,6 +366,9 @@ ul {
     margin-bottom: 1em; 
 }
 
+#markdown-content h1 {
+    border-bottom: 1px solid #fff;
+}
 
 #markdown-content pre {
     background-color: #333; /* Or any other suitable background color */
@@ -359,7 +380,7 @@ ul {
 }
 
 #markdown-content code {  /* Style inline code */
-    /* background-color: #f0f0f0; */
+    background-color: #333333;
     padding: 2px 4px;
     border-radius: 3px;
     font-family: monospace;
@@ -415,6 +436,8 @@ ul {
         width: calc(100% - 40px); /* Account for padding if needed */
         /* margin: 0 20px; */
         height: auto;      /* Maintain aspect ratio */
+        object-fit: cover;
+        border-radius: 4.5px;
     }
 }
 
