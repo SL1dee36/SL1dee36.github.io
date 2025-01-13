@@ -29,6 +29,7 @@ body {
     height: 100vh; /* Ð¤Ð¸ÐºÑÐ¸Ñ€ÑƒÐµÐ¼ Ð²Ñ‹ÑÐ¾Ñ‚Ñƒ Ð² 100vh */
     object-fit: cover;
     z-index: 0;
+    pointer-events: none;
 }
 
 .background {
