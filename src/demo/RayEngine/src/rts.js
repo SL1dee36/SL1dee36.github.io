@@ -652,4 +652,467 @@ canvas.addEventListener('mousedown', (e) => {
         // Проверка на источник света
          for (let i = 0; i < lightSources.length; i++) {
             const source = lightSources[i];
-             const dist = Math.sqrt((mouseX - source
+             const dist = Math.sqrt((mouseX - source.x) ** 2 + (mouseY - source.y) ** 2);
+             if (dist < source.radius) {
+                 isDraggingLight = true;
+                 draggingLightIndex = i;
+                 return;
+             }
+         }
+         // Проверка на объект
+         for (let i = objects.length - 1; i >= 0; i--) {
+             const object = objects[i];
+             if (object.type === 'segment') {
+                   const x1 = object.x - object.length / 2 * Math.cos(object.angle * Math.PI / 180);
+                   const y1 = object.y - object.length / 2 * Math.sin(object.angle * Math.PI / 180);
+                   const x2 = object.x + object.length / 2 * Math.cos(object.angle * Math.PI / 180);
+                   const y2 = object.y + object.length / 2 * Math.sin(object.angle * Math.PI / 180);
+ 
+                   const dx = mouseX - x1;
+                   const dy = mouseY - y1;
+                   const rotatedX = dx * Math.cos(-object.angle * Math.PI / 180) - dy * Math.sin(-object.angle * Math.PI / 180);
+                   const rotatedY = dx * Math.sin(-object.angle * Math.PI / 180) + dy * Math.cos(-object.angle * Math.PI / 180);
+                if (rotatedX >= -object.hitBox && rotatedX <= (x2 - x1) + object.hitBox && rotatedY >= -object.hitBox && rotatedY <= (y2 - y1) + object.hitBox) {
+                     isDraggingObject = true;
+                     draggingObjectOffsetX = rotatedX;
+                     draggingObjectOffsetY = rotatedY;
+                     uiState.selectedObject = i;
+                     uiState.selectedLightIndex = -1
+                    updateUI()
+                      return;
+                 }
+             } else if (object.type === 'rect') {
+                  const rectPoints = [
+                         { x: object.x - object.width / 2, y: object.y - object.height / 2 },
+                         { x: object.x + object.width / 2, y: object.y - object.height / 2 },
+                         { x: object.x + object.width / 2, y: object.y + object.height / 2 },
+                         { x: object.x - object.width / 2, y: object.y + object.height / 2 }
+                       ].map(p => {
+                         const dx = p.x - object.x;
+                         const dy = p.y - object.y;
+                         return {
+                            x: object.x + dx * Math.cos(object.angle * Math.PI / 180) - dy * Math.sin(object.angle * Math.PI / 180),
+                            y: object.y + dx * Math.sin(object.angle * Math.PI / 180) + dy * Math.cos(object.angle * Math.PI / 180)
+                         }
+                      })
+ 
+                   const minX = Math.min(rectPoints[0].x, rectPoints[1].x, rectPoints[2].x, rectPoints[3].x);
+                     const minY = Math.min(rectPoints[0].y, rectPoints[1].y, rectPoints[2].y, rectPoints[3].y);
+                     const maxX = Math.max(rectPoints[0].x, rectPoints[1].x, rectPoints[2].x, rectPoints[3].x);
+                     const maxY = Math.max(rectPoints[0].y, rectPoints[1].y, rectPoints[2].y, rectPoints[3].y);
+                     if (mouseX >= minX && mouseX <= maxX && mouseY >= minY && mouseY <= maxY ) {
+                       isDraggingObject = true;
+                       draggingObjectOffsetX = mouseX - object.x;
+                       draggingObjectOffsetY = mouseY - object.y;
+                       uiState.selectedObject = i;
+                       uiState.selectedLightIndex = -1
+                     updateUI()
+                     return;
+                    }
+             } else if (object.type === 'arc') {
+                    const dist = Math.sqrt((mouseX - object.x) ** 2 + (mouseY - object.y) ** 2);
+                     const angle = Math.atan2(mouseY - object.y, mouseX - object.x) * 180 / Math.PI;
+                     if (dist < object.radius && angle >= object.startAngle && angle <= object.endAngle) {
+                         isDraggingObject = true;
+                          draggingObjectOffsetX = mouseX - object.x;
+                          draggingObjectOffsetY = mouseY - object.y;
+                          uiState.selectedObject = i;
+                         uiState.selectedLightIndex = -1
+                        updateUI()
+                        return;
+                 }
+              }else {
+                 const dist = Math.sqrt((mouseX - object.x) ** 2 + (mouseY - object.y) ** 2);
+                 if (dist < object.radius) {
+                     isDraggingObject = true;
+                     draggingObjectOffsetX = mouseX - object.x;
+                     draggingObjectOffsetY = mouseY - object.y;
+                     uiState.selectedObject = i;
+                     uiState.selectedLightIndex = -1
+                     updateUI()
+                      return;
+                 }
+             }
+         }
+         // Проверка на клик по UI
+         for (const element of uiElements) {
+             if (element.type === 'button' &&
+                 e.offsetX >= element.x && e.offsetX <= element.x + element.width &&
+                 e.offsetY >= element.y && e.offsetY <= element.y + element.height) {
+                     if(element.onClick) element.onClick(element);
+                     updateUI();
+                     return;
+              }
+              if(element.type === 'modal-button' &&
+                  e.offsetX >= element.x && e.offsetX <= element.x + element.w &&
+                  e.offsetY >= element.y && e.offsetY <= element.y + element.h) {
+                  if(element.onClick) element.onClick(element);
+                  return;
+              }
+              if(element.type === 'script-button' &&
+                   e.offsetX >= element.x && e.offsetX <= element.x + element.w &&
+                  e.offsetY >= element.y && e.offsetY <= element.y + element.h) {
+                     if(element.onClick) element.onClick(element);
+                     return;
+               }
+         }
+         
+ 
+ 
+      } else if (e.button === 2) {
+             //Проверка на объект для вращения
+         for (let i = objects.length - 1; i >= 0; i--) {
+             const object = objects[i];
+             if (object.type === 'segment') {
+                    const x1 = object.x - object.length / 2 * Math.cos(object.angle * Math.PI / 180);
+                    const y1 = object.y - object.length / 2 * Math.sin(object.angle * Math.PI / 180);
+                    const x2 = object.x + object.length / 2 * Math.cos(object.angle * Math.PI / 180);
+                    const y2 = object.y + object.length / 2 * Math.sin(object.angle * Math.PI / 180);
+ 
+                    const dx = mouseX - x1;
+                    const dy = mouseY - y1;
+                     const rotatedX = dx * Math.cos(-object.angle * Math.PI / 180) - dy * Math.sin(-object.angle * Math.PI / 180);
+                      const rotatedY = dx * Math.sin(-object.angle * Math.PI / 180) + dy * Math.cos(-object.angle * Math.PI / 180);
+                    if (rotatedX >= -object.hitBox && rotatedX <= (x2 - x1) + object.hitBox && rotatedY >= -object.hitBox && rotatedY <= (y2 - y1) + object.hitBox) {
+                         isRotatingObject = true;
+                         rotatingObjectCenter = { x: object.x, y: object.y };
+                         rotationStartAngle = Math.atan2(mouseY - rotatingObjectCenter.y, mouseX - rotatingObjectCenter.x) - (object.angle * Math.PI / 180);
+                            uiState.selectedObject = i;
+                             uiState.selectedLightIndex = -1
+                         updateUI();
+                        return;
+                     }
+             } else if (object.type === 'rect') {
+                 const rectPoints = [
+                     { x: object.x - object.width / 2, y: object.y - object.height / 2 },
+                     { x: object.x + object.width / 2, y: object.y - object.height / 2 },
+                     { x: object.x + object.width / 2, y: object.y + object.height / 2 },
+                     { x: object.x - object.width / 2, y: object.y + object.height / 2 }
+                     ].map(p => {
+                          const dx = p.x - object.x;
+                         const dy = p.y - object.y;
+                          return {
+                             x: object.x + dx * Math.cos(object.angle * Math.PI / 180) - dy * Math.sin(object.angle * Math.PI / 180),
+                            y: object.y + dx * Math.sin(object.angle * Math.PI / 180) + dy * Math.cos(object.angle * Math.PI / 180)
+                         }
+                  })
+                const minX = Math.min(rectPoints[0].x, rectPoints[1].x, rectPoints[2].x, rectPoints[3].x);
+                 const minY = Math.min(rectPoints[0].y, rectPoints[1].y, rectPoints[2].y, rectPoints[3].y);
+                 const maxX = Math.max(rectPoints[0].x, rectPoints[1].x, rectPoints[2].x, rectPoints[3].x);
+                  const maxY = Math.max(rectPoints[0].y, rectPoints[1].y, rectPoints[2].y, rectPoints[3].y);
+                     if (mouseX >= minX && mouseX <= maxX && mouseY >= minY && mouseY <= maxY ) {
+                          isRotatingObject = true;
+                             rotatingObjectCenter = { x: object.x, y: object.y };
+                              rotationStartAngle = Math.atan2(mouseY - rotatingObjectCenter.y, mouseX - rotatingObjectCenter.x) - (object.angle * Math.PI / 180);
+                             uiState.selectedObject = i;
+                             uiState.selectedLightIndex = -1
+                            updateUI();
+                        return;
+                    }
+             }else if (object.type === 'arc') {
+                      const dist = Math.sqrt((mouseX - object.x) ** 2 + (mouseY - object.y) ** 2);
+                      const angle = Math.atan2(mouseY - object.y, mouseX - object.x) * 180 / Math.PI;
+                         if (dist < object.radius && angle >= object.startAngle && angle <= object.endAngle) {
+                               isRotatingObject = true;
+                                rotatingObjectCenter = { x: object.x, y: object.y };
+                                rotationStartAngle = Math.atan2(mouseY - rotatingObjectCenter.y, mouseX - rotatingObjectCenter.x) - (object.angle * Math.PI / 180);
+                              uiState.selectedObject = i;
+                               uiState.selectedLightIndex = -1
+                                 updateUI();
+                             return;
+                         }
+               } else {
+                  const dist = Math.sqrt((mouseX - object.x) ** 2 + (mouseY - object.y) ** 2);
+                 if (dist < object.radius) {
+                     isRotatingObject = true;
+                     rotatingObjectCenter = { x: object.x, y: object.y };
+                    rotationStartAngle = Math.atan2(mouseY - rotatingObjectCenter.y, mouseX - rotatingObjectCenter.x) - (object.angle * Math.PI / 180);
+                      uiState.selectedObject = i;
+                     uiState.selectedLightIndex = -1
+                       updateUI();
+                    return;
+                 }
+             }
+         }
+      } else if (e.button === 1) {
+           isDraggingCamera = true;
+          cameraDragStartX = e.offsetX;
+          cameraDragStartY = e.offsetY;
+     }
+ });
+ 
+ 
+ 
+ canvas.addEventListener('mousemove', (e) => {
+     const rect = canvas.getBoundingClientRect();
+      mouseX = (e.clientX - rect.left - canvas.width / 2 + cameraX) / cameraScale + canvas.width / 2;
+      mouseY = (e.clientY - rect.top - canvas.height / 2 + cameraY) / cameraScale + canvas.height / 2;
+    
+     
+     if(uiState.isEditingUI) return;
+ 
+     if (isDraggingLight && draggingLightIndex > -1) {
+         lightSources[draggingLightIndex].x = mouseX;
+         lightSources[draggingLightIndex].y = mouseY;
+      }
+     if (isDraggingObject && uiState.selectedObject > -1) {
+         const obj = objects[uiState.selectedObject];
+          if (obj.type === 'segment') {
+              const x1 = mouseX - draggingObjectOffsetX * Math.cos(obj.angle * Math.PI/180) + draggingObjectOffsetY * Math.sin(obj.angle * Math.PI/180);
+               const y1 = mouseY - draggingObjectOffsetX * Math.sin(obj.angle * Math.PI/180) - draggingObjectOffsetY * Math.cos(obj.angle * Math.PI/180);
+               obj.x = x1;
+               obj.y = y1;
+           } else {
+             obj.x = mouseX - draggingObjectOffsetX;
+              obj.y = mouseY - draggingObjectOffsetY;
+          }
+         updateUI();
+     }
+         if (isRotatingObject && uiState.selectedObject > -1) {
+             const obj = objects[uiState.selectedObject];
+             const currentAngle = Math.atan2(mouseY - rotatingObjectCenter.y, mouseX - rotatingObjectCenter.x) - rotationStartAngle;
+            obj.angle = currentAngle * 180 / Math.PI;
+            updateUI()
+       }
+      if (isDraggingCamera) {
+           cameraX += e.offsetX - cameraDragStartX;
+           cameraY += e.offsetY - cameraDragStartY;
+          cameraDragStartX = e.offsetX;
+          cameraDragStartY = e.offsetY;
+      }
+   
+ });
+ 
+ canvas.addEventListener('mouseup', () => {
+     isDraggingLight = false;
+     draggingLightIndex = -1;
+     isDraggingObject = false;
+     isRotatingObject = false;
+     isDraggingCamera = false;
+     uiState.isEditingUI = false;
+ });
+ 
+ canvas.addEventListener('wheel', (e) => {
+     const scaleFactor = e.deltaY > 0 ? 0.9 : 1.1;
+     cameraScale *= scaleFactor;
+ });
+ 
+ canvas.addEventListener('keydown', (e) => {
+     if (e.key === 'Escape') {
+         uiState.selectedObject = -1;
+          uiState.selectedLightIndex = -1;
+        updateUI()
+         closeModal();
+          closeScriptModal();
+     }
+    if(e.key === 'Enter') {
+        closeModal();
+         closeScriptModal();
+    }
+ 
+     if(e.key === 'Delete' && uiState.selectedObject > -1) {
+        objects.splice(uiState.selectedObject, 1);
+        uiState.selectedObject = -1;
+        updateUI();
+     }
+     if (e.key === 'Delete' && uiState.modal ) {
+         closeModal();
+     }
+      if (e.key === 'Delete' && uiState.scriptModal ) {
+          closeScriptModal();
+      }
+ });
+ 
+ 
+ canvas.addEventListener('contextmenu', (e) => {
+   e.preventDefault();
+ });
+ 
+ function updateLightSources(count) {
+   while(lightSources.length < count) {
+       lightSources.push({
+            x: Math.random() * canvas.width, y: Math.random() * canvas.height,
+            radius: 10, color: "#ffffff", numRays: 100, spreadAngle: 360, rayLength: 1000, blur: 0
+           });
+   }
+   while(lightSources.length > count) {
+       lightSources.pop();
+   }
+     createUI();
+ }
+ function deleteObject() {
+     objects.splice(uiState.selectedObject, 1);
+       uiState.selectedObject = -1;
+         updateUI();
+        closeModal();
+ }
+ function showModal(label, value, onChange, type, element) {
+     uiState.isEditingUI = true;
+   uiState.modal = { label, value, onChange, type, element};
+ 
+    const modalDiv = document.createElement('div');
+     modalDiv.classList.add('modal');
+ 
+     const labelElement = document.createElement('label');
+     labelElement.textContent = label;
+     modalDiv.appendChild(labelElement);
+ 
+ 
+      const inputElement = document.createElement('input');
+     inputElement.type = type === 'color' ? 'color' : type === 'number' ? 'number' : 'text';
+       inputElement.value = value;
+       modalInput = inputElement;
+ 
+      modalDiv.appendChild(inputElement);
+ 
+      const okButton = document.createElement('button');
+       okButton.textContent = 'OK';
+      okButton.onclick = () => {
+          uiState.modal.onChange(type === 'color' ? inputElement.value :  inputElement.value);
+         closeModal();
+      };
+      modalDiv.appendChild(okButton);
+ 
+      const cancelButton = document.createElement('button');
+      cancelButton.textContent = 'Cancel';
+      cancelButton.onclick = () => closeModal();
+      modalDiv.appendChild(cancelButton);
+     document.body.appendChild(modalDiv);
+ 
+     modalDiv.style.top = element.y +  'px';
+     modalDiv.style.left = element.x +  'px';
+ }
+ 
+ function closeModal() {
+   if(uiState.modal) {
+       const modalDiv = document.querySelector('.modal');
+         if (modalDiv) {
+            modalDiv.remove();
+            uiState.modal = null;
+            modalInput = null;
+            uiState.isEditingUI = false;
+        }
+ 
+   }
+ }
+ function drawModal() {
+   if(uiState.modal) {
+       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+       ctx.fillRect(0, 0, canvas.width, canvas.height);
+     }
+ }
+ function openScriptModal(obj) {
+     uiState.isEditingUI = true;
+       uiState.scriptModal = {obj}
+     const modalDiv = document.createElement('div');
+     modalDiv.classList.add('modal');
+      const labelElement = document.createElement('label');
+     labelElement.textContent = 'Script Name:';
+     modalDiv.appendChild(labelElement);
+      const nameInput = document.createElement('input');
+     nameInput.type = 'text';
+     nameInput.value = '';
+     modalDiv.appendChild(nameInput);
+     const codeElement = document.createElement('label');
+     codeElement.textContent = 'Script code:';
+     modalDiv.appendChild(codeElement);
+      const textarea = document.createElement('textarea');
+      modalDiv.appendChild(textarea);
+     const okButton = document.createElement('button');
+       okButton.textContent = 'OK';
+      okButton.onclick = () => {
+         obj.scripts.push({name: nameInput.value, code: textarea.value, enabled: true})
+         closeScriptModal()
+          updateUI()
+      };
+      modalDiv.appendChild(okButton);
+ 
+      const cancelButton = document.createElement('button');
+      cancelButton.textContent = 'Cancel';
+      cancelButton.onclick = () => closeScriptModal();
+      modalDiv.appendChild(cancelButton);
+     document.body.appendChild(modalDiv);
+ 
+   const el = uiElements.find(el => el.type === 'inspector')
+     modalDiv.style.top = el.y +  'px';
+    modalDiv.style.left = el.x +  'px';
+ }
+ 
+ function showScriptModal(obj, script, index) {
+     uiState.isEditingUI = true;
+       uiState.scriptModal = {obj, script, index}
+     currentScript = script;
+     const modalDiv = document.createElement('div');
+     modalDiv.classList.add('modal');
+      const labelElement = document.createElement('label');
+     labelElement.textContent = 'Script Name:';
+     modalDiv.appendChild(labelElement);
+      const nameInput = document.createElement('input');
+     nameInput.type = 'text';
+     nameInput.value = script.name;
+      modalDiv.appendChild(nameInput);
+     const codeElement = document.createElement('label');
+     codeElement.textContent = 'Script code:';
+     modalDiv.appendChild(codeElement);
+      const textarea = document.createElement('textarea');
+      textarea.value = script.code
+      modalDiv.appendChild(textarea);
+     const okButton = document.createElement('button');
+       okButton.textContent = 'Save';
+      okButton.onclick = () => {
+          script.code = textarea.value;
+            script.name = nameInput.value;
+          closeScriptModal()
+          updateUI()
+      };
+      modalDiv.appendChild(okButton);
+       const toggleButton = document.createElement('button');
+      toggleButton.textContent = script.enabled ? 'Disable' : 'Enable';
+      toggleButton.onclick = () => {
+        script.enabled = !script.enabled;
+        closeScriptModal()
+          updateUI();
+      };
+      modalDiv.appendChild(toggleButton);
+       const deleteButton = document.createElement('button');
+      deleteButton.textContent = 'Delete';
+      deleteButton.onclick = () => {
+          obj.scripts.splice(index,1);
+            closeScriptModal()
+          updateUI();
+      };
+      modalDiv.appendChild(deleteButton);
+      const cancelButton = document.createElement('button');
+      cancelButton.textContent = 'Cancel';
+      cancelButton.onclick = () => closeScriptModal();
+      modalDiv.appendChild(cancelButton);
+     document.body.appendChild(modalDiv);
+ 
+       const el = uiElements.find(el => el.type === 'inspector')
+     modalDiv.style.top = el.y +  'px';
+     modalDiv.style.left = el.x +  'px';
+ }
+ function closeScriptModal() {
+   if(uiState.scriptModal) {
+       const modalDiv = document.querySelector('.modal');
+         if (modalDiv) {
+            modalDiv.remove();
+            uiState.scriptModal = null;
+            currentScript = null;
+            uiState.isEditingUI = false;
+        }
+ 
+   }
+ }
+ function drawScriptModal() {
+   if(uiState.scriptModal) {
+       ctx.fillStyle = 'rgba(0, 0, 0, 0.5)';
+       ctx.fillRect(0, 0, canvas.width, canvas.height);
+     }
+ }
+ // Инициализация и запуск анимации
+ resizeCanvas();
+ createUI();
+ animate();
+ 
+ window.addEventListener('resize', resizeCanvas);
