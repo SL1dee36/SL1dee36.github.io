@@ -1,5 +1,5 @@
 Title: One-Line Magic: Writing Elegant Python with List Comprehensions
-Date: September 25, 2025
+Date: November 17, 2025
 Tags: python, list comprehension, best practice, pythonic, tutorial
 Categories: Python, For Beginners, Tutorial
 
