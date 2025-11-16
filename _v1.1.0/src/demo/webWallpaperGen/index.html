@@ -1,0 +1,72 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Генератор белого шума</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>White Noise Image Generator</h1>
+        <p>This tool allows you to generate images that simulate white noise.</p>
+        <div style="display: flex;/* flex-wrap: wrap; */flex-direction: column;align-items: center;">
+            <div class="controls">
+                <div class="control-row">
+                    <label for="columns">Columns:</label>
+                    <input type="number" id="columns" value="50" min="1">
+                </div>
+                <div class="control-row">
+                    <label for="rows">Rows:</label>
+                    <input type="number" id="rows" value="25" min="1">
+                </div>
+                <div class="control-row">
+                    <label for="square-size">Square size:</label>
+                    <input type="number" id="square-size" value="5" min="1"> <span class="pixels-label">pixels</span>
+                </div>
+                <div class="control-row">
+                    <label for="color-mode">Colours:</label>
+                    <select id="color-mode">
+                        <option value="monochrome">Monochrome</option>
+                        <option value="red">Red</option>
+                        <option value="blue">Blue</option>
+                        <option value="green">Green</option>
+                        <option value="gradient2">Gradient 2-color</option>
+                        <option value="gradient35">Gradient 3-5 color</option>
+                    </select>
+                </div>
+                <div id="gradient2-controls" style="display: none;">
+                    <div class="control-row">
+                        <label for="start-color">Start Color:</label>
+                        <input type="color" id="start-color" value="#000000">
+                    </div>
+                    <div class="control-row">
+                        <label for="end-color">End Color:</label>
+                        <input type="color" id="end-color" value="#ffffff">
+                    </div>
+                    </div>
+                <div class="control-row">
+                    <label for="bias">Bias:</label>
+                    <select id="bias">
+                        <option value="verylight">Very Light</option>
+                        <option value="light">Light</option>
+                        <option value="none">None</option>
+                        <option value="dark">Dark</option>
+                        <option value="verydark">Very Dark</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <div id="warning-message" style="color: red; display: none;"></div>
+        <button id="generate-button">Generate <span id="image-size">(250x125)</span></button>
+         <button id="download-button">Download</button>
+        <div class="image-container">
+            <canvas id="white-noise-canvas" style="display:none"></canvas>
+        </div>
+
+        <p><a href="https://github.com/SL1dee36/White-Noise-Image-Generator">Code</a> by <a href="https://SL1dee36.github.io/">Sl1dee36</a></p>
+    </div>
+    <script src="script.js"></script>
+</body>
+</html>

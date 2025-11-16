@@ -317,13 +317,17 @@ ul {
 
 
 #documentation .project {  /* Target the documentation section's project */
-    max-width: 100%;
+    /* max-width: 100%; */
     margin-bottom: 10px;
     padding: 20px;
     border-radius: 10px;
     border: solid 1px #797979;
     transition-duration: 0.2s;
+    justify-self: center;
+    max-width: 60%;
 }
+
+
 
 #documentation .project:hover {
     border-radius: 30px;
@@ -396,6 +400,15 @@ ul {
     font-style: italic;
 }
 
+@media (max-width: 1200px) {
+    #documentation .project {  /* Target the documentation section's project */
+        max-width: 100%;
+        transition-duration: 0.2s;
+        justify-self: center;
+    }
+}
+
+
 @media (max-width: 450px) {
     .footer {
         display: flex;
@@ -404,6 +417,7 @@ ul {
         transition-duration: 0.3s;
         /*  Или по центру, если нужно: align-items: center; */
     }
+
     .footer-section {
         margin-bottom: 20px; /* Добавляем отступ между секциями */
         transition-duration: 0.3s;

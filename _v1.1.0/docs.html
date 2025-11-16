@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Portfolio</title>
+    <link rel="icon" href="src/img/icon.jpg">
+    <link rel="stylesheet" href="src/portfolio.css"> 
+    <!-- <link rel="stylesheet" href="src/docs.css">  -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@400;700&display=swap" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200..900&display=swap" rel="stylesheet">
+
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script> <script src="https://cdn.jsdelivr.net/npm/showdown/dist/showdown.min.js"></script>
+</head>
+<body>
+    <header>
+        <div class="container">
+            <h1>{ProjectName}</h1>
+
+            <div class="button-container" style="margin-top: 20px;margin-bottom: 5px;">
+                <button>Back</button> </div>
+        </div>
+    </header>
+
+    <main>
+        <section id="projects" class="visible"> </section>
+        <section id="documentation" class="hidden">
+            <div class="container">
+                <div class="project">
+                    <div class="project-content">
+                        <div class="project-text">
+                            <div id="markdown-content"></div> </div> </div> </div>
+        </section>
+    </main>
+
+    <footer>
+        <div class="footer">
+            <div class="footer-section">
+                <p style="border-bottom: solid 1px white;">© 2024 Nazaryan Artem</p>
+                <ul>
+                    <li><a href="https://www.youtube.com/codejets" target="_blank">CodeJets</a></li> </ul>
+            </div>
+            <div class="footer-section">
+                <p style="border-bottom: solid 1px white;">Contact me</p>
+                <ul>
+                    <li><a href="mailto:spanishiwasc2@gmail.com">spanishiwasc2@gmail.com</a></li>
+                    <li><a href="https://t.me/Slide36" target="_blank">Telegram</a></li>
+                    <li><a href="https://github.com/sl1dee36" target="_blank">GitHub</a></li> </ul>
+            </div>
+        </div>
+    </footer>
+
+    <script src="src/docs.js"></script> 
+</body>
+</html>
