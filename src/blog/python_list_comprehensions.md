@@ -1,7 +1,7 @@
-Название: One-Line Magic: Writing Elegant Python with List Comprehensions
-Дата: September 25, 2025
-Теги: python, list comprehension, best practice, pythonic, tutorial
-Категории: Python, For Beginners, Tutorial
+Title: One-Line Magic: Writing Elegant Python with List Comprehensions
+Data: September 25, 2025
+Tags: python, list comprehension, best practice, pythonic, tutorial
+Categories: Python, For Beginners, Tutorial
 
 Let's admit it: we've all written this kind of code. You need to create a new list based on an existing one, and you instinctively type:
 
