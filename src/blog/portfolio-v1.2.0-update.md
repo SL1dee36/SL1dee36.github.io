@@ -1,5 +1,5 @@
 Title: Portfolio 1.2.0: Blog and a Total Upgrade!
-Date: August 15, 2025
+Date: November 16, 2025
 Tags: update, portfolio, JavaScript, UI/UX, frontend
 Categories: Project News, Web Development
 
