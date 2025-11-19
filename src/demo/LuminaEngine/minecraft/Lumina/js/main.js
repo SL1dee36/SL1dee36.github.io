@@ -11,116 +11,93 @@ import { UIManager } from '../../game/UIManager.js';
 import { BlockInteraction } from '../../game/BlockInteraction.js';
 import { DayNightCycle } from '../../game/DayNightCycle.js';
 import { SaveManager } from '../../game/SaveManager.js';
+import { SettingsManager } from '../../game/SettingsManager.js';
 
 function main() {
     const engine = new Engine('game-canvas');
-    const uiManager = new UIManager();
+    const settingsManager = new SettingsManager();
     const saveManager = new SaveManager();
 
+    // Применяем качество при старте
+    engine.renderer.renderer.setPixelRatio(window.devicePixelRatio * settingsManager.get('quality'));
+
+    // Коллбек для сохранения, передаем в UI
+    const saveCallback = () => {
+        if(engine.player && engine.physicsEngine.world) {
+            saveManager.saveWorld(engine.physicsEngine.world, engine.player);
+        }
+    };
+
+    const uiManager = new UIManager(engine.inputManager, settingsManager, saveCallback);
+    
     const startMenu = document.getElementById('start-menu');
     const newWorldBtn = document.getElementById('new-world-btn');
     const loadWorldBtn = document.getElementById('load-world-btn');
 
-    loadWorldBtn.disabled = !saveManager.hasSavedWorld();
+    if (!saveManager.hasSavedWorld()) loadWorldBtn.style.display = 'none';
 
-    newWorldBtn.addEventListener('click', () => {
-        startGame(null);
-    });
-
+    newWorldBtn.addEventListener('click', () => startGame(null));
     loadWorldBtn.addEventListener('click', () => {
-        const saveData = saveManager.loadWorld();
-        if (saveData) {
-            startGame(saveData);
-        } else {
-            alert("Ошибка загрузки мира!");
-        }
+        const data = saveManager.loadWorld();
+        if(data) startGame(data);
     });
 
     function startGame(saveData) {
         startMenu.style.display = 'none';
-
-        // --- ИЗМЕНЕНИЕ: Передаем renderer в конструктор World ---
-        // Наш новый GPUWorldGenerator требует прямого доступа к экземпляру
-        // THREE.WebGLRenderer для выполнения закадрового рендеринга.
-        const world = new World(engine.renderer.scene, undefined, engine.renderer.renderer);
+        
+        // Передаем settingsManager в World
+        const world = new World(engine.renderer.scene, undefined, engine.renderer.renderer, settingsManager);
         engine.physicsEngine.setWorld(world);
 
-        if (saveData) {
-            // --- ИЗМЕНЕНИЕ: Передаем renderer также и в loadData ---
-            // Это нужно, чтобы при загрузке мира GPUWorldGenerator был
-            // пересоздан с правильным seed'ом.
-            world.loadData(saveData.world, engine.renderer.renderer);
-        } else {
-            world.generate();
-        }
+        if (saveData) world.loadData(saveData.world, engine.renderer.renderer);
+        else world.generate();
 
-        // --- Create Player ---
+        // Player
         const player = new GameObject('Player');
         player.addComponent(RigidBody, { bodyType: 'dynamic' });
         player.addComponent(BoxCollider, new THREE.Vector3(0.6, 1.8, 0.6));
-        player.addComponent(PlayerController);
+        // Передаем settingsManager в контроллер
+        player.addComponent(PlayerController, settingsManager);
         const inventory = player.addComponent(Inventory, uiManager);
         player.addComponent(BlockInteraction, world);
-        
-        // --- Логика безопасного спавна ---
+
         if (saveData && saveData.player) {
             player.transform.position.fromArray(saveData.player.position);
-            player.transform.rotation.fromArray(saveData.player.rotation);
+            if (saveData.player.rotation) player.transform.rotation.fromArray(saveData.player.rotation);
             inventory.loadData(saveData.player.inventory);
         } else {
-            const spawnX = 8;
-            const spawnZ = 8;
-            let spawnY = 128; 
-            let groundFound = false;
-
-            while(spawnY > 0) {
-                const blockId = world.getVoxel(spawnX, spawnY, spawnZ);
-                if (blockId !== 0) {
-                    groundFound = true;
-                    break;
-                }
-                spawnY--;
-            }
-
-            if (!groundFound) {
-                console.warn(`Не найдена земля в точке ${spawnX},${spawnZ}. Создаем платформу.`);
-                spawnY = 64;
-                for(let dx = -1; dx <= 1; dx++) {
-                    for(let dz = -1; dz <= 1; dz++) {
-                        world.setVoxel(spawnX + dx, spawnY, spawnZ + dz, 4); 
-                        const chunkToUpdate = world.getChunk(Math.floor((spawnX + dx) / 16), Math.floor((spawnZ + dz) / 16));
-                        if(chunkToUpdate) chunkToUpdate.needsUpdate = true;
-                    }
-                }
-            }
-            
-            player.transform.position.set(spawnX + 0.5, spawnY + 2, spawnZ + 0.5);
+            player.transform.position.set(8, 80, 8);
         }
         
         engine.addGameObject(player);
         engine.setPlayer(player);
 
-        // --- Create Sky Manager ---
-        const skyManager = new GameObject('SkyManager');
-        skyManager.addComponent(DayNightCycle);
-        engine.addGameObject(skyManager);
+        // Sky
+        const sky = new GameObject('Sky');
+        sky.addComponent(DayNightCycle, settingsManager);
+        engine.addGameObject(sky);
 
-        // --- Add world update to the game loop ---
-        const worldUpdater = new GameObject('WorldUpdater');
-        worldUpdater.update = world.update.bind(world);
-        engine.addGameObject(worldUpdater);
+        // Updater
+        const updater = new GameObject('WorldUpdater');
+        updater.update = () => world.update(player.transform.position);
+        engine.addGameObject(updater);
 
-        // --- Setup Auto-Save and Inventory toggle ---
+        // Inputs
         document.addEventListener('keydown', (e) => {
-            if (e.code === 'KeyE') {
-                uiManager.toggleInventory();
-            }
-            if (e.code === 'KeyP') {
-                saveManager.saveWorld(world, player);
+            if (e.code === 'KeyE') uiManager.toggleInventory();
+            if (e.code === 'Escape') {
+                // Если инвентарь открыт - закрываем
+                if (engine.inputManager.isInventoryOpen) {
+                    uiManager.toggleInventory();
+                } 
+                // Если пауза не активна (и инвентарь закрыт) - InputManager сам откроет паузу через pointerlockchange
+                // Но если курсор уже был отпущен, принудительно ставим паузу
+                else if (!engine.inputManager.isPointerLocked() && !engine.inputManager.isPaused) {
+                    engine.inputManager.setPaused(true);
+                }
             }
         });
 
-        // Start the engine
         engine.start();
     }
 }

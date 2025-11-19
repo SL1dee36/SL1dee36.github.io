@@ -5,62 +5,130 @@
     <title>LuminaCraft</title>
     <link rel="icon" href="img/le.png">
     <style>
-        body { margin: 0; overflow: hidden; font-family: 'Minecraftia', sans-serif; background: #111; color: white; }
+        /* --- Global --- */
+        body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #111; color: white; user-select: none; }
         canvas { display: block; }
+        button { font-family: 'Courier New', monospace; cursor: pointer; border: 2px solid #000; background: #777; color: white; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.4); }
+        button:hover { background: #888; }
+        button:active { background: #666; box-shadow: inset 2px 2px 0 rgba(0,0,0,0.4), inset -2px -2px 0 rgba(255,255,255,0.2); }
+
+        /* --- UI Containers --- */
         #ui-container { position: absolute; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; }
-        #crosshair { position: absolute; top: 50%; left: 50%; width: 4px; height: 4px; background: white; border: 1px solid black; transform: translate(-50%, -50%); }
-        #hotbar { position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; background: rgba(0,0,0,0.4); border: 2px solid #555; }
-        .hotbar-slot { width: 50px; height: 50px; border: 2px solid #888; margin: 2px; background-size: cover; background-position: center; image-rendering: pixelated; position: relative; }
-        .hotbar-slot.selected { border-color: white; transform: scale(1.1); }
-        .item-count { position: absolute; bottom: 2px; right: 2px; font-size: 14px; text-shadow: 1px 1px 2px black; }
-        #inventory { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 462px; background: rgba(10,10,10,0.8); border: 3px solid #555; padding: 10px; display: none; pointer-events: all; }
-        .inventory-grid { display: grid; grid-template-columns: repeat(9, 50px); gap: 2px; }
-        #debug-info { position: absolute; top: 10px; left: 10px; background: rgba(0,0,0,0.5); padding: 5px; font-size: 12px; line-height: 1.2; }
-        #start-menu { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: #333; display: flex; flex-direction: column; justify-content: center; align-items: center; pointer-events: all; }
-        #start-menu h1 { font-size: 48px; }
-        #start-menu button { font-size: 24px; padding: 10px 20px; margin: 10px; cursor: pointer; }
-        #instructions {
-            position: absolute;
-            width: 100%;
-            height: 100%;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            background: rgba(0,0,0,0.5);
-            color: white;
-            text-align: center;
-            font-size: 1.5em;
-            display: none; /* Initially hidden */
-        }
+        .menu-screen { position: absolute; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.65); backdrop-filter: blur(2px); display: none; flex-direction: column; justify-content: center; align-items: center; z-index: 1000; pointer-events: all; }
+        
+        /* --- HUD --- */
+        #crosshair { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAKklEQVQ4T2NkQAKrVq36zwziEzNs3LiRkZqaQWPYMGgwGoaDYSB+QCwAAH/8I7Gg+68sAAAAAElFTkSuQmCC') no-repeat center; image-rendering: pixelated; transform: translate(-50%, -50%); opacity: 0.8; }
+        #hotbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; background: rgba(0,0,0,0.6); padding: 2px; border-radius: 2px; }
+        
+        /* --- Inventory Slots --- */
+        .slot { width: 40px; height: 40px; border: 2px solid #555; margin: 1px; background-color: rgba(0,0,0,0.3); background-size: cover; image-rendering: pixelated; position: relative; pointer-events: all; cursor: pointer; }
+        .slot:hover { background-color: rgba(255,255,255,0.1); }
+        .hotbar-slot.selected { border-color: white; box-shadow: 0 0 4px white; z-index: 10; }
+        .item-count { position: absolute; bottom: 0; right: 2px; font-size: 14px; font-weight: bold; text-shadow: 1px 1px 0 #000; pointer-events: none; }
+        
+        /* --- Inventory Window --- */
+        #inventory { position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #c6c6c6; border: 4px solid #555; padding: 10px; display: none; pointer-events: all; box-shadow: 0 0 20px rgba(0,0,0,0.5); color: #333; }
+        .inv-title { margin: 0 0 5px 2px; font-weight: bold; }
+        .inventory-grid { display: grid; grid-template-columns: repeat(9, 44px); gap: 0; background: #8b8b8b; padding: 2px; border: 2px solid #fff; border-top-color: #333; border-left-color: #333; }
+        .inventory-grid .slot { border-color: #8b8b8b; background-color: #8b8b8b; width: 40px; height: 40px; margin: 0; border: 2px solid #fff; border-bottom-color: #333; border-right-color: #333; }
+        
+        #drag-icon { position: absolute; width: 40px; height: 40px; pointer-events: none; z-index: 2000; display: none; background-size: cover; image-rendering: pixelated; }
+
+        /* --- Menus --- */
+        .menu-btn { font-size: 20px; padding: 12px 0; width: 300px; margin: 8px; text-align: center; }
+        .menu-title { font-size: 40px; color: white; text-shadow: 2px 2px 0 #000; margin-bottom: 30px; }
+        
+        /* --- Options --- */
+        .option-row { display: flex; justify-content: space-between; align-items: center; width: 400px; margin: 5px 0; background: rgba(0,0,0,0.3); padding: 10px; }
+        .option-row label { font-size: 16px; }
+        input[type=range] { width: 150px; }
+        
+        /* --- Debug --- */
+        #debug-info { position: absolute; top: 10px; left: 10px; color: yellow; font-family: monospace; text-shadow: 1px 1px 0 #000; }
     </style>
 </head>
 <body>
     <canvas id="game-canvas"></canvas>
+    
     <div id="ui-container">
         <div id="debug-info">
             <div id="fps-display">FPS: 0</div>
             <div id="coords-display"></div>
         </div>
         <div id="crosshair"></div>
+        
         <div id="hotbar"></div>
+        
         <div id="inventory">
+            <div class="inv-title">Inventory</div>
             <div class="inventory-grid" id="main-inventory-grid"></div>
-            <hr>
+            <div style="height: 10px;"></div>
+            <div class="inv-title">Hotbar</div>
             <div class="inventory-grid" id="hotbar-inventory-grid"></div>
         </div>
-    </div>
-    <div id="start-menu">
-        <h1>LuminaCraft</h1>
-        <button id="new-world-btn">Новый мир</button>
-        <button id="load-world-btn">Загрузить мир</button>
-    </div>
-    <div id="instructions">
-        <p>Игра на паузе</p>
-        <p>(Нажмите, чтобы продолжить)</p>
+
+        <div id="drag-icon"></div>
     </div>
 
-    <!-- Загрузчик THREE.js (можно скачать или использовать CDN) -->
+    <!-- Start Menu -->
+    <div id="start-menu" class="menu-screen" style="display: flex; background: #333;">
+        <div class="menu-title">LuminaCraft</div>
+        <button class="menu-btn" id="new-world-btn">New World</button>
+        <button class="menu-btn" id="load-world-btn">Load World</button>
+    </div>
+
+    <!-- Pause Menu -->
+    <div id="pause-menu" class="menu-screen">
+        <div class="menu-title">Game Menu</div>
+        <button class="menu-btn" id="resume-btn">Back to Game</button>
+        <button class="menu-btn" id="options-btn">Options</button>
+        <button class="menu-btn" id="stats-btn">Statistics</button>
+        <button class="menu-btn" id="save-quit-btn">Save and Quit to Title</button>
+    </div>
+
+    <!-- Options Menu -->
+    <div id="options-menu" class="menu-screen">
+        <div class="menu-title">Options</div>
+        
+        <div class="option-row">
+            <label>Render Distance (Chunks)</label>
+            <input type="range" id="opt-render-dist" min="1" max="8" step="1">
+            <span id="val-render-dist">3</span>
+        </div>
+        
+        <div class="option-row">
+            <label>Quality (Pixel Ratio)</label>
+            <input type="range" id="opt-quality" min="0.5" max="1" step="0.1">
+            <span id="val-quality">1.0</span>
+        </div>
+
+        <div class="option-row">
+            <label>Time Speed</label>
+            <input type="range" id="opt-time-speed" min="0" max="5" step="0.5">
+            <span id="val-time-speed">1.0</span>
+        </div>
+        
+        <div class="option-row">
+            <label>Mouse Sensitivity</label>
+            <input type="range" id="opt-sensitivity" min="0.001" max="0.010" step="0.001">
+            <span id="val-sensitivity">0.002</span>
+        </div>
+
+        <div class="option-row">
+            <label>Show Hand</label>
+            <button id="opt-show-hand" style="width: 50px;">ON</button>
+        </div>
+
+        <button class="menu-btn" id="options-back-btn" style="margin-top: 20px;">Done</button>
+    </div>
+
+    <!-- Statistics Menu -->
+    <div id="stats-menu" class="menu-screen">
+        <div class="menu-title">Statistics</div>
+        <div id="stats-content" style="text-align: center; line-height: 1.5;"></div>
+        <button class="menu-btn" id="stats-back-btn" style="margin-top: 20px;">Done</button>
+    </div>
+
     <script type="importmap">
     {
         "imports": {
@@ -69,8 +137,8 @@
         }
     }
     </script>
-    
-    <!-- Основной скрипт игры -->
+    <!-- Создаем файл настроек перед main -->
+    <script type="module" src="Lumina/js/game/SettingsManager.js"></script> 
     <script type="module" src="Lumina/js/main.js"></script>
 </body>
 </html>

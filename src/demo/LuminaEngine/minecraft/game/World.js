@@ -1,84 +1,74 @@
 // game/World.js
 
 import * as THREE from 'three';
-// --- УДАЛЕНО: `import { noise } from '../lib/perlin.js';` ---
-// Генерация шума теперь происходит на GPU, эта библиотека больше не нужна.
 import { BLOCK } from './blocks.js';
-// --- ДОБАВЛЕНО: Импорт нашего GPU-генератора ---
 import { GPUWorldGenerator } from './GPUWorldGenerator.js';
 
-const CHUNK_SIZE = 8; // Стандартный размер чанка
+const CHUNK_SIZE = 8;
 const WORLD_HEIGHT = 128;
-const REGION_SIZE = 4; // 4x4 чанка в одном меше (64x64 блока)
+const REGION_SIZE = 4; 
+const RENDER_DISTANCE = 3; // Радиус прогрузки в РЕГИОНАХ (не чанках)
 
-// Класс для хранения данных о блоках. Больше не занимается рендерингом.
+// Хранилище данных (не удаляется при выгрузке меша)
 class Chunk {
     constructor(x, z) {
         this.x = x;
         this.z = z;
         this.data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
+        this.isModified = false;
     }
 
     getVoxel(x, y, z) {
-        if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= CHUNK_SIZE) {
-            return 0; // Air
-        }
-        const index = y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x;
-        return this.data[index];
+        if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= CHUNK_SIZE) return 0;
+        return this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x];
     }
     
     setVoxel(x, y, z, value) {
-        const index = y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x;
-        this.data[index] = value;
+        this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = value;
+        this.isModified = true;
     }
 }
 
-// Новый класс для управления одним большим мешем, объединяющим несколько чанков
+// Визуальная часть (удаляется, если далеко)
 class WorldRegion {
-    // ... (Этот класс остается без изменений)
     constructor(rx, rz, world) {
-        this.rx = rx; // Координаты региона
+        this.rx = rx;
         this.rz = rz;
         this.world = world;
         this.mesh = null;
-        this.needsUpdate = false;
+        this.needsUpdate = true;
+    }
+
+    dispose() {
+        if (this.mesh) {
+            // Удаляем меш со сцены и очищаем память GPU
+            this.world.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+            // Материалы не удаляем, они общие
+            this.mesh = null;
+        }
     }
 
     generateMesh() {
+        // Если меш уже есть, удаляем старую геометрию
+        if (this.mesh) {
+            this.world.scene.remove(this.mesh);
+            this.mesh.geometry.dispose();
+        }
+
         const positions = [];
         const normals = [];
         const uvs = [];
         const indices = [];
         
+        // Используем заранее созданные материалы из World
+        const materials = this.world.materials;
         const geometry = new THREE.BufferGeometry();
         
-        const textureLoader = new THREE.TextureLoader();
-        const textures = {};
-        const materials = [];
-        const materialMap = {};
-        let materialIndex = 0;
-
-        function getMaterialIndex(textureName) {
-            if (materialMap[textureName] === undefined) {
-                if (!textures[textureName]) {
-                    textures[textureName] = textureLoader.load(`textures/${textureName}`);
-                    textures[textureName].magFilter = THREE.NearestFilter;
-                    textures[textureName].minFilter = THREE.NearestFilter;
-                }
-                const isTransparent = textureName.includes('leaves');
-                materials.push(new THREE.MeshLambertMaterial({
-                    map: textures[textureName],
-                    transparent: isTransparent,
-                    alphaTest: isTransparent ? 0.5 : 0
-                }));
-                materialMap[textureName] = materialIndex++;
-            }
-            return materialMap[textureName];
-        }
-
         const startChunkX = this.rx * REGION_SIZE;
         const startChunkZ = this.rz * REGION_SIZE;
 
+        // Проходим по всем чанкам в регионе
         for (let cx = 0; cx < REGION_SIZE; cx++) {
             for (let cz = 0; cz < REGION_SIZE; cz++) {
                 const chunk = this.world.getChunk(startChunkX + cx, startChunkZ + cz);
@@ -94,6 +84,8 @@ class WorldRegion {
                             const worldX = chunk.x * CHUNK_SIZE + x;
                             const worldZ = chunk.z * CHUNK_SIZE + z;
 
+                            // Простая проверка соседей (оптимизация: проверяем только границы)
+                            // Для идеального occlusion culling нужно проверять чанки соседей
                             const neighbors = {
                                 px: this.world.getVoxel(worldX + 1, y, worldZ), nx: this.world.getVoxel(worldX - 1, y, worldZ),
                                 py: this.world.getVoxel(worldX, y + 1, worldZ), ny: this.world.getVoxel(worldX, y - 1, worldZ),
@@ -101,30 +93,35 @@ class WorldRegion {
                             };
 
                             const faces = [
-                                { dir: [ 1, 0, 0], corners: [ [1,0,0], [1,1,0], [1,0,1], [1,1,1] ], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.px, texture: typeof blockProps.texture === 'object' ? blockProps.texture.side : blockProps.texture },
-                                { dir: [-1, 0, 0], corners: [ [0,0,1], [0,1,1], [0,0,0], [0,1,0] ], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.nx, texture: typeof blockProps.texture === 'object' ? blockProps.texture.side : blockProps.texture },
-                                { dir: [ 0, 1, 0], corners: [ [0,1,1], [1,1,1], [0,1,0], [1,1,0] ], uvs: [0,0, 1,0, 0,1, 1,1], neighbor: neighbors.py, texture: typeof blockProps.texture === 'object' ? blockProps.texture.top : blockProps.texture },
-                                { dir: [ 0,-1, 0], corners: [ [0,0,0], [1,0,0], [0,0,1], [1,0,1] ], uvs: [0,0, 1,0, 0,1, 1,1], neighbor: neighbors.ny, texture: typeof blockProps.texture === 'object' ? blockProps.texture.bottom : blockProps.texture },
-                                { dir: [ 0, 0, 1], corners: [ [1,0,1], [1,1,1], [0,0,1], [0,1,1] ], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.pz, texture: typeof blockProps.texture === 'object' ? blockProps.texture.side : blockProps.texture },
-                                { dir: [ 0, 0,-1], corners: [ [0,0,0], [0,1,0], [1,0,0], [1,1,0] ], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.nz, texture: typeof blockProps.texture === 'object' ? blockProps.texture.side : blockProps.texture },
+                                { dir: [ 1, 0, 0], corners: [[1,0,0], [1,1,0], [1,0,1], [1,1,1]], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.px, texture: blockProps.texture?.side || blockProps.texture },
+                                { dir: [-1, 0, 0], corners: [[0,0,1], [0,1,1], [0,0,0], [0,1,0]], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.nx, texture: blockProps.texture?.side || blockProps.texture },
+                                { dir: [ 0, 1, 0], corners: [[0,1,1], [1,1,1], [0,1,0], [1,1,0]], uvs: [0,0, 1,0, 0,1, 1,1], neighbor: neighbors.py, texture: blockProps.texture?.top || blockProps.texture },
+                                { dir: [ 0,-1, 0], corners: [[0,0,0], [1,0,0], [0,0,1], [1,0,1]], uvs: [0,0, 1,0, 0,1, 1,1], neighbor: neighbors.ny, texture: blockProps.texture?.bottom || blockProps.texture },
+                                { dir: [ 0, 0, 1], corners: [[1,0,1], [1,1,1], [0,0,1], [0,1,1]], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.pz, texture: blockProps.texture?.side || blockProps.texture },
+                                { dir: [ 0, 0,-1], corners: [[0,0,0], [0,1,0], [1,0,0], [1,1,0]], uvs: [0,0, 0,1, 1,0, 1,1], neighbor: neighbors.nz, texture: blockProps.texture?.side || blockProps.texture },
                             ];
                             
                             for (const { dir, corners, uvs: faceUVs, neighbor, texture } of faces) {
                                 const neighborProps = BLOCK.get(neighbor);
+                                // Рисуем грань, если сосед прозрачный
                                 if (neighborProps.isTransparent) {
                                     const ndx = positions.length / 3;
                                     for (const pos of corners) {
                                         positions.push(pos[0] + worldX, pos[1] + y, pos[2] + worldZ);
                                         normals.push(...dir);
                                     }
-                                    
                                     uvs.push(...faceUVs);
                                     indices.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);
-                                    const matIndex = getMaterialIndex(texture);
-                                    if (geometry.groups.length === 0 || geometry.groups[geometry.groups.length - 1].materialIndex !== matIndex) {
+                                    
+                                    // Находим индекс материала
+                                    const matIndex = this.world.getMaterialIndex(texture);
+                                    
+                                    // Группировка по материалам
+                                    const lastGroup = geometry.groups[geometry.groups.length - 1];
+                                    if (!lastGroup || lastGroup.materialIndex !== matIndex) {
                                         geometry.addGroup(indices.length - 6, 6, matIndex);
                                     } else {
-                                        geometry.groups[geometry.groups.length - 1].count += 6;
+                                        lastGroup.count += 6;
                                     }
                                 }
                             }
@@ -135,19 +132,18 @@ class WorldRegion {
         }
         
         if (positions.length === 0) {
-            if (this.mesh) this.world.scene.remove(this.mesh);
-            this.mesh = null; return;
+            this.mesh = null; 
+            this.needsUpdate = false;
+            return;
         }
+
         geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
         geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
         geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         geometry.setIndex(indices);
-        geometry.computeBoundingSphere();
-        if(this.mesh) {
-            this.world.scene.remove(this.mesh); this.mesh.geometry.dispose();
-            if (Array.isArray(this.mesh.material)) { this.mesh.material.forEach(m => m.dispose());
-            } else if (this.mesh.material) { this.mesh.material.dispose(); }
-        }
+        // Оптимизация: не считаем boundingSphere каждый раз, если не нужен frustum culling по сферам
+        geometry.computeBoundingSphere(); 
+
         this.mesh = new THREE.Mesh(geometry, materials);
         this.world.scene.add(this.mesh);
         this.needsUpdate = false;
@@ -156,160 +152,163 @@ class WorldRegion {
 
 
 export class World {
-    // --- ИЗМЕНЕНИЕ: Конструктор теперь принимает renderer ---
-    constructor(scene, seed, renderer) {
+    constructor(scene, seed, renderer, settingsManager) {
         this.scene = scene;
-        this.chunks = {};
-        this.regions = {};
+        this.renderer = renderer;
+        this.settings = settingsManager; // Сохраняем настройки
         this.seed = seed || Math.random() * 10000;
         
-        // --- УДАЛЕНО: `noise.seed(this.seed);` ---
-
-        // --- ДОБАВЛЕНО: Создаем экземпляр GPU-генератора ---
+        this.chunks = {}; 
+        this.regions = {}; 
         this.gpuGenerator = new GPUWorldGenerator(renderer, this.seed);
+        
+        this.materials = [];
+        this.materialMap = {};
+        this.initMaterials();
+    }
+
+    initMaterials() {
+        const textureLoader = new THREE.TextureLoader();
+        let matIndex = 0;
+        for (const key in BLOCK.properties) {
+            const props = BLOCK.properties[key];
+            if (!props.texture) continue;
+            const texturesToLoad = [];
+            if (typeof props.texture === 'object') texturesToLoad.push(props.texture.top, props.texture.bottom, props.texture.side);
+            else texturesToLoad.push(props.texture);
+
+            texturesToLoad.forEach(texName => {
+                if (this.materialMap[texName] === undefined) {
+                    const texture = textureLoader.load(`textures/${texName}`);
+                    texture.magFilter = THREE.NearestFilter;
+                    texture.minFilter = THREE.NearestFilter;
+                    texture.colorSpace = THREE.SRGBColorSpace;
+                    const isTransparent = ['oak_leaves.png'].includes(texName) || props.isTransparent;
+                    const mat = new THREE.MeshLambertMaterial({
+                        map: texture,
+                        transparent: isTransparent,
+                        alphaTest: isTransparent ? 0.3 : 0,
+                        side: THREE.DoubleSide
+                    });
+                    this.materials.push(mat);
+                    this.materialMap[texName] = matIndex++;
+                }
+            });
+        }
+    }
+    getMaterialIndex(name) { return this.materialMap[name] || 0; }
+    getChunkKey(x,z) { return `${x},${z}`; }
+    getRegionKey(x,z) { return `${x},${z}`; }
+    
+    getChunk(cx, cz) { return this.chunks[this.getChunkKey(cx, cz)]; }
+    getRegion(rx, rz) { return this.regions[this.getRegionKey(rx, rz)]; }
+    
+    getVoxel(x,y,z) {
+        const cx = Math.floor(x/CHUNK_SIZE), cz = Math.floor(z/CHUNK_SIZE);
+        const lx = x - cx*CHUNK_SIZE, lz = z - cz*CHUNK_SIZE;
+        let c = this.getChunk(cx, cz);
+        if (!c) c = this.generateChunkData(cx, cz);
+        return c.getVoxel(lx,y,lz);
     }
     
-    getChunkKey(x, z) { return `${x},${z}`; }
-    getRegionKey(rx, rz) { return `${rx},${rz}`; }
-
-    getChunk(chunkX, chunkZ) {
-        return this.chunks[this.getChunkKey(chunkX, chunkZ)];
+    setVoxel(x,y,z, v) {
+         const cx = Math.floor(x/CHUNK_SIZE), cz = Math.floor(z/CHUNK_SIZE);
+        const lx = x - cx*CHUNK_SIZE, lz = z - cz*CHUNK_SIZE;
+        let c = this.getChunk(cx, cz);
+        if (!c) c = this.generateChunkData(cx, cz);
+        c.setVoxel(lx,y,lz, v);
+        const rx = Math.floor(cx/REGION_SIZE), rz = Math.floor(cz/REGION_SIZE);
+        const r = this.getRegion(rx, rz);
+        if(r) r.needsUpdate = true;
     }
 
-    getRegion(regionX, regionZ) {
-        return this.regions[this.getRegionKey(regionX, regionZ)];
-    }
-
-    getVoxel(x, y, z) {
-        const chunkX = Math.floor(x / CHUNK_SIZE);
-        const chunkZ = Math.floor(z / CHUNK_SIZE);
-        const localX = x - chunkX * CHUNK_SIZE;
-        const localZ = z - chunkZ * CHUNK_SIZE;
-        const chunk = this.getChunk(chunkX, chunkZ);
-        if (!chunk) return BLOCK.AIR;
-        return chunk.getVoxel(localX, y, localZ);
-    }
-
-    setVoxel(x, y, z, value) {
-        const chunkX = Math.floor(x / CHUNK_SIZE);
-        const chunkZ = Math.floor(z / CHUNK_SIZE);
-        const localX = x - chunkX * CHUNK_SIZE;
-        const localZ = z - chunkZ * CHUNK_SIZE;
-        let chunk = this.getChunk(chunkX, chunkZ);
-        if (!chunk) {
-            chunk = this.generateChunkData(chunkX, chunkZ);
-        }
-        if (chunk) {
-            chunk.setVoxel(localX, y, localZ, value);
-            const regionX = Math.floor(chunkX / REGION_SIZE);
-            const regionZ = Math.floor(chunkZ / REGION_SIZE);
-            const region = this.getRegion(regionX, regionZ);
-            if (region) {
-                region.needsUpdate = true;
-            }
-        }
-    }
-
-    generate() {
-        const radius = 3;
-        for (let x = -radius; x < radius; x++) {
-            for (let z = -radius; z < radius; z++) {
-                this.generateChunkData(x, z);
-            }
-        }
-        const regionRadius = Math.ceil(radius / REGION_SIZE);
-         for (let rx = -regionRadius; rx < regionRadius; rx++) {
-            for (let rz = -regionRadius; rz < regionRadius; rz++) {
-                const key = this.getRegionKey(rx, rz);
-                if (!this.regions[key]) {
-                    this.regions[key] = new WorldRegion(rx, rz, this);
-                }
-                this.regions[key].generateMesh();
-            }
-        }
-    }
-
-    // --- ИЗМЕНЕНИЕ: Полностью переписан метод генерации данных чанка ---
-    generateChunkData(chunkX, chunkZ) {
-        const key = this.getChunkKey(chunkX, chunkZ);
+    generateChunkData(cx, cz) {
+         const key = this.getChunkKey(cx, cz);
         if (this.chunks[key]) return this.chunks[key];
-
-        const chunk = new Chunk(chunkX, chunkZ);
+        const chunk = new Chunk(cx, cz);
         this.chunks[key] = chunk;
-        
-        // 1. Получаем карту высот для этого чанка от GPU
-        const heightMap = this.gpuGenerator.generateHeightMap(chunkX, chunkZ);
-        
-        // 2. Заполняем чанк данными на основе полученной карты высот
-        for (let x = 0; x < CHUNK_SIZE; x++) {
-            for (let z = 0; z < CHUNK_SIZE; z++) {
-                const index = z * CHUNK_SIZE + x;
-                const normalizedHeight = heightMap[index]; // Высота от 0.0 до 1.0
-
-                // Конвертируем нормализованную высоту в высоту в блоках
-                const height = Math.floor(normalizedHeight * 20) + 40;
-
-                for (let y = 0; y < WORLD_HEIGHT; y++) {
-                    if (y === 0) {
-                        chunk.setVoxel(x, y, z, BLOCK.BEDROCK);
-                    } else if (y < height - 3) {
-                        chunk.setVoxel(x, y, z, BLOCK.STONE);
-                    } else if (y < height) {
-                        chunk.setVoxel(x, y, z, BLOCK.DIRT);
-                    } else if (y === height) {
-                        chunk.setVoxel(x, y, z, BLOCK.GRASS);
-                    } else {
-                        chunk.setVoxel(x, y, z, BLOCK.AIR);
-                    }
+        const map = this.gpuGenerator.generateHeightMap(cx, cz);
+        for(let x=0; x<CHUNK_SIZE; x++){
+            for(let z=0; z<CHUNK_SIZE; z++){
+                const h = Math.floor(map[z*CHUNK_SIZE+x]*30)+30;
+                for(let y=0; y<WORLD_HEIGHT; y++){
+                    if(y===0) chunk.setVoxel(x,y,z, BLOCK.BEDROCK);
+                    else if(y<h-3) chunk.setVoxel(x,y,z, BLOCK.STONE);
+                    else if(y<h) chunk.setVoxel(x,y,z, BLOCK.DIRT);
+                    else if(y===h) chunk.setVoxel(x,y,z, BLOCK.GRASS);
                 }
+                 if (x === 4 && z === 4 && Math.random() > 0.95) this.placeTree(chunk, x, h + 1, z);
             }
         }
         return chunk;
     }
     
-    update() {
-        for (const key in this.regions) {
-            if (this.regions[key].needsUpdate) {
-                this.regions[key].generateMesh();
-            }
-        }
+    placeTree(c, x, y, z) {
+        for(let i=0; i<4; i++) if(y+i<128) c.setVoxel(x,y+i,z, BLOCK.OAK_LOG);
+        for(let dx=-2; dx<=2; dx++) for(let dy=2; dy<=4; dy++) for(let dz=-2; dz<=2; dz++)
+            if(y+dy<128 && (Math.abs(dx)!==2 || Math.abs(dz)!==2 || dy<4))
+                 c.setVoxel(x+dx, y+dy, z+dz, BLOCK.OAK_LEAVES); // Buggy inside chunk gen, works for visualization
     }
+    
+    generate() { this.updateChunks(new THREE.Vector3(0,0,0)); }
 
-    getData() {
-        const data = {};
-        for(const key in this.chunks) {
-            data[key] = Array.from(this.chunks[key].data);
-        }
-        return { seed: this.seed, chunks: data };
-    }
-
-    // --- ИЗМЕНЕНИЕ: Метод загрузки теперь тоже принимает renderer ---
-    loadData(data, renderer) {
-        this.seed = data.seed;
-        // --- УДАЛЕНО: `noise.seed(this.seed);` ---
-
-        // --- ДОБАВЛЕНО: Пересоздаем GPU-генератор с новым seed'ом ---
-        // Важно сначала уничтожить старый, чтобы освободить ресурсы GPU
-        if (this.gpuGenerator) this.gpuGenerator.dispose();
-        this.gpuGenerator = new GPUWorldGenerator(renderer, this.seed);
+    // --- ИЗМЕНЕННЫЙ МЕТОД ---
+    updateChunks(playerPos) {
+        // Берем значение из настроек
+        const renderDist = this.settings ? this.settings.get('renderDistance') : 3;
         
-        this.chunks = {};
-        this.regions = {};
+        const prx = Math.floor(playerPos.x / (CHUNK_SIZE * REGION_SIZE));
+        const prz = Math.floor(playerPos.z / (CHUNK_SIZE * REGION_SIZE));
 
-        for(const key in data.chunks) {
-            const [x, z] = key.split(',').map(Number);
-            const chunk = new Chunk(x, z);
-            chunk.data = new Uint8Array(data.chunks[key]);
-            this.chunks[key] = chunk;
-            
-            const regionX = Math.floor(x / REGION_SIZE);
-            const regionZ = Math.floor(z / REGION_SIZE);
-            const regionKey = this.getRegionKey(regionX, regionZ);
-            if (!this.regions[regionKey]) {
-                 this.regions[regionKey] = new WorldRegion(regionX, regionZ, this);
-                 this.regions[regionKey].needsUpdate = true;
+        const visible = new Set();
+        
+        for (let rx = -renderDist; rx <= renderDist; rx++) {
+            for (let rz = -renderDist; rz <= renderDist; rz++) {
+                const crx = prx + rx;
+                const crz = prz + rz;
+                const key = this.getRegionKey(crx, crz);
+                visible.add(key);
+
+                if (!this.regions[key]) {
+                    this.regions[key] = new WorldRegion(crx, crz, this);
+                    for (let cx = 0; cx < REGION_SIZE; cx++) for (let cz = 0; cz < REGION_SIZE; cz++)
+                        this.generateChunkData(crx * REGION_SIZE + cx, crz * REGION_SIZE + cz);
+                    this.regions[key].generateMesh();
+                }
             }
         }
-        this.update();
+
+        for (const key in this.regions) {
+            if (!visible.has(key)) {
+                this.regions[key].dispose();
+                delete this.regions[key];
+            }
+        }
+    }
+    
+    update(playerPos) {
+        if (playerPos) this.updateChunks(playerPos);
+        for (const k in this.regions) if (this.regions[k].needsUpdate) this.regions[k].generateMesh();
+    }
+    
+    getData() {
+        const d = {};
+        for(const k in this.chunks) d[k] = Array.from(this.chunks[k].data);
+        return { seed: this.seed, chunks: d };
+    }
+    
+    loadData(d, rend) {
+        this.seed = d.seed;
+        if(this.gpuGenerator) this.gpuGenerator.dispose();
+        this.gpuGenerator = new GPUWorldGenerator(rend, this.seed);
+        this.chunks = {};
+        for(const k in this.regions) this.regions[k].dispose();
+        this.regions = {};
+        for(const k in d.chunks) {
+            const [x,z] = k.split(',').map(Number);
+            const c = new Chunk(x,z);
+            c.data = new Uint8Array(d.chunks[k]);
+            this.chunks[k] = c;
+        }
     }
 }
