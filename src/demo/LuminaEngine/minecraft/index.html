@@ -18,6 +18,39 @@
         
         /* --- HUD --- */
         #crosshair { position: absolute; top: 50%; left: 50%; width: 16px; height: 16px; background: url('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAABAAAAAQCAYAAAAf8/9hAAAAKklEQVQ4T2NkQAKrVq36zwziEzNs3LiRkZqaQWPYMGgwGoaDYSB+QCwAAH/8I7Gg+68sAAAAAElFTkSuQmCC') no-repeat center; image-rendering: pixelated; transform: translate(-50%, -50%); opacity: 0.8; }
+        #crosshair { 
+            position: absolute; 
+            top: 50%; 
+            left: 50%; 
+            width: 20px; 
+            height: 20px; 
+            transform: translate(-50%, -50%); 
+            pointer-events: none; /* Чтобы клики проходили сквозь него */
+        }
+
+        /* Горизонтальная палочка */
+        #crosshair::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: white;
+            transform: translateY(-50%);
+        }
+
+        /* Вертикальная палочка */
+        #crosshair::after {
+            content: '';
+            position: absolute;
+            left: 50%;
+            top: 0;
+            height: 100%;
+            width: 2px;
+            background: white;
+            transform: translateX(-50%);
+        }
         #hotbar { position: absolute; bottom: 10px; left: 50%; transform: translateX(-50%); display: flex; background: rgba(0,0,0,0.6); padding: 2px; border-radius: 2px; }
         
         /* --- Inventory Slots --- */

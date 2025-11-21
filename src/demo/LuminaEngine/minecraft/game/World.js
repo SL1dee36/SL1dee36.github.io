@@ -1,5 +1,3 @@
-// game/World.js
-
 import * as THREE from 'three';
 import { BLOCK } from './blocks.js';
 import { GPUWorldGenerator } from './GPUWorldGenerator.js';
@@ -7,9 +5,8 @@ import { GPUWorldGenerator } from './GPUWorldGenerator.js';
 const CHUNK_SIZE = 8;
 const WORLD_HEIGHT = 128;
 const REGION_SIZE = 4; 
-const RENDER_DISTANCE = 3; // Радиус прогрузки в РЕГИОНАХ (не чанках)
+const RENDER_DISTANCE = 3;
 
-// Хранилище данных (не удаляется при выгрузке меша)
 class Chunk {
     constructor(x, z) {
         this.x = x;
@@ -29,7 +26,6 @@ class Chunk {
     }
 }
 
-// Визуальная часть (удаляется, если далеко)
 class WorldRegion {
     constructor(rx, rz, world) {
         this.rx = rx;
@@ -41,16 +37,13 @@ class WorldRegion {
 
     dispose() {
         if (this.mesh) {
-            // Удаляем меш со сцены и очищаем память GPU
             this.world.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
-            // Материалы не удаляем, они общие
             this.mesh = null;
         }
     }
 
     generateMesh() {
-        // Если меш уже есть, удаляем старую геометрию
         if (this.mesh) {
             this.world.scene.remove(this.mesh);
             this.mesh.geometry.dispose();
@@ -61,14 +54,12 @@ class WorldRegion {
         const uvs = [];
         const indices = [];
         
-        // Используем заранее созданные материалы из World
         const materials = this.world.materials;
         const geometry = new THREE.BufferGeometry();
         
         const startChunkX = this.rx * REGION_SIZE;
         const startChunkZ = this.rz * REGION_SIZE;
 
-        // Проходим по всем чанкам в регионе
         for (let cx = 0; cx < REGION_SIZE; cx++) {
             for (let cz = 0; cz < REGION_SIZE; cz++) {
                 const chunk = this.world.getChunk(startChunkX + cx, startChunkZ + cz);
@@ -84,8 +75,6 @@ class WorldRegion {
                             const worldX = chunk.x * CHUNK_SIZE + x;
                             const worldZ = chunk.z * CHUNK_SIZE + z;
 
-                            // Простая проверка соседей (оптимизация: проверяем только границы)
-                            // Для идеального occlusion culling нужно проверять чанки соседей
                             const neighbors = {
                                 px: this.world.getVoxel(worldX + 1, y, worldZ), nx: this.world.getVoxel(worldX - 1, y, worldZ),
                                 py: this.world.getVoxel(worldX, y + 1, worldZ), ny: this.world.getVoxel(worldX, y - 1, worldZ),
@@ -103,7 +92,6 @@ class WorldRegion {
                             
                             for (const { dir, corners, uvs: faceUVs, neighbor, texture } of faces) {
                                 const neighborProps = BLOCK.get(neighbor);
-                                // Рисуем грань, если сосед прозрачный
                                 if (neighborProps.isTransparent) {
                                     const ndx = positions.length / 3;
                                     for (const pos of corners) {
@@ -113,10 +101,8 @@ class WorldRegion {
                                     uvs.push(...faceUVs);
                                     indices.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);
                                     
-                                    // Находим индекс материала
                                     const matIndex = this.world.getMaterialIndex(texture);
                                     
-                                    // Группировка по материалам
                                     const lastGroup = geometry.groups[geometry.groups.length - 1];
                                     if (!lastGroup || lastGroup.materialIndex !== matIndex) {
                                         geometry.addGroup(indices.length - 6, 6, matIndex);
@@ -141,7 +127,6 @@ class WorldRegion {
         geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
         geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
         geometry.setIndex(indices);
-        // Оптимизация: не считаем boundingSphere каждый раз, если не нужен frustum culling по сферам
         geometry.computeBoundingSphere(); 
 
         this.mesh = new THREE.Mesh(geometry, materials);
@@ -155,7 +140,7 @@ export class World {
     constructor(scene, seed, renderer, settingsManager) {
         this.scene = scene;
         this.renderer = renderer;
-        this.settings = settingsManager; // Сохраняем настройки
+        this.settings = settingsManager;
         this.seed = seed || Math.random() * 10000;
         
         this.chunks = {}; 
@@ -222,22 +207,34 @@ export class World {
         if(r) r.needsUpdate = true;
     }
 
-    generateChunkData(cx, cz) {
-         const key = this.getChunkKey(cx, cz);
+    generateChunkData(chunkX, chunkZ) {
+        const key = this.getChunkKey(chunkX, chunkZ);
         if (this.chunks[key]) return this.chunks[key];
-        const chunk = new Chunk(cx, cz);
+
+        const chunk = new Chunk(chunkX, chunkZ);
         this.chunks[key] = chunk;
-        const map = this.gpuGenerator.generateHeightMap(cx, cz);
-        for(let x=0; x<CHUNK_SIZE; x++){
-            for(let z=0; z<CHUNK_SIZE; z++){
-                const h = Math.floor(map[z*CHUNK_SIZE+x]*30)+30;
-                for(let y=0; y<WORLD_HEIGHT; y++){
-                    if(y===0) chunk.setVoxel(x,y,z, BLOCK.BEDROCK);
-                    else if(y<h-3) chunk.setVoxel(x,y,z, BLOCK.STONE);
-                    else if(y<h) chunk.setVoxel(x,y,z, BLOCK.DIRT);
-                    else if(y===h) chunk.setVoxel(x,y,z, BLOCK.GRASS);
+        
+        const heightMap = this.gpuGenerator.generateHeightMap(chunkX, chunkZ);
+        
+        for (let x = 0; x < CHUNK_SIZE; x++) {
+            for (let z = 0; z < CHUNK_SIZE; z++) {
+                const index = z * CHUNK_SIZE + x;
+                const hVal = heightMap[index]; 
+                
+                const height = Math.floor(hVal * 50) + 40; 
+
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    if (y === 0) chunk.setVoxel(x, y, z, BLOCK.BEDROCK);
+                    else if (y < height - 4) chunk.setVoxel(x, y, z, BLOCK.STONE);
+                    else if (y < height) chunk.setVoxel(x, y, z, BLOCK.DIRT);
+                    else if (y === height) chunk.setVoxel(x, y, z, BLOCK.GRASS);
                 }
-                 if (x === 4 && z === 4 && Math.random() > 0.95) this.placeTree(chunk, x, h + 1, z);
+                
+                if (height > 45 && Math.random() > 0.98) {
+                     if (x > 2 && x < CHUNK_SIZE - 2 && z > 2 && z < CHUNK_SIZE - 2) {
+                        this.placeTree(chunk, x, height + 1, z);
+                     }
+                }
             }
         }
         return chunk;
@@ -247,14 +244,11 @@ export class World {
         for(let i=0; i<4; i++) if(y+i<128) c.setVoxel(x,y+i,z, BLOCK.OAK_LOG);
         for(let dx=-2; dx<=2; dx++) for(let dy=2; dy<=4; dy++) for(let dz=-2; dz<=2; dz++)
             if(y+dy<128 && (Math.abs(dx)!==2 || Math.abs(dz)!==2 || dy<4))
-                 c.setVoxel(x+dx, y+dy, z+dz, BLOCK.OAK_LEAVES); // Buggy inside chunk gen, works for visualization
-    }
+                 c.setVoxel(x+dx, y+dy, z+dz, BLOCK.OAK_LEAVES);  }
     
     generate() { this.updateChunks(new THREE.Vector3(0,0,0)); }
 
-    // --- ИЗМЕНЕННЫЙ МЕТОД ---
     updateChunks(playerPos) {
-        // Берем значение из настроек
         const renderDist = this.settings ? this.settings.get('renderDistance') : 3;
         
         const prx = Math.floor(playerPos.x / (CHUNK_SIZE * REGION_SIZE));

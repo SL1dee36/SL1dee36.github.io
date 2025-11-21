@@ -12,16 +12,15 @@ import { BlockInteraction } from '../../game/BlockInteraction.js';
 import { DayNightCycle } from '../../game/DayNightCycle.js';
 import { SaveManager } from '../../game/SaveManager.js';
 import { SettingsManager } from '../../game/SettingsManager.js';
+import { PlayerHand } from '../../game/PlayerHand.js';
 
 function main() {
     const engine = new Engine('game-canvas');
     const settingsManager = new SettingsManager();
     const saveManager = new SaveManager();
 
-    // Применяем качество при старте
     engine.renderer.renderer.setPixelRatio(window.devicePixelRatio * settingsManager.get('quality'));
 
-    // Коллбек для сохранения, передаем в UI
     const saveCallback = () => {
         if(engine.player && engine.physicsEngine.world) {
             saveManager.saveWorld(engine.physicsEngine.world, engine.player);
@@ -45,54 +44,73 @@ function main() {
     function startGame(saveData) {
         startMenu.style.display = 'none';
         
-        // Передаем settingsManager в World
         const world = new World(engine.renderer.scene, undefined, engine.renderer.renderer, settingsManager);
         engine.physicsEngine.setWorld(world);
 
-        if (saveData) world.loadData(saveData.world, engine.renderer.renderer);
-        else world.generate();
-
-        // Player
+        // Создаем игрока
         const player = new GameObject('Player');
         player.addComponent(RigidBody, { bodyType: 'dynamic' });
         player.addComponent(BoxCollider, new THREE.Vector3(0.6, 1.8, 0.6));
-        // Передаем settingsManager в контроллер
         player.addComponent(PlayerController, settingsManager);
         const inventory = player.addComponent(Inventory, uiManager);
+        player.addComponent(PlayerHand, settingsManager);
         player.addComponent(BlockInteraction, world);
-
-        if (saveData && saveData.player) {
-            player.transform.position.fromArray(saveData.player.position);
-            if (saveData.player.rotation) player.transform.rotation.fromArray(saveData.player.rotation);
-            inventory.loadData(saveData.player.inventory);
-        } else {
-            player.transform.position.set(8, 80, 8);
-        }
         
         engine.addGameObject(player);
         engine.setPlayer(player);
 
-        // Sky
+        if (saveData) {
+            // Загружаем мир и игрока
+            world.loadData(saveData.world, engine.renderer.renderer);
+            if (saveData.player) {
+                player.transform.position.fromArray(saveData.player.position);
+                if (player.getComponent(RigidBody).physicsPosition) {
+                    player.getComponent(RigidBody).physicsPosition.fromArray(saveData.player.position);
+                    player.getComponent(RigidBody).prevPhysicsPosition.fromArray(saveData.player.position);
+                }
+                if (saveData.player.rotation) player.transform.rotation.fromArray(saveData.player.rotation);
+                inventory.loadData(saveData.player.inventory);
+            }
+        } else {
+            // Генерируем новый мир
+            world.generate();
+            
+            // === СПАВН НА ЗЕМЛЕ ===
+            const spawnX = 8;
+            const spawnZ = 8;
+            let spawnY = 100;
+            
+            // Ищем твердый блок сверху вниз
+            // (Примечание: world.generate() уже заполнил данные чанков вокруг 0,0)
+            while (spawnY > 0 && world.getVoxel(spawnX, spawnY, spawnZ) === 0) {
+                spawnY--;
+            }
+            
+            // Ставим игрока на 2 блока выше земли
+            const finalY = spawnY + 2;
+            player.transform.position.set(spawnX, finalY, spawnZ);
+            
+            // Важно обновить и физическую позицию!
+            if (player.getComponent(RigidBody)) {
+                player.getComponent(RigidBody).physicsPosition = new THREE.Vector3(spawnX, finalY, spawnZ);
+                player.getComponent(RigidBody).prevPhysicsPosition = new THREE.Vector3(spawnX, finalY, spawnZ);
+            }
+        }
+
         const sky = new GameObject('Sky');
         sky.addComponent(DayNightCycle, settingsManager);
         engine.addGameObject(sky);
 
-        // Updater
         const updater = new GameObject('WorldUpdater');
         updater.update = () => world.update(player.transform.position);
         engine.addGameObject(updater);
 
-        // Inputs
         document.addEventListener('keydown', (e) => {
             if (e.code === 'KeyE') uiManager.toggleInventory();
             if (e.code === 'Escape') {
-                // Если инвентарь открыт - закрываем
                 if (engine.inputManager.isInventoryOpen) {
                     uiManager.toggleInventory();
-                } 
-                // Если пауза не активна (и инвентарь закрыт) - InputManager сам откроет паузу через pointerlockchange
-                // Но если курсор уже был отпущен, принудительно ставим паузу
-                else if (!engine.inputManager.isPointerLocked() && !engine.inputManager.isPaused) {
+                } else if (!engine.inputManager.isPointerLocked() && !engine.inputManager.isPaused) {
                     engine.inputManager.setPaused(true);
                 }
             }

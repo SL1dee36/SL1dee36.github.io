@@ -26,15 +26,16 @@ export class PlayerController extends Component {
     update(deltaTime) {
         // Респавн
         if (this.transform.position.y < -30) {
-            this.transform.position.set(8, 80, 8);
+            const respawnPos = new THREE.Vector3(8, 80, 8);
+            this.transform.position.copy(respawnPos);
+            
+            // ВАЖНО: Обновляем физическую позицию тоже!
+            if (this.rigidBody.physicsPosition) {
+                this.rigidBody.physicsPosition.copy(respawnPos);
+                this.rigidBody.prevPhysicsPosition.copy(respawnPos);
+            }
+            
             this.rigidBody.velocity.set(0, 0, 0);
-        }
-
-        // Если пауза или инвентарь - не двигаемся и не вращаем камеру
-        if (this.engine.inputManager.isPaused || this.engine.inputManager.isInventoryOpen) {
-            this.rigidBody.velocity.x = 0;
-            this.rigidBody.velocity.z = 0;
-            return;
         }
 
         // Получаем чувствительность из настроек
