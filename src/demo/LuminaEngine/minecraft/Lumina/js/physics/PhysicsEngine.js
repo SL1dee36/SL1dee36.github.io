@@ -9,7 +9,7 @@ export class PhysicsEngine {
         this.gravity = new THREE.Vector3(0, -20, 0); // Гравитация чуть сильнее для резкости
         this.world = null;
         
-        this.fixedTimeStep = 1 / 30;
+        this.fixedTimeStep = 1 / 24;
         this.timeAccumulator = 0;
         this.maxStepsPerFrame = 5;
     }

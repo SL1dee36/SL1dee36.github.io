@@ -1,12 +1,14 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
     <meta charset="UTF-8">
     <title>LuminaCraft</title>
     <link rel="icon" href="img/le.png">
     <style>
         /* --- Global --- */
-        body { margin: 0; overflow: hidden; font-family: 'Courier New', monospace; background: #111; color: white; user-select: none; }
+        body { margin: 0; overflow: hidden; touch-action: none; font-family: 'Courier New', monospace; background: #111; color: white; user-select: none; }
         canvas { display: block; }
         button { font-family: 'Courier New', monospace; cursor: pointer; border: 2px solid #000; background: #777; color: white; box-shadow: inset 2px 2px 0 rgba(255,255,255,0.2), inset -2px -2px 0 rgba(0,0,0,0.4); }
         button:hover { background: #888; }
@@ -78,6 +80,84 @@
         
         /* --- Debug --- */
         #debug-info { position: absolute; top: 10px; left: 10px; color: yellow; font-family: monospace; text-shadow: 1px 1px 0 #000; }
+
+        #mobile-controls {
+            display: none;
+            position: absolute;
+            top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 800;
+        }
+
+        #joystick-zone {
+            position: absolute;
+            bottom: 40px; left: 40px;
+            width: 140px; height: 140px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 2px solid rgba(255, 255, 255, 0.2);
+            border-radius: 50%;
+            pointer-events: auto;
+            touch-action: none;
+        }
+
+        #joystick-knob {
+            position: absolute;
+            top: 50%; left: 50%;
+            width: 60px; height: 60px;
+            background: rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+        }
+
+        #action-buttons {
+            position: absolute;
+            bottom: 40px; right: 40px;
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            pointer-events: auto;
+        }
+
+        #action-buttons button {
+            box-shadow: none;
+        }
+
+        /* Кнопки верхнего ряда (Инвентарь и Пауза) */
+        .top-btn {
+            position: absolute;
+            top: 10px;
+            width: 50px; height: 50px;
+            background: rgba(0, 0, 0, 0.5);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            color: white;
+            font-weight: bold;
+            font-size: 10px;
+            z-index: 900;
+            pointer-events: auto; /* ВАЖНО */
+            touch-action: none;
+            display: flex; justify-content: center; align-items: center;
+        }
+        
+        .touch-btn {
+            width: 70px; height: 70px;
+            background: rgba(0, 0, 0, 0.3);
+            border: 2px solid rgba(255, 255, 255, 0.4);
+            border-radius: 50%;
+            color: white; font-weight: bold; font-size: 12px;
+            touch-action: none; user-select: none;
+            backdrop-filter: blur(4px);
+        }
+        
+        .touch-btn:active, .touch-btn.active {
+            background: rgba(255, 255, 255, 0.6);
+            color: black;
+        }
+
+        @media (hover: none) and (pointer: coarse) {
+            #mobile-controls { display: block; }
+            #start-menu { font-size: 0.8em; }
+        }
     </style>
 </head>
 <body>
@@ -100,6 +180,23 @@
             <div class="inventory-grid" id="hotbar-inventory-grid"></div>
         </div>
 
+        <div id="mobile-controls">
+            <div id="joystick-zone">
+                <div id="joystick-knob"></div>
+            </div>
+            
+            <div id="action-buttons">
+                <button id="btn-jump" class="touch-btn">JUMP</button>
+                <button id="btn-run" class="touch-btn">RUN</button>
+            </div>
+            
+            <!-- Кнопка Инвентаря -->
+            <button id="btn-inv-mobile" class="top-btn" style="right: 10px;">INV</button>
+            
+            <!-- Кнопка Паузы/Настроек -->
+            <button id="btn-pause-mobile" class="top-btn" style="right: 70px;">PAUSE</button>
+        </div>
+
         <div id="drag-icon"></div>
     </div>
 
@@ -110,7 +207,6 @@
         <button class="menu-btn" id="load-world-btn">Load World</button>
     </div>
 
-    <!-- Pause Menu -->
     <div id="pause-menu" class="menu-screen">
         <div class="menu-title">Game Menu</div>
         <button class="menu-btn" id="resume-btn">Back to Game</button>
@@ -119,43 +215,29 @@
         <button class="menu-btn" id="save-quit-btn">Save and Quit to Title</button>
     </div>
 
-    <!-- Options Menu -->
     <div id="options-menu" class="menu-screen">
         <div class="menu-title">Options</div>
+        <div class="option-row"><label>Render Distance</label><input type="range" id="opt-render-dist" min="1" max="8" step="1"><span id="val-render-dist">3</span></div>
+        <div class="option-row"><label>Render Mode</label><select id="opt-render-mode"><option value="normal">Normal</option><option value="smart">Smart (Fast)</option></select></div>
+        <div class="option-row"><label>Sensitivity</label><input type="range" id="opt-sensitivity" min="0.001" max="0.010" step="0.001"><span id="val-sensitivity">0.002</span></div>
+        <div class="option-row"><label>Time Speed</label><input type="range" id="opt-time-speed" min="0" max="5" step="0.5"><span id="val-time-speed">1.0</span></div>
         
-        <div class="option-row">
-            <label>Render Distance (Chunks)</label>
-            <input type="range" id="opt-render-dist" min="1" max="8" step="1">
-            <span id="val-render-dist">3</span>
-        </div>
-        
-        <div class="option-row">
-            <label>Quality (Pixel Ratio)</label>
-            <input type="range" id="opt-quality" min="0.5" max="1" step="0.1">
-            <span id="val-quality">1.0</span>
-        </div>
-
-        <div class="option-row">
-            <label>Time Speed</label>
-            <input type="range" id="opt-time-speed" min="0" max="5" step="0.5">
-            <span id="val-time-speed">1.0</span>
+        <div class="option-row"><label>Shadows</label>
+            <select id="opt-shadows">
+                <option value="off">OFF</option>
+                <option value="low">Low (1024)</option>
+                <option value="high">High (2048)</option>
+            </select>
         </div>
         
-        <div class="option-row">
-            <label>Mouse Sensitivity</label>
-            <input type="range" id="opt-sensitivity" min="0.001" max="0.010" step="0.001">
-            <span id="val-sensitivity">0.002</span>
-        </div>
-
-        <div class="option-row">
-            <label>Show Hand</label>
-            <button id="opt-show-hand" style="width: 50px;">ON</button>
-        </div>
+        <div class="option-row"><label>Show Hand</label><button id="opt-show-hand" style="width: 60px;">ON</button></div>
+        <div class="option-row"><label>Clouds</label><button id="opt-show-clouds" style="width: 60px;">ON</button></div>
+        <div class="option-row"><label>Stars</label><button id="opt-show-stars" style="width: 60px;">ON</button></div>
+        <div class="option-row"><label>Sun/Moon</label><button id="opt-show-sky" style="width: 60px;">ON</button></div>
 
         <button class="menu-btn" id="options-back-btn" style="margin-top: 20px;">Done</button>
     </div>
 
-    <!-- Statistics Menu -->
     <div id="stats-menu" class="menu-screen">
         <div class="menu-title">Statistics</div>
         <div id="stats-content" style="text-align: center; line-height: 1.5;"></div>

@@ -8,8 +8,14 @@ export class InputManager {
         this.lastMouseButtons = {};
         this.mouseDelta = { x: 0, y: 0 };
         this.scrollDelta = 0;
-        this.lockElement = targetElement; // Это наш Canvas
+        this.lockElement = targetElement;
         
+        // --- ДЛЯ МОБИЛОК ---
+        this.joystickInput = { x: 0, y: 0 };
+        this.touchDelta = { x: 0, y: 0 };
+        this.isSprintingMobile = false; // Флаг для кнопки бега
+        // ------------------
+
         this.isPaused = false; 
         this.isInventoryOpen = false;
 
@@ -20,10 +26,8 @@ export class InputManager {
         document.addEventListener('mouseup', (e) => this.mouseButtons[e.button] = false);
         document.addEventListener('wheel', (e) => this.scrollDelta += Math.sign(e.deltaY));
 
-        // Клик по игре (если мы не в меню)
         document.addEventListener('click', (e) => {
-            // Игнорируем клики по интерфейсу
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.menu-screen')) return;
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.menu-screen') || e.target.closest('#mobile-controls')) return;
             
             if (!this.isPaused && !this.isInventoryOpen && document.pointerLockElement !== this.lockElement) {
                 this.lock();
@@ -31,42 +35,74 @@ export class InputManager {
         });
 
         document.addEventListener('pointerlockchange', () => {
-            // Проверяем, захвачен ли НАШ элемент (canvas) ИЛИ body (для надежности)
-            if (document.pointerLockElement === this.lockElement || document.pointerLockElement === document.body) {
-                // === ИГРА АКТИВНА ===
+             if (document.pointerLockElement === this.lockElement || document.pointerLockElement === document.body) {
                 this.isPaused = false;
                 if (this.onPauseToggle) this.onPauseToggle(false);
-                
                 document.addEventListener('mousemove', this.onMouseMove.bind(this), false);
             } else {
-                // === КУРСОР ОСВОБОЖДЕН ===
                 document.removeEventListener('mousemove', this.onMouseMove.bind(this), false);
-                
-                // Если мы не в инвентаре -> значит это пауза (Esc или Alt-Tab)
-                if (!this.isInventoryOpen) {
-                    if (!this.isPaused) {
-                        this.setPaused(true);
-                    }
+                if (!this.isInventoryOpen && !this.isMobile()) {
+                    if (!this.isPaused) this.setPaused(true);
                 }
             }
         });
     }
-    
-    // Метод для вызова из UI
-    lock() {
-        this.lockElement.requestPointerLock();
+
+    // --- Методы для TouchControls ---
+    setJoystickInput(x, y) {
+        this.joystickInput.x = x;
+        this.joystickInput.y = y;
     }
     
-    onPauseToggle(isPaused) { /* Переопределяется в UIManager */ }
+    addTouchDelta(dx, dy) {
+        this.touchDelta.x += dx;
+        this.touchDelta.y += dy;
+    }
+
+    emulateKey(code, pressed) {
+        this.keys[code] = pressed;
+    }
+    
+    setMobileSprint(isActive) {
+        this.isSprintingMobile = isActive;
+    }
+
+    emulateMouseClick(button) {
+        // Одиночный клик
+        this.mouseButtons[button] = true;
+        this.lastMouseButtons[button] = false;
+        // Сброс произойдет в lateUpdate
+    }
+
+    emulateMouseHold(button, isDown) {
+        // Удержание кнопки
+        this.mouseButtons[button] = isDown;
+        if (!isDown) {
+             // Чтобы не сработал 'JustPressed' при отпускании, синхронизируем last
+             this.lastMouseButtons[button] = false;
+        }
+    }
+    
+    isMobile() {
+         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1);
+    }
+    // ---------------------------------
+
+    lock() {
+        if (!this.isMobile()) {
+            this.lockElement.requestPointerLock();
+        } else {
+             this.isPaused = false;
+             if (this.onPauseToggle) this.onPauseToggle(false);
+        }
+    }
+    
+    onPauseToggle(isPaused) { /* Override */ }
 
     setPaused(paused) {
         this.isPaused = paused;
         if (this.onPauseToggle) this.onPauseToggle(paused);
-        
-        // Если ставим паузу программно -> отпускаем мышь
-        if (paused) {
-            document.exitPointerLock();
-        }
+        if (paused && !this.isMobile()) document.exitPointerLock();
     }
 
     onKeyDown(event) { this.keys[event.code] = true; }
@@ -77,14 +113,33 @@ export class InputManager {
         this.mouseDelta.y += event.movementY;
     }
 
-    isKeyDown(key) { return this.keys[key] || false; }
+    isKeyDown(key) { 
+        if (key === 'KeyW' && this.joystickInput.y < -0.3) return true;
+        if (key === 'KeyS' && this.joystickInput.y > 0.3) return true;
+        if (key === 'KeyA' && this.joystickInput.x < -0.3) return true;
+        if (key === 'KeyD' && this.joystickInput.x > 0.3) return true;
+        
+        // Бег (Shift) активен если зажата кнопка на экране
+        if (key === 'ShiftLeft' && this.isSprintingMobile) return true;
+        
+        return this.keys[key] || false; 
+    }
+    
     wasKeyJustPressed(key) { return this.isKeyDown(key) && !this.lastKeys[key]; }
     isMouseButtonDown(button) { return this.mouseButtons[button] || false; }
     wasMouseButtonJustPressed(button) { return this.isMouseButtonDown(button) && !this.lastMouseButtons[button]; }
-    getMouseDelta() { return { ...this.mouseDelta }; }
+    
+    getMouseDelta() { 
+        return { 
+            x: this.mouseDelta.x + this.touchDelta.x, 
+            y: this.mouseDelta.y + this.touchDelta.y 
+        }; 
+    }
+    
     getScrollDelta() { return this.scrollDelta; }
     
     isPointerLocked() { 
+        if (this.isMobile()) return !this.isPaused && !this.isInventoryOpen;
         return document.pointerLockElement === this.lockElement || document.pointerLockElement === document.body; 
     }
 
@@ -92,11 +147,20 @@ export class InputManager {
         this.mouseDelta.x = 0;
         this.mouseDelta.y = 0;
         this.scrollDelta = 0;
+        this.touchDelta.x = 0;
+        this.touchDelta.y = 0;
     }
 
     lateUpdate() {
         this.lastKeys = { ...this.keys };
         this.lastMouseButtons = { ...this.mouseButtons };
+        
+        // Сбрасываем "клики", если это была эмуляция одиночного нажатия
+        if (this.isMobile()) {
+             // Но НЕ сбрасываем, если это режим удержания (hold)
+             // Логику hold контролирует TouchControls, он сам вызовет emulateMouseHold(false)
+        }
+        
         this.resetDeltas();
     }
 }
