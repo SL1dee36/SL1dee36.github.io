@@ -1,14 +1,16 @@
 export class SettingsManager {
     constructor() {
         this.settings = {
-            renderDistance: 3,
-            renderMode: 'smart',   // 'normal' (все чанки в радиусе) или 'smart' (только видимые камерой)
+            renderDistance: 4,
+            renderMode: 'smart',
             quality: 1.0,
             timeSpeed: 1.0,
-            sensitivity: 0.002,
+            sensitivity: 0.003,
             showHand: true,
-            shadows: true,
-            shadowMapSize: 1024,   // По умолчанию Low для производительности
+            shadowMapSize: 0,
+            shadowDistance: 50,
+            fogFactor: 0.8,
+            volume: 0.5,
             showClouds: true,
             showStars: true,
             showSunMoon: true
@@ -17,7 +19,7 @@ export class SettingsManager {
     }
 
     load() {
-        const saved = localStorage.getItem('luminaSettings');
+        const saved = localStorage.getItem('luminaSettings_v3');
         if (saved) {
             try {
                 const parsed = JSON.parse(saved);
@@ -26,7 +28,7 @@ export class SettingsManager {
         }
     }
 
-    save() { localStorage.setItem('luminaSettings', JSON.stringify(this.settings)); }
+    save() { localStorage.setItem('luminaSettings_v3', JSON.stringify(this.settings)); }
     get(key) { return this.settings[key]; }
     set(key, value) { this.settings[key] = value; this.save(); }
 }

@@ -10,14 +10,16 @@ export class InputManager {
         this.scrollDelta = 0;
         this.lockElement = targetElement;
         
-        // --- ДЛЯ МОБИЛОК ---
+        // Mobile
         this.joystickInput = { x: 0, y: 0 };
         this.touchDelta = { x: 0, y: 0 };
-        this.isSprintingMobile = false; // Флаг для кнопки бега
-        // ------------------
+        this.isSprintingMobile = false; 
 
         this.isPaused = false; 
         this.isInventoryOpen = false;
+
+        // Block Context Menu globally for Right-Click logic
+        document.addEventListener('contextmenu', (e) => e.preventDefault(), false);
 
         document.addEventListener('keydown', this.onKeyDown.bind(this));
         document.addEventListener('keyup', (e) => this.keys[e.code] = false);
@@ -27,7 +29,7 @@ export class InputManager {
         document.addEventListener('wheel', (e) => this.scrollDelta += Math.sign(e.deltaY));
 
         document.addEventListener('click', (e) => {
-            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.menu-screen') || e.target.closest('#mobile-controls')) return;
+            if (e.target.tagName === 'BUTTON' || e.target.tagName === 'INPUT' || e.target.closest('.menu-screen') || e.target.closest('#mobile-controls') || e.target.closest('.slot')) return;
             
             if (!this.isPaused && !this.isInventoryOpen && document.pointerLockElement !== this.lockElement) {
                 this.lock();
@@ -48,7 +50,6 @@ export class InputManager {
         });
     }
 
-    // --- Методы для TouchControls ---
     setJoystickInput(x, y) {
         this.joystickInput.x = x;
         this.joystickInput.y = y;
@@ -68,17 +69,13 @@ export class InputManager {
     }
 
     emulateMouseClick(button) {
-        // Одиночный клик
         this.mouseButtons[button] = true;
         this.lastMouseButtons[button] = false;
-        // Сброс произойдет в lateUpdate
     }
 
     emulateMouseHold(button, isDown) {
-        // Удержание кнопки
         this.mouseButtons[button] = isDown;
         if (!isDown) {
-             // Чтобы не сработал 'JustPressed' при отпускании, синхронизируем last
              this.lastMouseButtons[button] = false;
         }
     }
@@ -86,7 +83,6 @@ export class InputManager {
     isMobile() {
          return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 1);
     }
-    // ---------------------------------
 
     lock() {
         if (!this.isMobile()) {
@@ -118,10 +114,7 @@ export class InputManager {
         if (key === 'KeyS' && this.joystickInput.y > 0.3) return true;
         if (key === 'KeyA' && this.joystickInput.x < -0.3) return true;
         if (key === 'KeyD' && this.joystickInput.x > 0.3) return true;
-        
-        // Бег (Shift) активен если зажата кнопка на экране
         if (key === 'ShiftLeft' && this.isSprintingMobile) return true;
-        
         return this.keys[key] || false; 
     }
     
@@ -154,13 +147,6 @@ export class InputManager {
     lateUpdate() {
         this.lastKeys = { ...this.keys };
         this.lastMouseButtons = { ...this.mouseButtons };
-        
-        // Сбрасываем "клики", если это была эмуляция одиночного нажатия
-        if (this.isMobile()) {
-             // Но НЕ сбрасываем, если это режим удержания (hold)
-             // Логику hold контролирует TouchControls, он сам вызовет emulateMouseHold(false)
-        }
-        
         this.resetDeltas();
     }
 }

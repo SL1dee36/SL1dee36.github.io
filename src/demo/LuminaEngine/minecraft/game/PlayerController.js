@@ -1,12 +1,12 @@
-// game/PlayerController.js
 import { Component } from '../Lumina/js/core/Component.js';
 import { RigidBody } from '../Lumina/js/physics/RigidBody.js';
 import * as THREE from 'three';
 
 export class PlayerController extends Component {
-    constructor(gameObject, settingsManager) {
+    constructor(gameObject, settingsManager, soundManager) {
         super(gameObject);
         this.settings = settingsManager;
+        this.soundManager = soundManager;
         this.camera = null;
         this.rigidBody = null;
 
@@ -24,21 +24,16 @@ export class PlayerController extends Component {
     }
 
     update(deltaTime) {
-        // Респавн
         if (this.transform.position.y < -30) {
             const respawnPos = new THREE.Vector3(8, 80, 8);
             this.transform.position.copy(respawnPos);
-            
-            // ВАЖНО: Обновляем физическую позицию тоже!
             if (this.rigidBody.physicsPosition) {
                 this.rigidBody.physicsPosition.copy(respawnPos);
                 this.rigidBody.prevPhysicsPosition.copy(respawnPos);
             }
-            
             this.rigidBody.velocity.set(0, 0, 0);
         }
 
-        // Получаем чувствительность из настроек
         const sensitivity = this.settings.get('sensitivity');
         const mouseDelta = this.engine.inputManager.getMouseDelta();
         
@@ -66,6 +61,7 @@ export class PlayerController extends Component {
         if (input.isKeyDown('Space') && this.rigidBody.isGrounded) {
             this.rigidBody.velocity.y = this.jumpForce;
             this.rigidBody.isGrounded = false;
+            if (this.soundManager) this.soundManager.playJump();
         }
     }
 }

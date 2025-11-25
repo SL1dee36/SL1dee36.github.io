@@ -2,6 +2,7 @@ import * as THREE from 'three';
 import { BLOCK } from './blocks.js';
 import { GPUWorldGenerator } from './GPUWorldGenerator.js';
 import { SimplexNoise } from './utils/SimplexNoise.js';
+import { TextureGenerator } from './TextureGenerator.js';
 
 const CHUNK_SIZE = 8;
 const WORLD_HEIGHT = 128;
@@ -51,28 +52,23 @@ class WorldRegion {
         const startChunkX = this.rx * REGION_SIZE;
         const startChunkZ = this.rz * REGION_SIZE;
 
-        // Вспомогательная функция для проверки видимости грани
-        // Исправляет проблему отрисовки листвы внутри листвы
         const shouldDrawFace = (currentId, currentProps, nx, ny, nz) => {
             const neighborId = this.world.getVoxel(nx, ny, nz);
-            
-            // 1. Если сосед воздух — рисуем всегда
             if (neighborId === BLOCK.AIR) return true;
-
             const neighborProps = BLOCK.get(neighborId);
-
-            // 2. Если сосед прозрачный (листва, стекло)
             if (neighborProps.isTransparent) {
-                // Если мы тоже прозрачные И мы одинаковые блоки (Листва <-> Листва)
-                // То НЕ рисуем грань (оптимизация)
                 if (currentProps.isTransparent && currentId === neighborId) return false;
-                
-                // В остальных случаях (Камень <-> Листва или Листва <-> Стекло) — рисуем
                 return true;
             }
-
-            // 3. Если сосед твердый (непрозрачный) — не рисуем
             return false;
+        };
+
+        const getTexture = (props, dir) => {
+            if (typeof props.texture !== 'object') return props.texture;
+            if (dir === 'top') return props.texture.top;
+            if (dir === 'bottom') return props.texture.bottom;
+            if (dir === 'front' && props.texture.front) return props.texture.front; 
+            return props.texture.side;
         };
         
         for (let cx = 0; cx < REGION_SIZE; cx++) {
@@ -94,41 +90,35 @@ class WorldRegion {
                             if (voxel === BLOCK.STONE || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE || voxel === BLOCK.BEDROCK) light = 0.6;
                             if (this.world.isSolid(wx, y + 1, wz) && this.world.isSolid(wx, y + 2, wz)) light *= 0.4;
 
-                            // Right (+X)
                             if (shouldDrawFace(voxel, blockProps, wx + 1, y, wz)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [1, 0, 0], [[1,0,0],[1,1,0],[1,0,1],[1,1,1]], [0,0, 0,1, 1,0, 1,1], 
-                                    blockProps.texture?.side || blockProps.texture, 0.8 * light, geometry);
+                                    getTexture(blockProps, 'side'), 0.8 * light, geometry);
                             }
-                            // Left (-X)
                             if (shouldDrawFace(voxel, blockProps, wx - 1, y, wz)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [-1, 0, 0], [[0,0,1],[0,1,1],[0,0,0],[0,1,0]], [0,0, 0,1, 1,0, 1,1], 
-                                    blockProps.texture?.side || blockProps.texture, 0.8 * light, geometry);
+                                    getTexture(blockProps, 'side'), 0.8 * light, geometry);
                             }
-                            // Top (+Y)
                             if (shouldDrawFace(voxel, blockProps, wx, y + 1, wz)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [0, 1, 0], [[0,1,1],[1,1,1],[0,1,0],[1,1,0]], [0,0, 1,0, 0,1, 1,1], 
-                                    blockProps.texture?.top || blockProps.texture, 1.0 * light, geometry);
+                                    getTexture(blockProps, 'top'), 1.0 * light, geometry);
                             }
-                            // Bottom (-Y)
                             if (shouldDrawFace(voxel, blockProps, wx, y - 1, wz)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [0, -1, 0], [[0,0,0],[1,0,0],[0,0,1],[1,0,1]], [0,0, 1,0, 0,1, 1,1], 
-                                    blockProps.texture?.bottom || blockProps.texture, 0.5 * light, geometry);
+                                    getTexture(blockProps, 'bottom'), 0.5 * light, geometry);
                             }
-                            // Front (+Z)
                             if (shouldDrawFace(voxel, blockProps, wx, y, wz + 1)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [0, 0, 1], [[1,0,1],[1,1,1],[0,0,1],[0,1,1]], [0,0, 0,1, 1,0, 1,1], 
-                                    blockProps.texture?.side || blockProps.texture, 0.7 * light, geometry);
+                                    getTexture(blockProps, 'front'), 0.7 * light, geometry);
                             }
-                            // Back (-Z)
                             if (shouldDrawFace(voxel, blockProps, wx, y, wz - 1)) {
                                 this.addFace(positions, normals, uvs, colors, indices, wx, y, wz, 
                                     [0, 0, -1], [[0,0,0],[0,1,0],[1,0,0],[1,1,0]], [0,0, 0,1, 1,0, 1,1], 
-                                    blockProps.texture?.side || blockProps.texture, 0.7 * light, geometry);
+                                    getTexture(blockProps, 'side'), 0.7 * light, geometry);
                             }
                         }
                     }
@@ -148,7 +138,6 @@ class WorldRegion {
         this.mesh = new THREE.Mesh(geometry, this.world.materials);
         this.mesh.castShadow = this.world.settings.get('shadows');
         this.mesh.receiveShadow = this.world.settings.get('shadows');
-        
         this.mesh.frustumCulled = false; 
 
         this.world.scene.add(this.mesh);
@@ -186,40 +175,47 @@ export class World {
         this.regions = {};
         this.gpuGenerator = new GPUWorldGenerator(renderer, this.seed);
         this.caveNoise = new SimplexNoise(this.seed);
-        
+
+        this.textureGenerator = new TextureGenerator();
         this.materials = [];
         this.materialMap = {};
         this.initMaterials();
         
         this.frustum = new THREE.Frustum();
         this.projScreenMatrix = new THREE.Matrix4();
+
+        this.fallingBlocks = []; // List of {x, y, z, id, time}
     }
 
     initMaterials() {
-        const tl = new THREE.TextureLoader();
         let mi = 0;
         for (const k in BLOCK.properties) {
             const p = BLOCK.properties[k];
             if (!p.texture) continue;
-            const arr = typeof p.texture === 'object' ? [p.texture.top, p.texture.bottom, p.texture.side] : [p.texture];
-            arr.forEach(tn => {
-                if (this.materialMap[tn] === undefined) {
-                    const t = tl.load(`textures/${tn}`);
-                    t.magFilter = THREE.NearestFilter;
-                    t.minFilter = THREE.NearestFilter;
-                    t.generateMipmaps = false;
-                    t.colorSpace = THREE.SRGBColorSpace;
-                    
-                    const tr = ['oak_leaves.png'].includes(tn) || p.isTransparent;
+            
+            const arr = [];
+            if (typeof p.texture === 'object') {
+                if(p.texture.top) arr.push(p.texture.top);
+                if(p.texture.bottom) arr.push(p.texture.bottom);
+                if(p.texture.side) arr.push(p.texture.side);
+                if(p.texture.front) arr.push(p.texture.front);
+            } else {
+                arr.push(p.texture);
+            }
+            
+            arr.forEach(genKey => {
+                if (this.materialMap[genKey] === undefined) {
+                    const texture = this.textureGenerator.generate(genKey);
+                    const isTransparent = p.isTransparent || genKey.includes('glass') || genKey.includes('leaves') || genKey.includes('water');
                     const mat = new THREE.MeshLambertMaterial({ 
-                        map: t, 
-                        transparent: tr, 
-                        alphaTest: tr ? 0.3 : 0, 
+                        map: texture, 
+                        transparent: isTransparent, 
+                        alphaTest: isTransparent ? 0.3 : 0, 
                         side: THREE.DoubleSide, 
                         vertexColors: true 
                     });
                     this.materials.push(mat);
-                    this.materialMap[tn] = mi++;
+                    this.materialMap[genKey] = mi++;
                 }
             });
         }
@@ -248,11 +244,60 @@ export class World {
         let c = this.getChunk(cx, cz);
         if (!c) c = this.generateChunkData(cx, cz);
         c.setVoxel(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE, v);
+        
         const rx = Math.floor(cx / REGION_SIZE), rz = Math.floor(cz / REGION_SIZE);
         const r = this.getRegion(rx, rz);
         if (r) r.needsUpdate = true;
+        
+        // Check for updates
+        if(v === BLOCK.AIR) {
+            // Block removed, check block above if falling
+            const above = this.getVoxel(x, y+1, z);
+            if(BLOCK.get(above).falling) {
+                this.scheduleBlockFall(x, y+1, z);
+            }
+        } else if (BLOCK.get(v).falling) {
+            // Block placed, check if should fall
+            this.scheduleBlockFall(x, y, z);
+        }
+    }
+
+    scheduleBlockFall(x, y, z) {
+        if (!this.fallingBlocks.some(b => b.x === x && b.y === y && b.z === z)) {
+            this.fallingBlocks.push({ x, y, z, id: this.getVoxel(x, y, z), time: 0 });
+        }
     }
     
+    updateFallingBlocks(dt) {
+        if (this.fallingBlocks.length === 0) return;
+        
+        // Simple cellular automata physics, not entity based for simplicity
+        const nextFrame = [];
+        const updates = new Set(); // Store coords to update mesh once
+
+        for (const block of this.fallingBlocks) {
+            block.time += dt;
+            if (block.time > 0.1) { // Fall speed
+                const below = this.getVoxel(block.x, block.y - 1, block.z);
+                if (below === BLOCK.AIR || below === BLOCK.WATER) {
+                    // Move down
+                    this.setVoxel(block.x, block.y, block.z, BLOCK.AIR);
+                    this.setVoxel(block.x, block.y - 1, block.z, block.id);
+                    nextFrame.push({ x: block.x, y: block.y - 1, z: block.z, id: block.id, time: 0 });
+                    
+                    // Trigger block above original pos
+                    const above = this.getVoxel(block.x, block.y + 1, block.z);
+                    if (BLOCK.get(above).falling) {
+                         nextFrame.push({ x: block.x, y: block.y + 1, z: block.z, id: above, time: 0 });
+                    }
+                }
+            } else {
+                nextFrame.push(block);
+            }
+        }
+        this.fallingBlocks = nextFrame;
+    }
+
     getTerrainHeight(x, z) {
         for (let y = WORLD_HEIGHT - 1; y > 0; y--) if (this.getVoxel(x, y, z) !== BLOCK.AIR) return y;
         return 0;
@@ -330,6 +375,9 @@ export class World {
     }
 
     update(p, camera) {
+        // Physics update for falling blocks
+        this.updateFallingBlocks(1/30); // Approx frame time
+
         if (p) this.updateChunks(p);
 
         if (camera) {
@@ -338,7 +386,6 @@ export class World {
         }
         
         const smartMode = this.settings.get('renderMode') === 'smart';
-        
         let updates = 0;
         
         for (let k in this.regions) {

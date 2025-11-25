@@ -8,25 +8,24 @@ export class TouchControls {
         this.joystickZone = document.getElementById('joystick-zone');
         this.joystickKnob = document.getElementById('joystick-knob');
         
-        // State Joystick
+        // Joystick State
         this.touchId = null; 
         this.origin = { x: 0, y: 0 };
-        this.joystickVector = { x: 0, y: 0 }; 
-
-        // State Camera / Action
+        
+        // Camera/Action State
         this.lookTouchId = null;
         this.lastLookX = 0;
         this.lastLookY = 0;
         this.tapStartX = 0;
         this.tapStartY = 0;
         
-        // Tap vs Hold Logic
+        // Logic for Hold to Break
         this.interactionTimer = null;
-        this.isBreaking = false; // Режим удержания
-        this.isDrag = false;     // Если палец поехал, это не тап и не холд
+        this.isBreaking = false; 
+        this.isDrag = false;
         
-        this.holdThreshold = 300; // мс до начала ломания
-        this.dragThreshold = 10;  // пикселей до отмены ломания
+        this.holdThreshold = 250; // мс (быстрее реакция)
+        this.dragThreshold = 15;
 
         if (this.isMobile()) {
             this.init();
@@ -38,7 +37,7 @@ export class TouchControls {
     }
 
     init() {
-        // --- Джойстик ---
+        // --- Joystick Logic (unchanged) ---
         this.joystickZone.addEventListener('touchstart', (e) => {
             e.preventDefault();
             const touch = e.changedTouches[0];
@@ -70,32 +69,29 @@ export class TouchControls {
         this.joystickZone.addEventListener('touchend', endJoystick);
         this.joystickZone.addEventListener('touchcancel', endJoystick);
 
-        // --- Вращение камеры и Действия (Tap/Hold) ---
-        // Вешаем на document, но игнорируем UI
+        // --- Interaction Logic (Break/Place) ---
         document.addEventListener('touchstart', (e) => {
             if (e.target.closest('#mobile-controls') || e.target.closest('#inventory') || e.target.closest('.menu-screen')) return;
             
             if (this.lookTouchId === null) {
-                // e.preventDefault(); // Можно, но осторожно (блочит скролл)
                 const touch = e.changedTouches[0];
                 this.lookTouchId = touch.identifier;
                 
                 this.lastLookX = touch.clientX;
                 this.lastLookY = touch.clientY;
-                
                 this.tapStartX = touch.clientX;
                 this.tapStartY = touch.clientY;
                 
                 this.isDrag = false;
                 this.isBreaking = false;
 
-                // Запускаем таймер на удержание (ломание)
+                // Начинаем таймер. Если палец не сдвинется сильно -> включаем "Hold"
                 this.interactionTimer = setTimeout(() => {
                     if (!this.isDrag) {
                         this.isBreaking = true;
-                        this.inputManager.emulateMouseHold(0, true); // Зажать ЛКМ
-                        // Вибрация при начале ломания (если поддерживается)
-                        if (navigator.vibrate) navigator.vibrate(50);
+                        // Task 5: Удерживаем кнопку ломания
+                        this.inputManager.emulateMouseHold(0, true); 
+                        if (navigator.vibrate) navigator.vibrate(30);
                     }
                 }, this.holdThreshold);
             }
@@ -109,18 +105,19 @@ export class TouchControls {
                     const dx = touch.clientX - this.lastLookX;
                     const dy = touch.clientY - this.lastLookY;
                     
-                    // Вращаем камеру
                     this.inputManager.addTouchDelta(dx * 2.0, dy * 2.0);
 
                     this.lastLookX = touch.clientX;
                     this.lastLookY = touch.clientY;
 
-                    // Проверяем, не сдвинулся ли палец слишком сильно для тапа/холда
+                    // Если палец сдвинулся сильно, это уже не попытка сломать блок, а осмотр
                     const dist = Math.sqrt(Math.pow(touch.clientX - this.tapStartX, 2) + Math.pow(touch.clientY - this.tapStartY, 2));
+                    
                     if (dist > this.dragThreshold) {
                         this.isDrag = true;
-                        // Если начали двигать, отменяем ломание
                         if (this.interactionTimer) clearTimeout(this.interactionTimer);
+                        
+                        // Если уже начали ломать, а потом дернули камерой -> прерываем ломание
                         if (this.isBreaking) {
                             this.isBreaking = false;
                             this.inputManager.emulateMouseHold(0, false);
@@ -134,17 +131,14 @@ export class TouchControls {
              for (let i = 0; i < e.changedTouches.length; i++) {
                 if (e.changedTouches[i].identifier === this.lookTouchId) {
                     this.lookTouchId = null;
-                    
-                    // Очищаем таймер (если палец отпустили раньше 300мс)
                     if (this.interactionTimer) clearTimeout(this.interactionTimer);
 
                     if (this.isBreaking) {
-                        // Если мы ломали, то прекращаем
+                        // Мы держали палец -> ломание прекращается
                         this.isBreaking = false;
                         this.inputManager.emulateMouseHold(0, false);
                     } else if (!this.isDrag) {
-                        // Если это был не драг и не холд -> значит ТАП
-                        // Ставим блок (ПКМ)
+                        // Мы просто тапнули -> ставим блок (ПКМ)
                         this.inputManager.emulateMouseClick(2);
                     }
                 }
@@ -153,11 +147,10 @@ export class TouchControls {
         document.addEventListener('touchend', endLook);
         document.addEventListener('touchcancel', endLook);
 
-        // --- Кнопки ---
-        const btnJump = document.getElementById('btn-jump');
-        btnJump.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); this.inputManager.emulateKey('Space', true); });
-        btnJump.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); this.inputManager.emulateKey('Space', false); });
-
+        // --- Buttons ---
+        this.bindButton('btn-jump', 'Space');
+        
+        // Sprint logic
         const btnRun = document.getElementById('btn-run');
         btnRun.addEventListener('touchstart', (e) => { 
             e.preventDefault(); e.stopPropagation();
@@ -170,46 +163,32 @@ export class TouchControls {
             btnRun.classList.remove('active');
         });
 
-        // ИНВЕНТАРЬ
-        const btnInv = document.getElementById('btn-inv-mobile');
-        btnInv.addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            this.uiManager.toggleInventory();
-        });
+        // UI toggles
+        document.getElementById('btn-inv-mobile').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); this.uiManager.toggleInventory(); });
+        document.getElementById('btn-pause-mobile').addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); this.inputManager.setPaused(true); });
+    }
 
-        // ПАУЗА / НАСТРОЙКИ
-        const btnPause = document.getElementById('btn-pause-mobile');
-        btnPause.addEventListener('touchstart', (e) => {
-            e.preventDefault(); e.stopPropagation();
-            // Вызываем паузу принудительно
-            this.inputManager.setPaused(true);
-        });
+    bindButton(id, key) {
+        const btn = document.getElementById(id);
+        btn.addEventListener('touchstart', (e) => { e.preventDefault(); e.stopPropagation(); this.inputManager.emulateKey(key, true); btn.classList.add('active'); });
+        btn.addEventListener('touchend', (e) => { e.preventDefault(); e.stopPropagation(); this.inputManager.emulateKey(key, false); btn.classList.remove('active'); });
     }
 
     updateJoystick(x, y) {
-        const maxRadius = 70; // Чуть больше для удобства
+        const maxRadius = 70;
         let dx = x - this.origin.x;
         let dy = y - this.origin.y;
-        
-        const distance = Math.sqrt(dx*dx + dy*dy);
-        if (distance > maxRadius) {
-            const ratio = maxRadius / distance;
-            dx *= ratio;
-            dy *= ratio;
+        const dist = Math.sqrt(dx*dx + dy*dy);
+        if (dist > maxRadius) {
+            dx = (dx / dist) * maxRadius;
+            dy = (dy / dist) * maxRadius;
         }
-        
         this.joystickKnob.style.transform = `translate(calc(-50% + ${dx}px), calc(-50% + ${dy}px))`;
-        
-        // Нормализуем (-1 до 1)
-        this.joystickVector.x = dx / maxRadius;
-        this.joystickVector.y = dy / maxRadius;
-        
-        this.inputManager.setJoystickInput(this.joystickVector.x, this.joystickVector.y);
+        this.inputManager.setJoystickInput(dx / maxRadius, dy / maxRadius);
     }
 
     resetJoystick() {
         this.joystickKnob.style.transform = `translate(-50%, -50%)`;
-        this.joystickVector = { x: 0, y: 0 };
         this.inputManager.setJoystickInput(0, 0);
     }
 }
