@@ -36,13 +36,11 @@ export class UIManager {
         this.inventoryElement = document.getElementById('inventory');
         
         this.dragIcon = document.getElementById('drag-icon');
-        // Critical for smooth transform positioning
         this.dragIcon.style.position = 'fixed';
         this.dragIcon.style.top = '0';
         this.dragIcon.style.left = '0';
         this.dragIcon.style.pointerEvents = 'none';
         this.dragIcon.style.zIndex = '9999';
-        // Remove transition for cursor tracking to prevent "lag" feeling
         this.dragIcon.style.transition = 'none'; 
         this.dragIcon.style.display = 'none';
 
@@ -114,8 +112,6 @@ export class UIManager {
     initCursorTracking() { 
         const updatePos = (x, y) => {
              if(this.cursorItem) {
-                 // Using transform translates relative to 0,0 (fixed position)
-                 // Offset by 25px (half icon size roughly) to center it
                  this.dragIcon.style.transform = `translate(${x - 20}px, ${y - 20}px) scale(1.1)`;
              }
         };
@@ -124,7 +120,6 @@ export class UIManager {
             if(this.cursorItem) updatePos(e.clientX, e.clientY);
         }); 
 
-        // Important: Track touch movement so icon follows finger on mobile too
         document.addEventListener('touchmove', (e) => {
             if(this.inputManager.isInventoryOpen && this.cursorItem) {
                  const t = e.touches[0];
@@ -139,18 +134,101 @@ export class UIManager {
         document.getElementById('stats-btn').onclick = () => { this.updateStatsUI(); this.showScreen(this.statsMenu); };
         document.getElementById('save-quit-btn').onclick = () => { if(this.saveAndQuitCallback) this.saveAndQuitCallback(); location.reload(); };
     }
+
     initOptionsMenu() {
-        const bindSlider = (id, k, d, f) => {
+        const bindSlider = (id, key, labelId, formatFunc) => {
             const el = document.getElementById(id);
             if(!el) return;
-            el.value = this.settings.get(k);
-            el.oninput = (e) => { this.settings.set(k, parseFloat(e.target.value)); document.getElementById(d).textContent = f ? f(e.target.value) : e.target.value; };
+            el.value = this.settings.get(key);
+            el.oninput = (e) => { 
+                const val = parseFloat(e.target.value);
+                this.settings.set(key, val); 
+                document.getElementById(labelId).textContent = formatFunc ? formatFunc(val) : val;
+            };
         };
-        bindSlider('opt-render-dist', 'renderDistance', 'val-render-dist');
+
+        bindSlider('opt-render-dist', 'renderDistance', 'val-render-dist', (v) => `${v} chunks`);
+        bindSlider('opt-shadow-dist', 'shadowDistance', 'val-shadow-dist', (v) => `${v}m`);
+        bindSlider('opt-fog', 'fogFactor', 'val-fog', (v) => v.toFixed(2));
+        bindSlider('opt-volume', 'volume', 'val-volume', (v) => `${Math.round(v*100)}%`);
+        bindSlider('opt-sensitivity', 'sensitivity', 'val-sensitivity', (v) => `${Math.round(v*10000)}%`);
+        bindSlider('opt-time-speed', 'timeSpeed', 'val-time-speed', (v) => `${v.toFixed(1)}x`);
+
+        const bindButton = (id, key, values, labels) => {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.onclick = () => {
+                const current = this.settings.get(key);
+                let idx = values.indexOf(current);
+                if(idx === -1) idx = 0;
+                idx = (idx + 1) % values.length;
+                this.settings.set(key, values[idx]);
+                btn.textContent = labels[idx];
+            };
+        };
+
+        bindButton('opt-render-mode', 'renderMode', ['smart', 'basic'], ['Mode: Smart', 'Mode: Basic']);
+        bindButton('opt-shadow-res', 'shadowMapSize', [0, 512, 1024, 2048, 4096], ['Shadows: OFF', 'Shadows: Low', 'Shadows: Med', 'Shadows: High', 'Shadows: Ultra']);
+        
+        const bindToggle = (id, key, prefix) => {
+            const btn = document.getElementById(id);
+            if(!btn) return;
+            btn.onclick = () => {
+                const val = !this.settings.get(key);
+                this.settings.set(key, val);
+                btn.textContent = `${prefix}: ${val ? 'ON' : 'OFF'}`;
+            };
+        };
+
+        bindToggle('opt-show-hand', 'showHand', 'Hand');
+        bindToggle('opt-show-clouds', 'showClouds', 'Clouds');
+        bindToggle('opt-show-stars', 'showStars', 'Stars');
+        bindToggle('opt-show-sky', 'showSunMoon', 'Sun/Moon');
+        bindToggle('opt-ao', 'ambientOcclusion', 'Smooth Lighting'); // New Setting
+
         document.getElementById('options-back-btn').onclick = () => this.showScreen(this.pauseMenu);
     }
-    updateOptionsUI() { }
-    updateStatsUI() { }
+
+    updateOptionsUI() {
+        const s = this.settings;
+        
+        const setTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+        const setVal = (id, key) => { const el = document.getElementById(id); if(el) el.value = s.get(key); };
+
+        setTxt('val-render-dist', `${s.get('renderDistance')} chunks`); setVal('opt-render-dist', 'renderDistance');
+        setTxt('val-shadow-dist', `${s.get('shadowDistance')}m`); setVal('opt-shadow-dist', 'shadowDistance');
+        setTxt('val-fog', s.get('fogFactor').toFixed(2)); setVal('opt-fog', 'fogFactor');
+        setTxt('val-volume', `${Math.round(s.get('volume')*100)}%`); setVal('opt-volume', 'volume');
+        setTxt('val-sensitivity', `${Math.round(s.get('sensitivity')*10000)}%`); setVal('opt-sensitivity', 'sensitivity');
+        setTxt('val-time-speed', `${s.get('timeSpeed').toFixed(1)}x`); setVal('opt-time-speed', 'timeSpeed');
+
+        const btnTxt = (id, txt) => { const el = document.getElementById(id); if(el) el.textContent = txt; };
+        
+        const mode = s.get('renderMode');
+        btnTxt('opt-render-mode', `Mode: ${mode.charAt(0).toUpperCase() + mode.slice(1)}`);
+        
+        const shSize = s.get('shadowMapSize');
+        let shLabel = 'OFF';
+        if(shSize === 512) shLabel = 'Low';
+        if(shSize === 1024) shLabel = 'Med';
+        if(shSize === 2048) shLabel = 'High';
+        if(shSize === 4096) shLabel = 'Ultra';
+        btnTxt('opt-shadow-res', `Shadows: ${shLabel}`);
+
+        btnTxt('opt-show-hand', `Hand: ${s.get('showHand') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-show-clouds', `Clouds: ${s.get('showClouds') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-show-stars', `Stars: ${s.get('showStars') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-show-sky', `Sun/Moon: ${s.get('showSunMoon') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-ao', `Smooth Lighting: ${s.get('ambientOcclusion') ? 'ON' : 'OFF'}`);
+    }
+
+    updateStatsUI() { 
+        const el = document.getElementById('stats-content');
+        if(el) {
+            el.innerHTML = "Not implemented yet.<br>Coming soon!";
+        }
+        document.getElementById('stats-back-btn').onclick = () => this.showScreen(this.pauseMenu);
+    }
 
     getBlockIconUrl(blockId) {
         if (this.iconCache[blockId]) return this.iconCache[blockId];
@@ -169,11 +247,13 @@ export class UIManager {
         const s = document.createElement('div'); 
         s.className = 'slot';
         
-        if (type === 'hotbar_hud' && i === this.inventoryComponent.selectedSlot) s.classList.add('selected');
+        if (type === 'hotbar_hud' && i === this.inventoryComponent.selectedSlot) {
+            s.classList.add('selected');
+        }
+        
         if (type === 'result') s.style.backgroundColor = '#8b8b6b';
 
-        // Highlighting for Mobile Selection
-        if (this.inputManager.isMobile() && this.selectedSlotIndex === i && this.selectedSlotType === type) {
+        if (this.inputManager.isMobile() && this.selectedSlotIndex === i && this.selectedSlotType === type && type !== 'hotbar_hud') {
             s.style.borderColor = '#ffff00';
             s.style.boxShadow = '0 0 4px #ffff00';
         }
@@ -184,54 +264,56 @@ export class UIManager {
             if(item.count > 1) s.innerHTML = `<div class="item-count">${item.count}</div>`; 
         }
         
-        // --- PC Interaction ---
+        if (type === 'hotbar_hud') {
+            const selectAction = (e) => {
+                e.preventDefault();
+                e.stopPropagation();
+                this.inventoryComponent.selectedSlot = i;
+                this.updateHotbarHUD();
+            };
+            s.onmousedown = selectAction;
+            s.ontouchstart = selectAction;
+            return s;
+        }
+
         s.onmousedown = (e) => {
-            if(!this.inputManager.isInventoryOpen && type !== 'hotbar_hud') return;
+            if(!this.inputManager.isInventoryOpen) return;
             e.preventDefault(); 
             e.stopPropagation();
             if(clickHandler) clickHandler(i, e.button === 2);
             
-            // Immediate visual update for cursor
             if(this.cursorItem) {
                 this.dragIcon.style.display = 'block';
                 this.dragIcon.style.transform = `translate(${e.clientX - 20}px, ${e.clientY - 20}px) scale(1.1)`;
             }
         };
 
-        // --- Mobile Interaction ---
         s.ontouchstart = (e) => {
             if(!this.inputManager.isInventoryOpen) return;
-            // Don't prevent default immediately to allow scrolling, but here we likely want to prevent
-            // e.preventDefault(); 
             
             const touch = e.touches[0];
             this.touchStartX = touch.clientX;
             this.touchStartY = touch.clientY;
             this.longPressTriggered = false;
 
-            // Start Long Press Timer (for Splitting)
             this.touchTimer = setTimeout(() => {
                 this.longPressTriggered = true;
-                if (navigator.vibrate) navigator.vibrate(30); // Haptic feedback
+                if (navigator.vibrate) navigator.vibrate(30);
                 this.handleMobileLongPress(type, i);
             }, 500);
         };
 
         s.ontouchend = (e) => {
             if(!this.inputManager.isInventoryOpen) return;
-            
-            // Cancel timer if finger lifted early
             if (this.touchTimer) clearTimeout(this.touchTimer);
 
-            // Calculate movement to ignore swipes
             const touch = e.changedTouches[0];
             const dx = Math.abs(touch.clientX - this.touchStartX);
             const dy = Math.abs(touch.clientY - this.touchStartY);
 
             if (dx < 10 && dy < 10) {
-                // If it wasn't a long press, it's a Tap
                 if (!this.longPressTriggered) {
-                    e.preventDefault(); // Prevent click emulation
+                    e.preventDefault(); 
                     this.handleMobileTap(type, i);
                 }
             }
@@ -240,9 +322,7 @@ export class UIManager {
         return s;
     }
 
-    // Mobile: Tap to Select / Move / Place All
     handleMobileTap(type, index) {
-        // If we have a cursor item (dragged/picked up), Tap acts like Left Click (Place All)
         if (this.cursorItem) {
             this.handleSlotClick(type, index, false);
             this.selectedSlotIndex = -1; 
@@ -252,19 +332,16 @@ export class UIManager {
         const list = this.getListByType(type);
         const item = list[index];
 
-        // 1. Select Slot
         if (this.selectedSlotIndex === -1) {
             if (item) {
                 this.selectedSlotType = type;
                 this.selectedSlotIndex = index;
             }
         } 
-        // 2. Deselect if same
         else if (this.selectedSlotIndex === index && this.selectedSlotType === type) {
             this.selectedSlotIndex = -1;
             this.selectedSlotType = null;
         } 
-        // 3. Move/Swap if different slot tapped
         else {
             this.executeMobileMove(type, index);
         }
@@ -272,16 +349,8 @@ export class UIManager {
         this.updateAll();
     }
 
-    // Mobile: Long Press to Split / Place One
     handleMobileLongPress(type, index) {
-        // Behaves like Right Click
-        // 1. If holding nothing -> Split stack in half
-        // 2. If holding something -> Place one
-        
-        // We reuse the existing logic, forcing isRightClick = true
         this.handleSlotClick(type, index, true);
-        
-        // Reset selection visual to avoid confusion
         this.selectedSlotIndex = -1; 
         this.selectedSlotType = null;
     }
@@ -300,22 +369,17 @@ export class UIManager {
             return;
         }
 
-        // Logic similar to PC handleSlotClick but direct source->target without cursor
         if (!targetItem) {
-            // Move to empty
             targetList[targetIndex] = sourceItem;
             sourceList[this.selectedSlotIndex] = null;
         } else {
-            // Target occupied
             if (sourceItem.id === targetItem.id) {
-                // Stack
                 const space = 64 - targetItem.count;
                 const add = Math.min(space, sourceItem.count);
                 targetItem.count += add;
                 sourceItem.count -= add;
                 if (sourceItem.count <= 0) sourceList[this.selectedSlotIndex] = null;
             } else {
-                // Swap
                 targetList[targetIndex] = sourceItem;
                 sourceList[this.selectedSlotIndex] = targetItem;
             }
@@ -358,7 +422,6 @@ export class UIManager {
         const invContainer = this.inventoryElement;
         invContainer.innerHTML = ''; 
 
-        // -- Container Construction --
         const title = document.createElement('div');
         title.className = 'inv-title';
         title.innerText = this.inventoryComponent.activeContainerType ? 
@@ -449,7 +512,6 @@ export class UIManager {
 
         const clickedItem = list[index];
 
-        // Furnace Result Slot Protection
         if (type === 'container' && this.inventoryComponent.activeContainerType === 'furnace' && index === 2) {
              if(clickedItem && !this.cursorItem) {
                  this.cursorItem = clickedItem;
@@ -465,7 +527,6 @@ export class UIManager {
         }
 
         if (!this.cursorItem) {
-            // Pick up
             if (clickedItem) {
                 if (isRightClick) {
                     const take = Math.ceil(clickedItem.count / 2);
@@ -478,7 +539,6 @@ export class UIManager {
                 }
             }
         } else {
-            // Place / Swap
             if (!clickedItem) {
                 if (isRightClick) {
                     list[index] = { id: this.cursorItem.id, count: 1 };
@@ -539,7 +599,7 @@ export class UIManager {
         if (!resultItem) return;
 
         if (!this.cursorItem) {
-            this.cursorItem = { ...resultItem }; // Copy
+            this.cursorItem = { ...resultItem }; 
             this.consumeIngredients(grid);
             this.updateCraftingResult(); 
         } else if (this.cursorItem.id === resultItem.id && this.cursorItem.count + resultItem.count <= 64) {

@@ -44,22 +44,24 @@ float fbm(vec2 p) {
 }
 
 void main() {
-    vec2 worldPos = u_offset + vUv * 8.0; // 8.0 = CHUNK_SIZE
+    // 16.0 = CHUNK_SIZE
+    vec2 worldPos = u_offset + vUv * 16.0; 
     
-    // Масштаб шума (чем меньше делитель, тем чаще "холмы")
-    float scale = 0.015; 
+    // Масштаб шума 
+    float scale = 0.010; 
     
     // Генерируем высоту
     float h = fbm(worldPos * scale);
     
-    // Делаем ландшафт более "гористым" через возведение в степень
+    // Делаем ландшафт более "гористым"
     h = pow(h, 1.2); 
 
     gl_FragColor = vec4(h, 0.0, 0.0, 1.0);
 }
 `;
 
-const CHUNK_SIZE = 8; 
+// Update to match World.js
+const CHUNK_SIZE = 16; 
 
 export class GPUWorldGenerator {
     constructor(renderer, seed) {

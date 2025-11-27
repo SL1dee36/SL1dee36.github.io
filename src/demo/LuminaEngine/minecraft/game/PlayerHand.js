@@ -1,8 +1,8 @@
-// game/PlayerHand.js
 import { Component } from '../Lumina/js/core/Component.js';
 import { BLOCK } from './blocks.js';
 import { Inventory } from './Inventory.js';
 import { RigidBody } from '../Lumina/js/physics/RigidBody.js';
+import { BlockInteraction } from './BlockInteraction.js';
 import * as THREE from 'three';
 import { TextureGenerator } from './TextureGenerator.js';
 
@@ -14,9 +14,18 @@ export class PlayerHand extends Component {
         this.handContainer = new THREE.Group();
         this.currentBlockId = 0;
         
-        this.isSwing = false; this.swingTime = 0;
-        this.isPlace = false; this.placeTime = 0;
+        // Animation States
+        this.swingProgress = 0;
+        this.swingSpeed = 15;
+        this.isSwing = false;
         
+        this.placeProgress = 0;
+        this.placeSpeed = 20;
+        this.isPlace = false;
+
+        this.jumpOffset = 0;
+        this.jumpTilt = 0;
+
         this.basePos = { x: 0.4, y: -0.6, z: -0.8 }; 
         this.bobPos = new THREE.Vector3();
         
@@ -28,6 +37,7 @@ export class PlayerHand extends Component {
         this.camera = this.engine.renderer.camera;
         this.inventory = this.gameObject.getComponent(Inventory);
         this.rigidBody = this.gameObject.getComponent(RigidBody);
+        this.blockInteraction = this.gameObject.getComponent(BlockInteraction);
 
         this.camera.add(this.handContainer);
         this.updateMesh();
@@ -47,13 +57,23 @@ export class PlayerHand extends Component {
             this.updateMesh();
         }
 
-        if (this.engine.inputManager.wasMouseButtonJustPressed(0)) {
-            this.swingTime = 0;
+        // --- Logic for Animations ---
+        // 1. Break / Hit Animation
+        // Check if user is holding button OR if BlockInteraction is actively breaking
+        const isBreaking = this.engine.inputManager.isMouseButtonDown(0);
+        
+        if (isBreaking) {
+            // Loop swing while holding
             this.isSwing = true;
+        } else if (this.isSwing && this.swingProgress <= 0) {
+            // Stop if released and cycle finished
+            this.isSwing = false;
         }
+
+        // 2. Place Animation
         if (this.engine.inputManager.wasMouseButtonJustPressed(2)) {
-            this.placeTime = 0;
             this.isPlace = true;
+            this.placeProgress = 0;
         }
 
         this.applyAnimations(deltaTime);
@@ -102,35 +122,19 @@ export class PlayerHand extends Component {
             const props = BLOCK.get(this.currentBlockId);
             
             if (props.isItem) {
-                // FLAT ITEM RENDER
-                const itemGeo = new THREE.BoxGeometry(0.5, 0.5, 0.5); // Thin box
                 const mat = this.getMaterial(props.texture);
-                const materials = [
-                    null, null, // Left/Right (transparent)
-                    null, null, // Top/Bottom
-                    mat, mat    // Front/Back
-                ];
-                // For simplified flat look, we can just use the material on all sides or a PlaneGeometry.
-                // BoxGeometry with 0.05 depth gives it a "3D pixel" feel like MC.
-                // However, Box sides need UV mapping fixes or just use basic color.
-                // Simplest: PlaneGeometry 
-                
-                // Let's use PlaneGeometry for true flatness
                 const planeGeo = new THREE.PlaneGeometry(0.5, 0.5);
                 const itemMesh = new THREE.Mesh(planeGeo, mat);
                 
-                // Attach to arm
                 armMesh.add(itemMesh);
                 
-                // Position like a held tool
-                itemMesh.position.set(-0.1, 0.6, 0.1);
+                itemMesh.position.set(-0.1, 0.5, 0.1);
                 itemMesh.rotation.x = 0;
                 itemMesh.rotation.y = Math.PI / 2;
-                itemMesh.rotation.z = Math.PI / 4;
+                itemMesh.rotation.z = Math.PI / 9;
                 itemMesh.scale.set(1.2, 1.2, 1.2);
 
             } else if (props.texture) {
-                // BLOCK RENDER
                 const itemGeo = new THREE.BoxGeometry(0.3, 0.3, 0.3);
                 let materials = [];
 
@@ -165,6 +169,7 @@ export class PlayerHand extends Component {
         const speed = Math.sqrt(this.rigidBody.velocity.x**2 + this.rigidBody.velocity.z**2);
         const time = performance.now() / 1000;
 
+        // 1. Walk Bobbing
         if (speed > 0.5 && this.rigidBody.isGrounded) {
             this.bobPos.x = Math.cos(time * 8) * 0.01;
             this.bobPos.y = Math.sin(time * 16) * 0.01;
@@ -173,24 +178,52 @@ export class PlayerHand extends Component {
             this.bobPos.y = THREE.MathUtils.lerp(this.bobPos.y, 0, deltaTime * 10);
         }
 
+        // 2. Jump/Fall Inertia
+        const targetJumpOffset = -Math.max(-0.2, Math.min(0.2, this.rigidBody.velocity.y * 0.015));
+        this.jumpOffset = THREE.MathUtils.lerp(this.jumpOffset, targetJumpOffset, deltaTime * 5);
+        this.jumpTilt = THREE.MathUtils.lerp(this.jumpTilt, targetJumpOffset * 2, deltaTime * 5);
+
+        // 3. Swing Animation (Attack / Break)
         if (this.isSwing) {
-            this.swingTime += deltaTime * 15;
-            if (this.swingTime > Math.PI) {
-                this.isSwing = false;
-                this.swingTime = 0;
+            this.swingProgress += deltaTime * this.swingSpeed;
+            if (this.swingProgress >= Math.PI) {
+                // Check if we should keep swinging (mouse held)
+                if (this.engine.inputManager.isMouseButtonDown(0)) {
+                    this.swingProgress = 0; // Reset for next cycle
+                } else {
+                    this.isSwing = false;
+                    this.swingProgress = 0;
+                }
             }
-            const sin = Math.sin(this.swingTime);
-            rotX -= sin * 1.0;
-            rotY -= sin * 0.5;
-            animZ -= sin * 0.5;
+            
+            // Simple sine wave swing
+            const sin = Math.sin(this.swingProgress);
+            rotX -= sin * 1.2;
+            rotY -= sin * 0.6;
+            animZ -= sin * 0.8;
+            animY -= sin * 0.2;
+        }
+
+        // 4. Place Animation (Quick dip)
+        if (this.isPlace) {
+            this.placeProgress += deltaTime * this.placeSpeed;
+            if (this.placeProgress >= Math.PI) {
+                this.isPlace = false;
+                this.placeProgress = 0;
+            } else {
+                const sin = Math.sin(this.placeProgress);
+                rotX -= sin * 0.5;
+                animY -= sin * 0.2;
+                animZ += sin * 0.2;
+            }
         }
 
         this.handContainer.position.set(
             this.basePos.x + this.bobPos.x,
-            this.basePos.y + this.bobPos.y + animY,
+            this.basePos.y + this.bobPos.y + animY + this.jumpOffset,
             this.basePos.z + animZ
         );
 
-        this.handContainer.rotation.set(rotX, rotY, 0);
+        this.handContainer.rotation.set(rotX + this.jumpTilt, rotY, 0);
     }
 }

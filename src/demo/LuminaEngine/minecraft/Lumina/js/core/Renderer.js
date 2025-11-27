@@ -1,5 +1,3 @@
-// Lumina/js/core/Renderer.js
-
 import * as THREE from 'three';
 
 export class Renderer {
@@ -32,7 +30,7 @@ export class Renderer {
         this.renderer.render(this.scene, this.camera);
     }
     
-    updateUI(fps, playerTransform) {
+    updateUI(fps, playerTransform, worldStats, renderStats) {
         this.fpsDisplay.textContent = `FPS: ${fps}`;
         
         if (!playerTransform) return;
@@ -47,11 +45,25 @@ export class Renderer {
         
         const yawDisplay = yaw.toFixed(1);
 
-        this.coordsDisplay.innerHTML = `
+        let statsHtml = `
             X: ${pos.x.toFixed(2)}<br>
             Y: ${pos.y.toFixed(2)}<br>
             Z: ${pos.z.toFixed(2)}<br>
             Pitch: ${pitch}° Yaw: ${yawDisplay}°
         `;
+
+        if (worldStats && renderStats) {
+            // Estimate blocks by loaded chunks capacity
+            const totalBlocks = worldStats.chunks * 8 * 128 * 8; 
+            
+            statsHtml += `<br>
+            Loaded Chunks: ${worldStats.chunks}<br>
+            Total Capacity: ${totalBlocks.toLocaleString()} blocks<br>
+            Visible Tris: ${renderStats.triangles.toLocaleString()}<br>
+            Total Tris: ${worldStats.totalTriangles.toLocaleString()}
+            `;
+        }
+
+        this.coordsDisplay.innerHTML = statsHtml;
     }
 }
