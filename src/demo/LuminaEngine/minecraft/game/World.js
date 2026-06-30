@@ -360,7 +360,7 @@ export class World {
                         map: texture,
                         transparent: isTransparent,
                         alphaTest: isTransparent ? 0.3 : 0,
-                        side: THREE.DoubleSide,
+                        side: THREE.FrontSide,
                         vertexColors: true
                     });
 
