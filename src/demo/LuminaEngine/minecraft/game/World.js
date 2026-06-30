@@ -8,7 +8,11 @@ const CHUNK_SIZE = 16;
 const WORLD_HEIGHT = 256;
 const SECTION_HEIGHT = 32;
 const SECTIONS_PER_CHUNK = WORLD_HEIGHT / SECTION_HEIGHT;
-const REGION_SIZE = 1;
+
+// Константы для кэша (Чанк + рамка в 1 блок со всех сторон для мгновенного доступа к соседям)
+const PX = CHUNK_SIZE + 2;
+const PY = SECTION_HEIGHT + 2;
+const PZ = CHUNK_SIZE + 2;
 
 class Chunk {
     constructor(x, z) {
@@ -27,6 +31,34 @@ class Chunk {
     }
 }
 
+// Утилита для быстрой сборки геометрии без сборщика мусора
+class GeometryBuilder {
+    constructor(initialCapacity = 10000) {
+        this.positions = new Float32Array(initialCapacity * 3);
+        this.normals = new Float32Array(initialCapacity * 3);
+        this.uvs = new Float32Array(initialCapacity * 2);
+        this.colors = new Float32Array(initialCapacity * 3);
+        this.indices = new Uint32Array(initialCapacity * 1.5);
+        this.vCount = 0;
+        this.iCount = 0;
+        this.groups = [];
+    }
+
+    ensureCapacity(verticesToAdd, indicesToAdd) {
+        if ((this.vCount + verticesToAdd) * 3 >= this.positions.length) {
+            const newSize = this.positions.length * 2;
+            const p = new Float32Array(newSize), n = new Float32Array(newSize), c = new Float32Array(newSize), u = new Float32Array((newSize/3)*2);
+            p.set(this.positions); n.set(this.normals); c.set(this.colors); u.set(this.uvs);
+            this.positions = p; this.normals = n; this.colors = c; this.uvs = u;
+        }
+        if (this.iCount + indicesToAdd >= this.indices.length) {
+            const i = new Uint32Array(this.indices.length * 2);
+            i.set(this.indices);
+            this.indices = i;
+        }
+    }
+}
+
 class WorldRegion {
     constructor(rx, rz, world) {
         this.rx = rx;
@@ -37,9 +69,7 @@ class WorldRegion {
         this.sectionVisFrame = new Int32Array(SECTIONS_PER_CHUNK).fill(-1);
 
         this.sectionPassability = new Array(SECTIONS_PER_CHUNK).fill(null).map(() => ({
-            xp: true, xn: true,
-            yp: true, yn: true,
-            zp: true, zn: true
+            xp: true, xn: true, yp: true, yn: true, zp: true, zn: true
         }));
 
         this.needsUpdate = true;
@@ -52,13 +82,12 @@ class WorldRegion {
 
         for(let i=0; i < SECTIONS_PER_CHUNK; i++) {
             const centerY = (i * SECTION_HEIGHT) + (SECTION_HEIGHT / 2);
-            const center = new THREE.Vector3(
-                this.chunkX + CHUNK_SIZE/2,
-                centerY,
-                this.chunkZ + CHUNK_SIZE/2
-            );
-            this.sectionSpheres.push(new THREE.Sphere(center, radius + frustumPadding));
+            this.sectionSpheres.push(new THREE.Sphere(new THREE.Vector3(this.chunkX + CHUNK_SIZE/2, centerY, this.chunkZ + CHUNK_SIZE/2), radius + frustumPadding));
         }
+
+        // Переиспользуемые буферы для генерации
+        this.paddedCache = new Int32Array(PX * PY * PZ);
+        this.mask = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT);
     }
 
     dispose() {
@@ -77,22 +106,32 @@ class WorldRegion {
             if (chunk) {
                 for (let i = 0; i < SECTIONS_PER_CHUNK; i++) {
                     const exists = this.world.meshBuildQueue.find(t => t.region === this && t.sectionIndex === i);
-                    if (!exists) {
-                        this.world.meshBuildQueue.push({ region: this, sectionIndex: i, chunk: chunk });
-                    }
+                    if (!exists) this.world.meshBuildQueue.push({ region: this, sectionIndex: i, chunk: chunk });
                 }
             }
             this.needsUpdate = false;
         }
     }
 
-    generateAllSections() {
-        const chunk = this.world.getChunk(this.rx, this.rz);
-        if (!chunk) return;
-
-        for (let i = 0; i < SECTIONS_PER_CHUNK; i++) {
-            this.generateSection(i, chunk);
+    fillPaddedCache(startY) {
+        // Заполняем кэш секции + 1 блок вокруг. Это уберет тысячи проверок границ!
+        for (let y = -1; y <= SECTION_HEIGHT; y++) {
+            for (let z = -1; z <= CHUNK_SIZE; z++) {
+                for (let x = -1; x <= CHUNK_SIZE; x++) {
+                    const idx = (y + 1) * PX * PZ + (z + 1) * PX + (x + 1);
+                    this.paddedCache[idx] = this.world.getVoxel(this.chunkX + x, startY + y, this.chunkZ + z);
+                }
+            }
         }
+    }
+
+    getCacheVoxel(x, y, z) {
+        return this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
+    }
+
+    isCacheSolid(x, y, z) {
+        const v = this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
+        return v !== BLOCK.AIR && BLOCK.get(v).isSolid ? 1 : 0;
     }
 
     generateSection(sectionIndex, chunk) {
@@ -103,242 +142,128 @@ class WorldRegion {
         }
 
         const startY = sectionIndex * SECTION_HEIGHT;
-        const endY = startY + SECTION_HEIGHT;
+        this.fillPaddedCache(startY);
 
-        const positions = [], normals = [], uvs = [], indices = [], colors = [];
-        const geometry = new THREE.BufferGeometry();
-
-        const getTexture = (props, dir) => {
-            if (typeof props.texture !== 'object') return props.texture;
-            if (dir === 'top') return props.texture.top;
-            if (dir === 'bottom') return props.texture.bottom;
-            if (dir === 'front' && props.texture.front) return props.texture.front;
-            return props.texture.side;
-        };
-
+        const builder = new GeometryBuilder();
         const useAO = this.world.settings.get('ambientOcclusion');
 
-        // --- Calculate Passability ---
-        let solidXN = true, solidXP = true;
-        let solidYN = true, solidYP = true;
-        let solidZN = true, solidZP = true;
-
-        for(let x=0; x<CHUNK_SIZE; x++) {
-            for(let z=0; z<CHUNK_SIZE; z++) {
-                if (solidYN) {
-                    const id = chunk.getVoxel(x, startY, z);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidYN = false;
-                }
-                if (solidYP) {
-                    const id = chunk.getVoxel(x, endY - 1, z);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidYP = false;
-                }
-            }
-        }
-
-        for(let y=startY; y<endY; y++) {
-            for(let i=0; i<CHUNK_SIZE; i++) {
-                if (solidXN) {
-                    const id = chunk.getVoxel(0, y, i);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidXN = false;
-                }
-                if (solidXP) {
-                    const id = chunk.getVoxel(CHUNK_SIZE-1, y, i);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidXP = false;
-                }
-                if (solidZN) {
-                    const id = chunk.getVoxel(i, y, 0);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidZN = false;
-                }
-                if (solidZP) {
-                    const id = chunk.getVoxel(i, y, CHUNK_SIZE-1);
-                    if (id === BLOCK.AIR || BLOCK.get(id).isTransparent) solidZP = false;
-                }
-            }
-        }
-
-        this.sectionPassability[sectionIndex] = {
-            xn: !solidXN, xp: !solidXP,
-            yn: !solidYN, yp: !solidYP,
-            zn: !solidZN, zp: !solidZP
-        };
-
-        // --- Cache Voxel Data ---
-        const voxelCache = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT * CHUNK_SIZE);
-        for (let y = 0; y < SECTION_HEIGHT; y++) {
-            for (let z = 0; z < CHUNK_SIZE; z++) {
-                for (let x = 0; x < CHUNK_SIZE; x++) {
-                    voxelCache[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = chunk.getVoxel(x, startY + y, z);
-                }
-            }
-        }
-
-        const getLocalVoxel = (x, y, z) => {
-            if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= SECTION_HEIGHT || z < 0 || z >= CHUNK_SIZE) {
-                return this.world.getVoxel(this.chunkX + x, startY + y, this.chunkZ + z);
-            }
-            return voxelCache[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x];
-        };
-
-        const canMerge = (a, b) => {
-            if (!a || !b) return false;
-            if (a.voxel !== b.voxel) return false;
-            if (a.texName !== b.texName) return false;
-            if (!a.isUniform || !b.isUniform) return false;
-            if (a.ao[0] !== b.ao[0]) return false;
-            return true;
+        const getTextureIdx = (props, dir) => {
+            let texName = typeof props.texture !== 'object' ? props.texture : (dir === 'top' ? props.texture.top : (dir === 'bottom' ? props.texture.bottom : (dir === 'front' && props.texture.front ? props.texture.front : props.texture.side)));
+            return this.world.getMaterialIndex(texName);
         };
 
         const faces = [
-            {
-                dirName: 'side', normal: [1, 0, 0], axis: 0, sign: 1, uAxis: 2, vAxis: 1,
-                buildCorners: (w, h) => [[1, 0, 0], [1, h, 0], [1, 0, w], [1, h, w]],
-                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
-            },
-            {
-                dirName: 'side', normal: [-1, 0, 0], axis: 0, sign: -1, uAxis: 2, vAxis: 1,
-                buildCorners: (w, h) => [[0, 0, w], [0, h, w], [0, 0, 0], [0, h, 0]],
-                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
-            },
-            {
-                dirName: 'top', normal: [0, 1, 0], axis: 1, sign: 1, uAxis: 0, vAxis: 2,
-                buildCorners: (w, h) => [[0, 1, h], [w, 1, h], [0, 1, 0], [w, 1, 0]],
-                buildUVs: (w, h) => [0,0, w,0, 0,h, w,h]
-            },
-            {
-                dirName: 'bottom', normal: [0, -1, 0], axis: 1, sign: -1, uAxis: 0, vAxis: 2,
-                buildCorners: (w, h) => [[0, 0, 0], [w, 0, 0], [0, 0, h], [w, 0, h]],
-                buildUVs: (w, h) => [0,0, w,0, 0,h, w,h]
-            },
-            {
-                dirName: 'front', normal: [0, 0, 1], axis: 2, sign: 1, uAxis: 0, vAxis: 1,
-                buildCorners: (w, h) => [[w, 0, 1], [w, h, 1], [0, 0, 1], [0, h, 1]],
-                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
-            },
-            {
-                dirName: 'side', normal: [0, 0, -1], axis: 2, sign: -1, uAxis: 0, vAxis: 1,
-                buildCorners: (w, h) => [[0, 0, 0], [0, h, 0], [w, 0, 0], [w, h, 0]],
-                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
-            }
+            { dirName: 'side', n: [1, 0, 0], axis: 0, sign: 1, uAxis: 2, vAxis: 1, buildCorners: (w, h) => [[1, 0, 0], [1, h, 0], [1, 0, w], [1, h, w]], buildUVs: (w, h) => [0,0, 0,h, w,0, w,h] },
+            { dirName: 'side', n: [-1, 0, 0], axis: 0, sign: -1, uAxis: 2, vAxis: 1, buildCorners: (w, h) => [[0, 0, w], [0, h, w], [0, 0, 0], [0, h, 0]], buildUVs: (w, h) => [0,0, 0,h, w,0, w,h] },
+            { dirName: 'top', n: [0, 1, 0], axis: 1, sign: 1, uAxis: 0, vAxis: 2, buildCorners: (w, h) => [[0, 1, h], [w, 1, h], [0, 1, 0], [w, 1, 0]], buildUVs: (w, h) => [0,0, w,0, 0,h, w,h] },
+            { dirName: 'bottom', n: [0, -1, 0], axis: 1, sign: -1, uAxis: 0, vAxis: 2, buildCorners: (w, h) => [[0, 0, 0], [w, 0, 0], [0, 0, h], [w, 0, h]], buildUVs: (w, h) => [0,0, w,0, 0,h, w,h] },
+            { dirName: 'front', n: [0, 0, 1], axis: 2, sign: 1, uAxis: 0, vAxis: 1, buildCorners: (w, h) => [[w, 0, 1], [w, h, 1], [0, 0, 1], [0, h, 1]], buildUVs: (w, h) => [0,0, 0,h, w,0, w,h] },
+            { dirName: 'side', n: [0, 0, -1], axis: 2, sign: -1, uAxis: 0, vAxis: 1, buildCorners: (w, h) => [[0, 0, 0], [0, h, 0], [w, 0, 0], [w, h, 0]], buildUVs: (w, h) => [0,0, 0,h, w,0, w,h] }
         ];
 
-        const mask = new Array(CHUNK_SIZE * SECTION_HEIGHT).fill(null);
-
-        // --- Greedy Meshing ---
         for (const face of faces) {
             const uSize = face.uAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
             const vSize = face.vAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
             const dSize = face.axis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
 
             for (let d = 0; d < dSize; d++) {
-                mask.fill(null);
+                this.mask.fill(0); // 0 значит блок не рисуем
 
                 for (let v = 0; v < vSize; v++) {
                     for (let u = 0; u < uSize; u++) {
-                        let x = 0, y = 0, z = 0;
-                        if (face.axis === 0) x = d; else if (face.axis === 1) y = d; else z = d;
-                        if (face.uAxis === 0) x = u; else if (face.uAxis === 1) y = u; else z = u;
-                        if (face.vAxis === 0) x = v; else if (face.vAxis === 1) y = v; else z = v;
+                        let x = face.axis === 0 ? d : (face.uAxis === 0 ? u : v);
+                        let y = face.axis === 1 ? d : (face.uAxis === 1 ? u : v);
+                        let z = face.axis === 2 ? d : (face.uAxis === 2 ? u : v);
 
-                        const voxel = getLocalVoxel(x, y, z);
+                        const voxel = this.getCacheVoxel(x, y, z);
                         if (voxel === BLOCK.AIR) continue;
 
-                        let nx = x, ny = y, nz = z;
-                        if (face.axis === 0) nx += face.sign;
-                        else if (face.axis === 1) ny += face.sign;
-                        else nz += face.sign;
+                        let nx = x + (face.axis === 0 ? face.sign : 0);
+                        let ny = y + (face.axis === 1 ? face.sign : 0);
+                        let nz = z + (face.axis === 2 ? face.sign : 0);
 
-                        const neighborId = getLocalVoxel(nx, ny, nz);
-                        const neighborProps = BLOCK.get(neighborId);
-                        const blockProps = BLOCK.get(voxel);
+                        const neighborId = this.getCacheVoxel(nx, ny, nz);
+                        const nProps = BLOCK.get(neighborId);
+                        const bProps = BLOCK.get(voxel);
 
                         let draw = false;
-                        if (neighborId === BLOCK.AIR) {
-                            draw = true;
-                        } else if (neighborProps.isTransparent) {
-                            if (blockProps.isTransparent && voxel === neighborId) draw = false;
-                            else draw = true;
-                        }
+                        if (neighborId === BLOCK.AIR) draw = true;
+                        else if (nProps.isTransparent) draw = !(bProps.isTransparent && voxel === neighborId);
 
                         if (draw) {
-                            const texName = getTexture(blockProps, face.dirName);
-                            const wx = this.chunkX + x;
-                            const wy = startY + y;
-                            const wz = this.chunkZ + z;
-                            
-                            let baseLight = 1.0;
-                            if (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) baseLight = 0.6;
+                            const texIdx = getTextureIdx(bProps, face.dirName);
+                            let ao0=10, ao1=10, ao2=10, ao3=10;
 
-                            const ao = [baseLight, baseLight, baseLight, baseLight];
                             if (useAO) {
-                                for(let k=0; k<4; k++) {
-                                    ao[k] = baseLight * this.calculateVertexAO(wx, wy, wz, face.dirName, k);
-                                }
+                                let baseLight = (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) ? 6 : 10;
+                                ao0 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 0));
+                                ao1 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 1));
+                                ao2 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 2));
+                                ao3 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 3));
                             }
 
-                            mask[v * uSize + u] = { 
-                                voxel, texName, ao, 
-                                isUniform: ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3] 
-                            };
+                            // Пакуем данные в 32-bit Integer: 
+                            // [8 bit Voxel] | [8 bit TexIdx] | [16 bit AO Hash]
+                            const aoHash = (ao0) | (ao1 << 4) | (ao2 << 8) | (ao3 << 12);
+                            this.mask[v * uSize + u] = voxel | (texIdx << 8) | (aoHash << 16);
                         }
                     }
                 }
 
+                // Жадное объединение (Greedy Meshing)
                 for (let v = 0; v < vSize; v++) {
                     for (let u = 0; u < uSize; u++) {
-                        const index = v * uSize + u;
-                        const current = mask[index];
-                        if (current) {
-                            let w = 1;
-                            while (u + w < uSize && canMerge(current, mask[v * uSize + (u + w)])) {
-                                w++;
-                            }
+                        const maskVal = this.mask[v * uSize + u];
+                        if (maskVal !== 0) {
+                            let w = 1, h = 1;
 
-                            let h = 1;
+                            // Расширяем в ширину
+                            while (u + w < uSize && this.mask[v * uSize + (u + w)] === maskVal) w++;
+
+                            // Расширяем в высоту
                             let done = false;
                             while (v + h < vSize && !done) {
                                 for (let i = 0; i < w; i++) {
-                                    if (!canMerge(current, mask[(v + h) * uSize + (u + i)])) {
-                                        done = true;
-                                        break;
-                                    }
+                                    if (this.mask[(v + h) * uSize + (u + i)] !== maskVal) { done = true; break; }
                                 }
                                 if (!done) h++;
                             }
 
+                            // Очищаем маску
                             for (let j = 0; j < h; j++) {
-                                for (let i = 0; i < w; i++) {
-                                    mask[(v + j) * uSize + (u + i)] = null;
-                                }
+                                for (let i = 0; i < w; i++) this.mask[(v + j) * uSize + (u + i)] = 0;
                             }
 
-                            let x = 0, y = 0, z = 0;
-                            if (face.axis === 0) x = d; else if (face.axis === 1) y = d; else z = d;
-                            if (face.uAxis === 0) x = u; else if (face.uAxis === 1) y = u; else z = u;
-                            if (face.vAxis === 0) x = v; else if (face.vAxis === 1) y = v; else z = v;
+                            let x = face.axis === 0 ? d : (face.uAxis === 0 ? u : v);
+                            let y = face.axis === 1 ? d : (face.uAxis === 1 ? u : v);
+                            let z = face.axis === 2 ? d : (face.uAxis === 2 ? u : v);
 
                             const wx = this.chunkX + x;
                             const wy = startY + y;
                             const wz = this.chunkZ + z;
-
-                            const corners = face.buildCorners(w, h);
-                            const uvCoords = face.buildUVs(w, h);
                             
-                            this.addFace(positions, normals, uvs, colors, indices, wx, wy, wz, face.normal, corners, uvCoords, current.texName, current.ao, geometry);
+                            // Распаковываем
+                            const texIdx = (maskVal >> 8) & 0xFF;
+                            const aoHash = (maskVal >> 16) & 0xFFFF;
+                            const ao = [ (aoHash & 0xF)/10, ((aoHash>>4) & 0xF)/10, ((aoHash>>8) & 0xF)/10, ((aoHash>>12) & 0xF)/10 ];
+
+                            this.addFacePacked(builder, wx, wy, wz, face.n, face.buildCorners(w, h), face.buildUVs(w, h), texIdx, ao);
                         }
                     }
                 }
             }
         }
 
-        if (positions.length === 0) return;
+        if (builder.vCount === 0) return;
 
-        geometry.setAttribute('position', new THREE.Float32BufferAttribute(positions, 3));
-        geometry.setAttribute('normal', new THREE.Float32BufferAttribute(normals, 3));
-        geometry.setAttribute('uv', new THREE.Float32BufferAttribute(uvs, 2));
-        geometry.setAttribute('color', new THREE.Float32BufferAttribute(colors, 3));
-        geometry.setIndex(indices);
-
+        const geometry = new THREE.BufferGeometry();
+        geometry.setAttribute('position', new THREE.BufferAttribute(builder.positions.subarray(0, builder.vCount * 3), 3));
+        geometry.setAttribute('normal', new THREE.BufferAttribute(builder.normals.subarray(0, builder.vCount * 3), 3));
+        geometry.setAttribute('uv', new THREE.BufferAttribute(builder.uvs.subarray(0, builder.vCount * 2), 2));
+        geometry.setAttribute('color', new THREE.BufferAttribute(builder.colors.subarray(0, builder.vCount * 3), 3));
+        geometry.setIndex(new THREE.BufferAttribute(builder.indices.subarray(0, builder.iCount), 1));
+        
+        for(let g of builder.groups) geometry.addGroup(g.start, g.count, g.mat);
         geometry.boundingSphere = this.sectionSpheres[sectionIndex].clone();
 
         const mesh = new THREE.Mesh(geometry, this.world.materials);
@@ -352,65 +277,66 @@ class WorldRegion {
         this.sections[sectionIndex] = mesh;
     }
 
-    calculateVertexAO(x, y, z, dir, vIdx) {
-        const s = (dx, dy, dz) => this.world.isSolid(x+dx, y+dy, z+dz) ? 0 : 1;
-        let side1=1, side2=1, corner=1;
+    calcAO(x, y, z, dir, vIdx) {
+        const s = (dx, dy, dz) => this.isCacheSolid(x+dx, y+dy, z+dz) ? 1 : 0;
+        let s1=0, s2=0, c=0;
 
         if (dir === 'top') {
-             if (vIdx===0) { side1=s(-1,1,0); side2=s(0,1,1); corner=s(-1,1,1); }
-             if (vIdx===1) { side1=s(1,1,0); side2=s(0,1,1); corner=s(1,1,1); }
-             if (vIdx===2) { side1=s(-1,1,0); side2=s(0,1,-1); corner=s(-1,1,-1); }
-             if (vIdx===3) { side1=s(1,1,0); side2=s(0,1,-1); corner=s(1,1,-1); }
-        }
-        else if (dir === 'bottom') {
-             if (vIdx===0) { side1=s(-1,-1,0); side2=s(0,-1,-1); corner=s(-1,-1,-1); }
-             if (vIdx===1) { side1=s(1,-1,0); side2=s(0,-1,-1); corner=s(1,-1,-1); }
-             if (vIdx===2) { side1=s(-1,-1,0); side2=s(0,-1,1); corner=s(-1,-1,1); }
-             if (vIdx===3) { side1=s(1,-1,0); side2=s(0,-1,1); corner=s(1,-1,1); }
-        }
-        else if (dir === 'front') {
-             if (vIdx===0) { side1=s(1,0,1); side2=s(0,1,1); corner=s(1,1,1); }
-             if (vIdx===1) { side1=s(1,0,1); side2=s(0,-1,1); corner=s(1,-1,1); }
-             if (vIdx===2) { side1=s(-1,0,1); side2=s(0,1,1); corner=s(-1,1,1); }
-             if (vIdx===3) { side1=s(-1,0,1); side2=s(0,-1,1); corner=s(-1,-1,1); }
-        }
-        else if (dir === 'side') {
-            if(this.world.isSolid(x, y+1, z)) return 0.6;
+             if (vIdx===0) { s1=s(-1,1,0); s2=s(0,1,1); c=s(-1,1,1); }
+             else if (vIdx===1) { s1=s(1,1,0); s2=s(0,1,1); c=s(1,1,1); }
+             else if (vIdx===2) { s1=s(-1,1,0); s2=s(0,1,-1); c=s(-1,1,-1); }
+             else if (vIdx===3) { s1=s(1,1,0); s2=s(0,1,-1); c=s(1,1,-1); }
+        } else if (dir === 'bottom') {
+             if (vIdx===0) { s1=s(-1,-1,0); s2=s(0,-1,-1); c=s(-1,-1,-1); }
+             else if (vIdx===1) { s1=s(1,-1,0); s2=s(0,-1,-1); c=s(1,-1,-1); }
+             else if (vIdx===2) { s1=s(-1,-1,0); s2=s(0,-1,1); c=s(-1,-1,1); }
+             else if (vIdx===3) { s1=s(1,-1,0); s2=s(0,-1,1); c=s(1,-1,1); }
+        } else if (dir === 'front') {
+             if (vIdx===0) { s1=s(1,0,1); s2=s(0,1,1); c=s(1,1,1); }
+             else if (vIdx===1) { s1=s(1,0,1); s2=s(0,-1,1); c=s(1,-1,1); }
+             else if (vIdx===2) { s1=s(-1,0,1); s2=s(0,1,1); c=s(-1,1,1); }
+             else if (vIdx===3) { s1=s(-1,0,1); s2=s(0,-1,1); c=s(-1,-1,1); }
+        } else if (dir === 'side') {
+            if(this.isCacheSolid(x, y+1, z)) return 0.6;
         }
 
-        const val = side1 + side2 + corner;
-        if (val === 3) return 1.0;
-        if (val === 2) return 0.8;
-        if (val === 1) return 0.6;
-        return 0.5;
+        if (s1 && s2) return 0.5;
+        return 1.0 - (s1 + s2 + c) * 0.2;
     }
 
-    addFace(posArr, normArr, uvArr, colArr, idxArr, wx, y, wz, dir, corners, uvs, texName, vertexLights, geo) {
-        const ndx = posArr.length / 3;
-
+    addFacePacked(builder, wx, y, wz, n, corners, uvs, matIdx, ao) {
+        builder.ensureCapacity(4, 6);
+        const vBase = builder.vCount;
+        let pIdx = vBase * 3, uIdx = vBase * 2;
+        
         let sideDim = 1.0;
-        if(dir[0] !== 0) sideDim = 0.8;
-        if(dir[2] !== 0) sideDim = 0.7;
-        if(dir[1] < 0) sideDim = 0.5;
+        if(n[0] !== 0) sideDim = 0.8;
+        else if(n[2] !== 0) sideDim = 0.7;
+        else if(n[1] < 0) sideDim = 0.5;
 
-        for (let i = 0; i < corners.length; i++) {
-            const c = corners[i];
-            posArr.push(c[0] + wx, c[1] + y, c[2] + wz);
-            normArr.push(...dir);
-
-            const l = vertexLights[i] * sideDim;
-            colArr.push(l, l, l);
+        for (let i = 0; i < 4; i++) {
+            builder.positions[pIdx] = corners[i][0] + wx;
+            builder.positions[pIdx+1] = corners[i][1] + y;
+            builder.positions[pIdx+2] = corners[i][2] + wz;
+            builder.normals[pIdx] = n[0]; builder.normals[pIdx+1] = n[1]; builder.normals[pIdx+2] = n[2];
+            
+            const l = ao[i] * sideDim;
+            builder.colors[pIdx] = l; builder.colors[pIdx+1] = l; builder.colors[pIdx+2] = l;
+            
+            builder.uvs[uIdx] = uvs[i*2]; builder.uvs[uIdx+1] = uvs[i*2+1];
+            pIdx += 3; uIdx += 2;
         }
-        uvArr.push(...uvs);
-        idxArr.push(ndx, ndx + 1, ndx + 2, ndx + 2, ndx + 1, ndx + 3);
 
-        const matIndex = this.world.getMaterialIndex(texName);
-        const lastGroup = geo.groups[geo.groups.length - 1];
-        if (!lastGroup || lastGroup.materialIndex !== matIndex) {
-            geo.addGroup(idxArr.length - 6, 6, matIndex);
-        } else {
-            lastGroup.count += 6;
-        }
+        let iIdx = builder.iCount;
+        builder.indices[iIdx] = vBase; builder.indices[iIdx+1] = vBase+1; builder.indices[iIdx+2] = vBase+2;
+        builder.indices[iIdx+3] = vBase+2; builder.indices[iIdx+4] = vBase+1; builder.indices[iIdx+5] = vBase+3;
+
+        builder.vCount += 4;
+        builder.iCount += 6;
+
+        let g = builder.groups;
+        if (g.length === 0 || g[g.length-1].mat !== matIdx) g.push({ start: iIdx, count: 6, mat: matIdx });
+        else g[g.length-1].count += 6;
     }
 }
 
@@ -425,7 +351,6 @@ export class World {
         this.regions = {};
         this.gpuGenerator = new GPUWorldGenerator(renderer, this.seed);
         this.caveNoise = new SimplexNoise(this.seed);
-
         this.textureGenerator = new TextureGenerator();
         this.materials = [];
         this.materialMap = {};
@@ -433,7 +358,6 @@ export class World {
 
         this.frustum = new THREE.Frustum();
         this.projScreenMatrix = new THREE.Matrix4();
-
         this.fallingBlocks = [];
         this.cullFrameId = 0;
         this.meshBuildQueue = [];
@@ -445,38 +369,18 @@ export class World {
         for (const k in BLOCK.properties) {
             const p = BLOCK.properties[k];
             if (!p.texture) continue;
-
-            const arr = [];
-            if (typeof p.texture === 'object') {
-                if(p.texture.top) arr.push(p.texture.top);
-                if(p.texture.bottom) arr.push(p.texture.bottom);
-                if(p.texture.side) arr.push(p.texture.side);
-                if(p.texture.front) arr.push(p.texture.front);
-            } else {
-                arr.push(p.texture);
-            }
+            const arr = typeof p.texture === 'object' ? [p.texture.top, p.texture.bottom, p.texture.side, p.texture.front].filter(Boolean) : [p.texture];
 
             arr.forEach(genKey => {
                 if (!processed.has(genKey)) {
                     processed.add(genKey);
                     const texture = this.textureGenerator.generate(genKey);
+                    texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
+                    const isTrans = p.isTransparent || genKey.includes('glass') || genKey.includes('leaves') || genKey.includes('water');
                     
-                    // --- ОБЯЗАТЕЛЬНО ДЛЯ GREEDY MESHING ---
-                    // Позволяет тайлить текстуру для огромных полигонов
-                    texture.wrapS = THREE.RepeatWrapping;
-                    texture.wrapT = THREE.RepeatWrapping;
-
-                    const isTransparent = p.isTransparent || genKey.includes('glass') || genKey.includes('leaves') || genKey.includes('water');
-
-                    const mat = new THREE.MeshLambertMaterial({
-                        map: texture,
-                        transparent: isTransparent,
-                        alphaTest: isTransparent ? 0.3 : 0,
-                        side: THREE.FrontSide,
-                        vertexColors: true
-                    });
-
-                    this.materials.push(mat);
+                    this.materials.push(new THREE.MeshLambertMaterial({
+                        map: texture, transparent: isTrans, alphaTest: isTrans ? 0.3 : 0, side: THREE.FrontSide, vertexColors: true
+                    }));
                     this.materialMap[genKey] = mi++;
                 }
             });
@@ -492,8 +396,7 @@ export class World {
     getVoxel(x, y, z) {
         const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
         let c = this.getChunk(cx, cz);
-        if (!c) return 0;
-        return c.getVoxel(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE);
+        return c ? c.getVoxel(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE) : 0;
     }
 
     getTerrainHeight(x, z) {
@@ -513,70 +416,43 @@ export class World {
         let c = this.getChunk(cx, cz);
         if (!c) c = this.generateChunkData(cx, cz);
 
-        const lx = x - cx * CHUNK_SIZE;
-        const lz = z - cz * CHUNK_SIZE;
+        const lx = x - cx * CHUNK_SIZE, lz = z - cz * CHUNK_SIZE;
         c.setVoxel(lx, y, lz, v);
 
-        const r = this.getRegion(cx, cz);
-        if (r) r.needsUpdate = true;
-
-        if (lx === 0) { const nr = this.getRegion(cx - 1, cz); if(nr) nr.needsUpdate = true; }
-        if (lx === CHUNK_SIZE - 1) { const nr = this.getRegion(cx + 1, cz); if(nr) nr.needsUpdate = true; }
-        if (lz === 0) { const nr = this.getRegion(cx, cz - 1); if(nr) nr.needsUpdate = true; }
-        if (lz === CHUNK_SIZE - 1) { const nr = this.getRegion(cx, cz + 1); if(nr) nr.needsUpdate = true; }
+        const flagUpdate = (dx, dz) => { const r = this.getRegion(cx+dx, cz+dz); if(r) r.needsUpdate = true; };
+        flagUpdate(0,0);
+        if (lx === 0) flagUpdate(-1,0); if (lx === CHUNK_SIZE - 1) flagUpdate(1,0);
+        if (lz === 0) flagUpdate(0,-1); if (lz === CHUNK_SIZE - 1) flagUpdate(0,1);
 
         if(v === BLOCK.AIR) {
             const above = this.getVoxel(x, y+1, z);
             if(BLOCK.get(above).falling) this.spawnFallingBlock(x, y+1, z, above);
-        } else if (BLOCK.get(v).falling) {
-            this.spawnFallingBlock(x, y, z, v);
-        }
+        } else if (BLOCK.get(v).falling) this.spawnFallingBlock(x, y, z, v);
     }
 
     spawnFallingBlock(x, y, z, id) {
         if (this.fallingBlocks.some(b => Math.abs(b.mesh.position.x - (x+0.5)) < 0.1 && Math.abs(b.mesh.position.z - (z+0.5)) < 0.1 && Math.abs(b.mesh.position.y - (y+0.5)) < 0.5)) return;
-
-        const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
-        const c = this.getChunk(cx, cz);
-        if(c) {
-            c.setVoxel(x - cx*CHUNK_SIZE, y, z - cz*CHUNK_SIZE, BLOCK.AIR);
-            const r = this.getRegion(cx, cz);
-            if(r) r.needsUpdate = true;
-        }
-
+        this.setVoxel(x, y, z, BLOCK.AIR);
+        
         const props = BLOCK.get(id);
-        const texture = this.textureGenerator.generate(typeof props.texture === 'object' ? props.texture.side : props.texture);
-        const mat = new THREE.MeshLambertMaterial({ map: texture });
-        const geo = new THREE.BoxGeometry(0.98, 0.98, 0.98);
-        const mesh = new THREE.Mesh(geo, mat);
-
+        const tex = this.textureGenerator.generate(typeof props.texture === 'object' ? props.texture.side : props.texture);
+        const mesh = new THREE.Mesh(new THREE.BoxGeometry(0.98, 0.98, 0.98), new THREE.MeshLambertMaterial({ map: tex }));
         mesh.position.set(x + 0.5, y + 0.5, z + 0.5);
         mesh.castShadow = true;
         this.scene.add(mesh);
-
         this.fallingBlocks.push({ mesh: mesh, id: id, velocity: 0 });
     }
 
     updateFallingBlocks(dt) {
-        if (this.fallingBlocks.length === 0) return;
-
         for (let i = this.fallingBlocks.length - 1; i >= 0; i--) {
             const fb = this.fallingBlocks[i];
-
             fb.velocity -= 20 * dt;
             fb.mesh.position.y += fb.velocity * dt;
 
-            const gridY = Math.floor(fb.mesh.position.y - 0.5);
-            const gridX = Math.floor(fb.mesh.position.x);
-            const gridZ = Math.floor(fb.mesh.position.z);
-
+            const gridY = Math.floor(fb.mesh.position.y - 0.5), gridX = Math.floor(fb.mesh.position.x), gridZ = Math.floor(fb.mesh.position.z);
             if (gridY < 0 || this.isSolid(gridX, gridY, gridZ)) {
-                const targetY = gridY + 1;
-                this.scene.remove(fb.mesh);
-                fb.mesh.geometry.dispose();
-                fb.mesh.material.dispose();
-
-                this.setVoxel(gridX, targetY, gridZ, fb.id);
+                this.scene.remove(fb.mesh); fb.mesh.geometry.dispose(); fb.mesh.material.dispose();
+                this.setVoxel(gridX, gridY + 1, gridZ, fb.id);
                 this.fallingBlocks.splice(i, 1);
             }
         }
@@ -596,7 +472,6 @@ export class World {
     generateChunkData(cx, cz) {
         const k = this.getChunkKey(cx, cz);
         if (this.chunks[k]) return this.chunks[k];
-
         const c = new Chunk(cx, cz);
         this.chunks[k] = c;
 
@@ -610,20 +485,17 @@ export class World {
                 if (y === 0) c.setVoxel(x, y, z, BLOCK.BEDROCK);
                 else if (y < h) {
                     const cave = (this.caveNoise.noise3D(wx * 0.03, y * 0.045, wz * 0.03) + 1) / 2;
-                    if (y > 2 && y < h - 4 && cave > 0.6) {
-                        c.setVoxel(x, y, z, BLOCK.AIR);
-                    } else if (y < h - 4) {
-                        c.setVoxel(x, y, z, BLOCK.STONE);
-                    } else {
-                        c.setVoxel(x, y, z, BLOCK.DIRT);
-                    }
-                } else if (y === h && c.getVoxel(x, y - 1, z) !== BLOCK.AIR) {
-                    c.setVoxel(x, y, z, BLOCK.GRASS);
-                }
+                    if (y > 2 && y < h - 4 && cave > 0.6) c.setVoxel(x, y, z, BLOCK.AIR);
+                    else if (y < h - 4) c.setVoxel(x, y, z, BLOCK.STONE);
+                    else c.setVoxel(x, y, z, BLOCK.DIRT);
+                } else if (y === h && c.getVoxel(x, y - 1, z) !== BLOCK.AIR) c.setVoxel(x, y, z, BLOCK.GRASS);
             }
-            if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > 45 && Math.random() > 0.98 && x > 2 && x < 14 && z > 2 && z < 14) this.placeTree(c, x, h + 1, z);
+            if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > 45 && Math.random() > 0.98 && x > 2 && x < 14 && z > 2 && z < 14) {
+                for (let i = 0; i < 5; i++) if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
+                for (let dx = -2; dx <= 2; dx++) for (let dy = 2; dy <= 5; dy++) for (let dz = -2; dz <= 2; dz++)
+                    if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) if (c.getVoxel(x + dx, h + 1 + dy, z + dz) === BLOCK.AIR) c.setVoxel(x + dx, h + 1 + dy, z + dz, BLOCK.OAK_LEAVES);
+            }
         }
-
         for (let x = 0; x < CHUNK_SIZE; x++) for (let z = 0; z < CHUNK_SIZE; z++) for (let y = 1; y < WORLD_HEIGHT - 5; y++) {
             if (c.getVoxel(x, y, z) === BLOCK.STONE) {
                 if (Math.random() < 0.006) this.generateVein(c, x, y, z, BLOCK.COAL_ORE, Math.floor(Math.random() * 4) + 2);
@@ -633,29 +505,16 @@ export class World {
         return c;
     }
 
-    placeTree(c, x, y, z) {
-        for (let i = 0; i < 5; i++) if (y + i < WORLD_HEIGHT) c.setVoxel(x, y + i, z, BLOCK.OAK_LOG);
-        for (let dx = -2; dx <= 2; dx++) for (let dy = 2; dy <= 5; dy++) for (let dz = -2; dz <= 2; dz++)
-            if (y + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) if (c.getVoxel(x + dx, y + dy, z + dz) === BLOCK.AIR) c.setVoxel(x + dx, y + dy, z + dz, BLOCK.OAK_LEAVES);
-    }
-
     generate() { this.updateChunks(new THREE.Vector3(0, 0, 0)); }
 
     updateChunks(p) {
-        let rdSetting = this.settings ? this.settings.get('renderDistance') : 4;
-        let radius = rdSetting - 1;
-        if (radius < 0) radius = 0;
-
-        const pcx = Math.floor(p.x / CHUNK_SIZE);
-        const pcz = Math.floor(p.z / CHUNK_SIZE);
-
+        const radius = Math.max(0, (this.settings ? this.settings.get('renderDistance') : 4) - 1);
+        const pcx = Math.floor(p.x / CHUNK_SIZE), pcz = Math.floor(p.z / CHUNK_SIZE);
         const v = new Set();
 
         for (let x = -radius; x <= radius; x++) {
             for (let z = -radius; z <= radius; z++) {
-                const targetCx = pcx + x;
-                const targetCz = pcz + z;
-
+                const targetCx = pcx + x, targetCz = pcz + z;
                 const regionKey = this.getRegionKey(targetCx, targetCz);
                 v.add(regionKey);
 
@@ -664,20 +523,16 @@ export class World {
                     this.generateChunkData(targetCx, targetCz);
                     this.regions[regionKey].needsUpdate = true;
 
-                    const checkAndDirty = (dx, dz) => {
-                        const nk = this.getRegionKey(targetCx + dx, targetCz + dz);
-                        if(this.regions[nk]) this.regions[nk].needsUpdate = true;
-                    };
-                    checkAndDirty(1, 0); checkAndDirty(-1, 0); checkAndDirty(0, 1); checkAndDirty(0, -1);
+                    const flagUpdate = (dx, dz) => { const nk = this.getRegionKey(targetCx + dx, targetCz + dz); if(this.regions[nk]) this.regions[nk].needsUpdate = true; };
+                    flagUpdate(1, 0); flagUpdate(-1, 0); flagUpdate(0, 1); flagUpdate(0, -1);
                 }
             }
         }
 
         for (let k in this.regions) {
             if (!v.has(k)) {
-                const reg = this.regions[k];
-                reg.dispose();
-                this.meshBuildQueue = this.meshBuildQueue.filter(task => task.region !== reg);
+                this.regions[k].dispose();
+                this.meshBuildQueue = this.meshBuildQueue.filter(task => task.region !== this.regions[k]);
                 delete this.regions[k];
             }
         }
@@ -686,9 +541,8 @@ export class World {
     update(p, camera) {
         this.updateFallingBlocks(1/30);
 
-        const MAX_BUILDS_PER_FRAME = 2;
         let builds = 0;
-        while (this.meshBuildQueue.length > 0 && builds < MAX_BUILDS_PER_FRAME) {
+        while (this.meshBuildQueue.length > 0 && builds < 2) {
             const task = this.meshBuildQueue.shift();
             if (this.regions[task.region.rx + ',' + task.region.rz] === task.region) {
                 task.region.generateSection(task.sectionIndex, task.chunk);
@@ -704,96 +558,53 @@ export class World {
         }
 
         const regionKeys = Object.keys(this.regions);
+        for (let k of regionKeys) this.regions[k].checkUpdates();
+
+        // Сброс видимости
         for (let k of regionKeys) {
-            this.regions[k].checkUpdates();
+            for (let i=0; i<SECTIONS_PER_CHUNK; i++) if(this.regions[k].sections[i]) this.regions[k].sections[i].visible = false;
         }
 
-        // --- OPTIMIZED BFS CULLING ---
-        for (let k of regionKeys) {
-            const r = this.regions[k];
-            for (let i=0; i<SECTIONS_PER_CHUNK; i++) {
-                if(r.sections[i]) r.sections[i].visible = false;
-            }
-        }
-
-        const pcx = Math.floor(p.x / CHUNK_SIZE);
-        const pcz = Math.floor(p.z / CHUNK_SIZE);
-        const pcy = Math.floor(p.y / SECTION_HEIGHT);
-
-        const startKey = this.getRegionKey(pcx, pcz);
-        const startRegion = this.regions[startKey];
-
+        const pcx = Math.floor(p.x / CHUNK_SIZE), pcz = Math.floor(p.z / CHUNK_SIZE), pcy = Math.floor(p.y / SECTION_HEIGHT);
+        const startRegion = this.regions[this.getRegionKey(pcx, pcz)];
         if (!startRegion) return;
 
         this.cullFrameId++;
-        const queue = [];
-        const rd = this.settings ? this.settings.get('renderDistance') : 4;
-
+        const queue = [], rd = this.settings ? this.settings.get('renderDistance') : 4;
         const safeY = Math.max(0, Math.min(SECTIONS_PER_CHUNK-1, pcy));
 
         startRegion.sectionVisFrame[safeY] = this.cullFrameId;
         queue.push({ r: startRegion, y: safeY, rx: pcx, rz: pcz });
 
-        const checkNeighbor = (curr, dx, dy, dz, boundaryFaceName) => {
-            const nx = curr.rx + dx;
-            const ny = curr.y + dy;
-            const nz = curr.rz + dz;
+        const checkNeighbor = (curr, dx, dy, dz, face) => {
+            const nx = curr.rx + dx, ny = curr.y + dy, nz = curr.rz + dz;
+            if (ny < 0 || ny >= SECTIONS_PER_CHUNK || Math.abs(nx - pcx) > rd || Math.abs(nz - pcz) > rd) return;
+            const nR = this.regions[this.getRegionKey(nx, nz)];
+            if (!nR || nR.sectionVisFrame[ny] === this.cullFrameId) return;
+            if (!this.frustum.intersectsSphere(nR.sectionSpheres[ny])) return;
+            if (!curr.r.sectionPassability[curr.y][face]) return;
 
-            if (ny < 0 || ny >= SECTIONS_PER_CHUNK) return;
-            if (Math.abs(nx - pcx) > rd || Math.abs(nz - pcz) > rd) return;
-
-            const nKey = this.getRegionKey(nx, nz);
-            const nRegion = this.regions[nKey];
-
-            if (!nRegion) return;
-            if (nRegion.sectionVisFrame[ny] === this.cullFrameId) return;
-
-            let inFrustum = true;
-            inFrustum = this.frustum.intersectsSphere(nRegion.sectionSpheres[ny]);
-
-            if (!inFrustum) return;
-
-            const pass = curr.r.sectionPassability[curr.y][boundaryFaceName];
-            if (!pass) return;
-
-            nRegion.sectionVisFrame[ny] = this.cullFrameId;
-            queue.push({ r: nRegion, y: ny, rx: nx, rz: nz });
+            nR.sectionVisFrame[ny] = this.cullFrameId;
+            queue.push({ r: nR, y: ny, rx: nx, rz: nz });
         };
 
         let head = 0;
         while(head < queue.length) {
             const curr = queue[head++];
+            if (curr.r.sections[curr.y]) curr.r.sections[curr.y].visible = true;
 
-            if (curr.r.sections[curr.y]) {
-                curr.r.sections[curr.y].visible = true;
-            }
-
-            checkNeighbor(curr, 1, 0, 0, 'xp');
-            checkNeighbor(curr, -1, 0, 0, 'xn');
-            checkNeighbor(curr, 0, 1, 0, 'yp');
-            checkNeighbor(curr, 0, -1, 0, 'yn');
-            checkNeighbor(curr, 0, 0, 1, 'zp');
-            checkNeighbor(curr, 0, 0, -1, 'zn');
+            checkNeighbor(curr, 1, 0, 0, 'xp'); checkNeighbor(curr, -1, 0, 0, 'xn');
+            checkNeighbor(curr, 0, 1, 0, 'yp'); checkNeighbor(curr, 0, -1, 0, 'yn');
+            checkNeighbor(curr, 0, 0, 1, 'zp'); checkNeighbor(curr, 0, 0, -1, 'zn');
         }
     }
 
     getStats() {
-        let totalTriangles = 0;
-        let visibleSections = 0;
-        for (const k in this.regions) {
-            const r = this.regions[k];
-            for (const s of r.sections) {
-                if (s && s.geometry) {
-                    totalTriangles += s.geometry.attributes.position.count / 3;
-                    if(s.visible) visibleSections++;
-                }
-            }
+        let tris = 0, vis = 0;
+        for (const k in this.regions) for (const s of this.regions[k].sections) {
+            if (s && s.geometry) { tris += s.geometry.attributes.position.count / 3; if(s.visible) vis++; }
         }
-        return {
-            chunks: Object.keys(this.chunks).length,
-            regions: Object.keys(this.regions).length,
-            totalTriangles: totalTriangles
-        };
+        return { chunks: Object.keys(this.chunks).length, regions: Object.keys(this.regions).length, totalTriangles: tris };
     }
 
     getData() { const d = {}; for (const k in this.chunks) d[k] = Array.from(this.chunks[k].data); return { seed: this.seed, chunks: d }; }
