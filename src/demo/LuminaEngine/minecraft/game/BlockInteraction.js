@@ -166,7 +166,8 @@ export class BlockInteraction extends Component {
 
         for (let i = 0; i < this.reach * 2; i++) {
             const blockId = this.world.getVoxel(x, y, z);
-            if (blockId !== BLOCK.AIR) {
+            
+            if (blockId !== BLOCK.AIR && blockId !== BLOCK.WATER) {
                 if (Math.sqrt((x+0.5-start.x)**2 + (y+0.5-start.y)**2 + (z+0.5-start.z)**2) > this.reach) break;
                 this.targetBlock = { x, y, z };
                 this.placePosition = { x, y, z };
@@ -175,6 +176,7 @@ export class BlockInteraction extends Component {
                 else if (lastSide === 2) this.placePosition.z -= stepZ;
                 return;
             }
+            
             if (tMaxX < tMaxY) {
                 if (tMaxX < tMaxZ) { x += stepX; tMaxX += tDeltaX; lastSide = 0; } else { z += stepZ; tMaxZ += tDeltaZ; lastSide = 2; }
             } else {

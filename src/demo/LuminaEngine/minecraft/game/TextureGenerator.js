@@ -13,40 +13,34 @@ export class TextureGenerator {
         const ctx = this.ctx;
         const w = this.size;
         
-        // Очистка
         ctx.clearRect(0, 0, w, w);
         const name = type.replace('gen:', '');
 
-        // Хелпер для фона с шумом (делает материал реалистичным)
         const baseNoise = (color, intensity = 10) => this.fillWithNoise(ctx, color, intensity);
 
         switch (name) {
             // --- BLOCKS ---
-
             case 'stone': 
-                // Камень: база с шумом + процедурные вкрапления
                 baseNoise('#7d7d7d', 15);
-                this.speckle(ctx, '#555555', 8); // Темные пятна
-                this.speckle(ctx, '#999999', 4); // Светлые пятна
+                this.speckle(ctx, '#555555', 8); 
+                this.speckle(ctx, '#999999', 4); 
                 break;
 
             case 'dirt': 
-                baseNoise('#5d4037', 20); // Более насыщенный коричневый
+                baseNoise('#5d4037', 20);
                 this.speckle(ctx, '#3e2723', 10);
                 this.speckle(ctx, '#8d6e63', 5);
                 break;
             
             case 'grass_top': 
-                baseNoise('#4caf50', 25); // Яркая зелень
-                this.speckle(ctx, '#2e7d32', 15); // Темная трава
-                this.speckle(ctx, '#81c784', 8);  // Светлая трава
+                baseNoise('#4caf50', 25);
+                this.speckle(ctx, '#2e7d32', 15);
+                this.speckle(ctx, '#81c784', 8);
                 break;
             
             case 'grass_side':
-                // Сначала рисуем землю
                 baseNoise('#5d4037', 20);
                 this.speckle(ctx, '#3e2723', 6);
-                // Сверху трава с "подтеками"
                 this.paint(ctx, [
                     "GGGGGGGGGGGGGGGG",
                     "GGGGGGGGGGGGGGGG",
@@ -55,7 +49,6 @@ export class TextureGenerator {
                     "G  GG   G G   G ",
                     "   G          G "
                 ], { 'G': '#4caf50' });
-                // Добавим шум на траву сверху, чтобы не была плоской
                 this.noiseOverlay(ctx, 0, 0, 16, 4, 0.2); 
                 break;
 
@@ -79,8 +72,7 @@ export class TextureGenerator {
             ], { '0': '#505050', '1': '#757575', '2': '#909090' }); break;
 
             case 'planks': 
-                // Дерево с более теплыми тонами и выделенными досками
-                baseNoise('#a1887f', 5); // Подложка
+                baseNoise('#a1887f', 5);
                 this.paint(ctx, [
                     "AAAAABAAAAABAAAA",
                     "CCCCCCCCCCCCCCCC",
@@ -99,20 +91,19 @@ export class TextureGenerator {
                     "0000000000000000",
                     "ABAAAAABAAAAABAA"
                 ], { 
-                    'A': '#d7ccc8', // Светлые волокна
-                    'B': '#a1887f', // Основной цвет
-                    'C': '#8d6e63', // Тень доски
-                    '0': '#5d4037'  // Щели между досками
+                    'A': '#d7ccc8',
+                    'B': '#a1887f',
+                    'C': '#8d6e63',
+                    '0': '#5d4037' 
                 }); 
                 break;
 
             case 'log_side': 
-                // Вертикальная текстура коры
                 baseNoise('#5d4037', 10);
                 for(let i=0; i<8; i++) {
                     let x = Math.floor(Math.random()*16);
                     ctx.fillStyle = '#3e2723';
-                    ctx.fillRect(x, 0, 1, 16); // Темные прожилки
+                    ctx.fillRect(x, 0, 1, 16);
                 }
                 break;
 
@@ -145,27 +136,36 @@ export class TextureGenerator {
                 break;
             
             case 'sand': 
-                baseNoise('#e6ddc5', 15); // Песочный
+                baseNoise('#e6ddc5', 15);
                 this.speckle(ctx, '#dccca3', 10);
                 break;
             
             case 'gravel': 
                 baseNoise('#9e9e9e', 20);
-                this.speckle(ctx, '#616161', 12); // Камешки
+                this.speckle(ctx, '#616161', 12);
                 this.speckle(ctx, '#bdbdbd', 8);
                 break;
             
             case 'leaves': 
-                // Прозрачность для листвы
                 ctx.fillStyle = 'rgba(0,0,0,0)'; 
                 ctx.clearRect(0,0,16,16);
-                // Рисуем много полупрозрачных точек
                 for(let i=0; i<60; i++) {
                     ctx.fillStyle = Math.random() > 0.5 ? '#2e7d32' : '#1b5e20';
                     ctx.globalAlpha = 0.8;
                     ctx.fillRect(Math.floor(Math.random()*16), Math.floor(Math.random()*16), 2, 2);
                 }
                 ctx.globalAlpha = 1.0;
+                break;
+
+            case 'water':
+                ctx.fillStyle = 'rgba(20, 110, 200, 0.7)';
+                ctx.fillRect(0, 0, 16, 16);
+                ctx.fillStyle = 'rgba(255, 255, 255, 0.15)';
+                ctx.fillRect(2, 2, 4, 1);
+                ctx.fillRect(10, 6, 3, 1);
+                ctx.fillRect(4, 12, 5, 1);
+                ctx.fillRect(14, 14, 2, 1);
+                ctx.fillRect(0, 14, 1, 1);
                 break;
             
             case 'coal_ore': 
@@ -182,8 +182,7 @@ export class TextureGenerator {
                 ctx.fillRect(0,0,16,16);
                 ctx.globalAlpha = 0.8;
                 ctx.strokeStyle = '#90caf9';
-                ctx.strokeRect(0.5,0.5,15,15); // Рамка
-                // Блики
+                ctx.strokeRect(0.5,0.5,15,15);
                 ctx.fillStyle = '#ffffff';
                 ctx.fillRect(3,3, 2, 1);
                 ctx.fillRect(4,4, 1, 1);
@@ -285,7 +284,6 @@ export class TextureGenerator {
             case 'furnace_top': this.generate('gen:cobblestone'); break;
 
             // --- ITEMS ---
-            
             case 'item_stick': 
                 this.paintItem(ctx, [
                     "              A ",
@@ -329,9 +327,7 @@ export class TextureGenerator {
                 ], { '1': '#616161', '2': '#bdbdbd', '3': '#eeeeee' }, 3, 5); 
                 break;
 
-            // --- TOOLS ---
-            // Для инструментов используем более сложную палитру для объема
-            
+            // --- TOOLS ---            
             case 'tool_wood_pick': this.generateTool(ctx, 'wood', 'pick'); break;
             case 'tool_stone_pick': this.generateTool(ctx, 'stone', 'pick'); break;
             case 'tool_iron_pick': this.generateTool(ctx, 'iron', 'pick'); break;
@@ -352,7 +348,6 @@ export class TextureGenerator {
         texture.minFilter = THREE.NearestFilter;
         texture.colorSpace = THREE.SRGBColorSpace;
         
-        // Клонируем канвас, чтобы текстура не перезаписалась при следующем вызове
         const newImage = document.createElement('canvas');
         newImage.width = w; newImage.height = w;
         newImage.getContext('2d').drawImage(this.canvas, 0, 0);
@@ -362,13 +357,11 @@ export class TextureGenerator {
     }
 
     // --- PAINTERS & UTILS ---
-
-    // Заливка с шумом для реализма
     fillWithNoise(ctx, hexColor, intensity) {
         const w = this.size;
         const h = this.size;
         
-        // Парсинг Hex
+        // Hex
         let r = parseInt(hexColor.slice(1, 3), 16);
         let g = parseInt(hexColor.slice(3, 5), 16);
         let b = parseInt(hexColor.slice(5, 7), 16);
@@ -377,7 +370,6 @@ export class TextureGenerator {
         const data = imgData.data;
 
         for (let i = 0; i < data.length; i += 4) {
-            // Случайное отклонение
             const noise = (Math.random() - 0.5) * intensity;
             
             data[i]     = Math.min(255, Math.max(0, r + noise));
@@ -413,7 +405,6 @@ export class TextureGenerator {
 
     paint(ctx, map, palette) {
         for(let y=0; y<16; y++) {
-            // Если строка короче 16, пропускаем или повторяем (защита)
             if(!map[y]) continue; 
             for(let x=0; x<16; x++) {
                 const char = map[y][x];
@@ -426,7 +417,6 @@ export class TextureGenerator {
     }
 
     paintOre(ctx, color) {
-        // Рисует красивые "кластеры" руды
         ctx.fillStyle = color;
         const spots = [
             [4,4], [5,4], [4,5], 
@@ -452,13 +442,12 @@ export class TextureGenerator {
 
     generateTool(ctx, material, type) {
         let pal = {};
-        if(material === 'wood')  pal = { '1': '#8d6e63', '2': '#a1887f', '3': '#d7ccc8' }; // Dark, Mid, Light
+        if(material === 'wood')  pal = { '1': '#8d6e63', '2': '#a1887f', '3': '#d7ccc8' };
         if(material === 'stone') pal = { '1': '#616161', '2': '#757575', '3': '#9e9e9e' };
         if(material === 'iron')  pal = { '1': '#bdbdbd', '2': '#e0e0e0', '3': '#ffffff' };
         
-        const stick = { 'S': '#5d4037', 's': '#8d6e63' }; // Stick dark, stick light
+        const stick = { 'S': '#5d4037', 's': '#8d6e63' };
 
-        // Универсальная ручка
         const handleMap = [
             "     SSs        ",
             "     SSS        ",
@@ -478,13 +467,10 @@ export class TextureGenerator {
             "      S         "
         ];
         
-        // Объединяем палитры
         const fullPal = { ...pal, ...stick };
 
-        // Рисуем ручку
         this.paint(ctx, handleMap, fullPal);
 
-        // Карты головок инструментов
         let headMap = [];
 
         if (type === 'pick') {

@@ -13,7 +13,7 @@ export class DayNightCycle extends Component {
         this.dayColor = new THREE.Color(0x87ceeb);
         this.nightColor = new THREE.Color(0x050510);
         this.sunsetColor = new THREE.Color(0xffaa44);
-        this.currentSkyColor = new THREE.Color(); // Этот объект будем переиспользовать
+        this.currentSkyColor = new THREE.Color(); 
     }
 
     start() {
@@ -145,6 +145,10 @@ export class DayNightCycle extends Component {
 
         this.engine.renderer.scene.background = this.currentSkyColor;
         this.fog.color = this.currentSkyColor;
+        
+        if (this.engine.physicsEngine.world) {
+            this.engine.physicsEngine.world.waterUniforms.skyColor.value.copy(this.currentSkyColor);
+        }
 
         const rdChunks = this.settings.get('renderDistance');
         const maxDist = rdChunks * 32;

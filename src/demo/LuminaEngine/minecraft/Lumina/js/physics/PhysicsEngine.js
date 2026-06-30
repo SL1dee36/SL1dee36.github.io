@@ -1,4 +1,3 @@
-// Lumina/js/physics/PhysicsEngine.js
 import { BoxCollider } from './Colliders.js';
 import { BLOCK } from '../../../game/blocks.js';
 import * as THREE from 'three';
@@ -6,17 +5,14 @@ import * as THREE from 'three';
 export class PhysicsEngine {
     constructor() {
         this.rigidBodies = [];
-        this.gravity = new THREE.Vector3(0, -20, 0); // Гравитация чуть сильнее для резкости
+        this.gravity = new THREE.Vector3(0, -20, 0); 
         this.world = null;
         
         this.fixedTimeStep = 1 / 16;
         this.timeAccumulator = 0;
-        this.maxStepsPerFrame = 5;
     }
 
-    setWorld(world) {
-        this.world = world;
-    }
+    setWorld(world) { this.world = world; }
 
     addRigidBody(body) {
         this.rigidBodies.push(body);
@@ -26,7 +22,6 @@ export class PhysicsEngine {
 
     update(deltaTime) {
         if (!this.world) return;
-
         this.timeAccumulator += deltaTime;
         if (this.timeAccumulator > 0.2) this.timeAccumulator = 0.2;
 
@@ -36,8 +31,7 @@ export class PhysicsEngine {
             this.timeAccumulator -= this.fixedTimeStep;
         }
 
-        const alpha = this.timeAccumulator / this.fixedTimeStep;
-        this.interpolatePositions(alpha);
+        this.interpolatePositions(this.timeAccumulator / this.fixedTimeStep);
     }
 
     savePreviousPositions() {
@@ -60,24 +54,37 @@ export class PhysicsEngine {
 
     stepPhysics(dt) {
         this.rigidBodies.forEach(body => {
-            if (body.bodyType === 'dynamic') {
-                this.updateBody(body, dt);
-            }
+            if (body.bodyType === 'dynamic') this.updateBody(body, dt);
         });
     }
 
     updateBody(body, dt) {
         const collider = body.gameObject.getComponent(BoxCollider);
         if (!collider) return;
-        
         if (!body.physicsPosition) body.physicsPosition = body.transform.position.clone();
 
-        // Трение (немного уменьшил, чтобы не прилипал)
-        body.velocity.x *= 0.92;
-        body.velocity.z *= 0.92;
-        body.velocity.addScaledVector(this.gravity, dt);
-
         const pos = body.physicsPosition;
+        
+        // --- ПРОВЕРКА НА ВОДУ ---
+        const headVoxel = this.world.getVoxel(Math.floor(pos.x), Math.floor(pos.y + 1.2), Math.floor(pos.z));
+        const legsVoxel = this.world.getVoxel(Math.floor(pos.x), Math.floor(pos.y), Math.floor(pos.z));
+        
+        body.isInWater = (headVoxel === BLOCK.WATER || legsVoxel === BLOCK.WATER);
+
+        if (body.isInWater) {
+            // Вязкость воды
+            body.velocity.x *= 0.8;
+            body.velocity.z *= 0.8;
+            body.velocity.y *= 0.9; 
+            // Ослабленная гравитация (плавучесть)
+            body.velocity.addScaledVector(this.gravity, dt * 0.2); 
+        } else {
+            // Воздух
+            body.velocity.x *= 0.92;
+            body.velocity.z *= 0.92;
+            body.velocity.addScaledVector(this.gravity, dt);
+        }
+
         const boxSize = collider.size;
         const epsilon = 0.001;
 
@@ -103,14 +110,11 @@ export class PhysicsEngine {
             }
         }
 
-        // Уменьшаем размер бокса по Y чуть-чуть для проверки стен,
-        // чтобы не цепляться за пол ногами и за потолок головой
         const wallCheckSize = boxSize.clone();
         wallCheckSize.y -= 0.05; 
 
         // --- X Axis ---
         const potentialX = pos.x + body.velocity.x * dt;
-        // Создаем бокс для проверки X, но чуть приподнятый снизу
         box = new THREE.Box3().setFromCenterAndSize(new THREE.Vector3(potentialX, pos.y, pos.z), wallCheckSize);
         collisions = this.getCollidingBlocks(box);
 
@@ -118,10 +122,8 @@ export class PhysicsEngine {
         for (const block of collisions) {
             const pen = this.getPenetrationX(box, block);
             if (Math.abs(pen) > epsilon) {
-                // Если мы просто идем в стену -> останавливаемся
                 hitX = true;
                 body.velocity.x = 0;
-                // Выталкиваем ровно до границы блока
                 pos.x = potentialX + pen;
                 break; 
             }
@@ -148,44 +150,27 @@ export class PhysicsEngine {
 
     getCollidingBlocks(playerBox) {
         const boxes = [];
-        // Добавляем небольшой отступ (skin width), чтобы ловить блоки чуть раньше
-        const minX = Math.floor(playerBox.min.x + 0.01);
-        const maxX = Math.ceil(playerBox.max.x - 0.01);
-        const minY = Math.floor(playerBox.min.y + 0.01);
-        const maxY = Math.ceil(playerBox.max.y - 0.01);
-        const minZ = Math.floor(playerBox.min.z + 0.01);
-        const maxZ = Math.ceil(playerBox.max.z - 0.01);
+        const minX = Math.floor(playerBox.min.x + 0.01), maxX = Math.ceil(playerBox.max.x - 0.01);
+        const minY = Math.floor(playerBox.min.y + 0.01), maxY = Math.ceil(playerBox.max.y - 0.01);
+        const minZ = Math.floor(playerBox.min.z + 0.01), maxZ = Math.ceil(playerBox.max.z - 0.01);
 
-        for (let y = minY; y < maxY; y++) {
-            for (let z = minZ; z < maxZ; z++) {
-                for (let x = minX; x < maxX; x++) {
-                    const id = this.world.getVoxel(x, y, z);
-                    const props = BLOCK.get(id);
-                    if (props.isSolid) {
-                        boxes.push(new THREE.Box3(
-                            new THREE.Vector3(x, y, z),
-                            new THREE.Vector3(x + 1, y + 1, z + 1)
-                        ));
-                    }
-                }
-            }
+        for (let y = minY; y < maxY; y++) for (let z = minZ; z < maxZ; z++) for (let x = minX; x < maxX; x++) {
+            const id = this.world.getVoxel(x, y, z);
+            if (BLOCK.get(id).isSolid) boxes.push(new THREE.Box3(new THREE.Vector3(x, y, z), new THREE.Vector3(x + 1, y + 1, z + 1)));
         }
         return boxes;
     }
 
     getPenetrationY(a, b) {
         const o = Math.min(a.max.y, b.max.y) - Math.max(a.min.y, b.min.y);
-        if (o <= 0) return 0;
-        return (a.min.y + a.max.y) / 2 < (b.min.y + b.max.y) / 2 ? -o : o;
+        return o <= 0 ? 0 : ((a.min.y + a.max.y) / 2 < (b.min.y + b.max.y) / 2 ? -o : o);
     }
     getPenetrationX(a, b) {
         const o = Math.min(a.max.x, b.max.x) - Math.max(a.min.x, b.min.x);
-        if (o <= 0) return 0;
-        return (a.min.x + a.max.x) / 2 < (b.min.x + b.max.x) / 2 ? -o : o;
+        return o <= 0 ? 0 : ((a.min.x + a.max.x) / 2 < (b.min.x + b.max.x) / 2 ? -o : o);
     }
     getPenetrationZ(a, b) {
         const o = Math.min(a.max.z, b.max.z) - Math.max(a.min.z, b.min.z);
-        if (o <= 0) return 0;
-        return (a.min.z + a.max.z) / 2 < (b.min.z + b.max.z) / 2 ? -o : o;
+        return o <= 0 ? 0 : ((a.min.z + a.max.z) / 2 < (b.min.z + b.max.z) / 2 ? -o : o);
     }
 }

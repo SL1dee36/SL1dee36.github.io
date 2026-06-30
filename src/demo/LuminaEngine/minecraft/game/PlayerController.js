@@ -25,7 +25,7 @@ export class PlayerController extends Component {
 
     update(deltaTime) {
         if (this.transform.position.y < -30) {
-            const respawnPos = new THREE.Vector3(8, 80, 8);
+            const respawnPos = new THREE.Vector3(8, 120, 8);
             this.transform.position.copy(respawnPos);
             if (this.rigidBody.physicsPosition) {
                 this.rigidBody.physicsPosition.copy(respawnPos);
@@ -55,13 +55,23 @@ export class PlayerController extends Component {
         }
 
         const speed = input.isKeyDown('ShiftLeft') ? this.runSpeed : this.moveSpeed;
-        this.rigidBody.velocity.x = dir.x * speed;
-        this.rigidBody.velocity.z = dir.z * speed;
+        
+        if (this.rigidBody.isInWater) {
+            this.rigidBody.velocity.x = dir.x * speed * 0.6;
+            this.rigidBody.velocity.z = dir.z * speed * 0.6;
+        } else {
+            this.rigidBody.velocity.x = dir.x * speed;
+            this.rigidBody.velocity.z = dir.z * speed;
+        }
 
-        if (input.isKeyDown('Space') && this.rigidBody.isGrounded) {
-            this.rigidBody.velocity.y = this.jumpForce;
-            this.rigidBody.isGrounded = false;
-            if (this.soundManager) this.soundManager.playJump();
+        if (input.isKeyDown('Space')) {
+            if (this.rigidBody.isGrounded) {
+                this.rigidBody.velocity.y = this.jumpForce;
+                this.rigidBody.isGrounded = false;
+                if (this.soundManager) this.soundManager.playJump();
+            } else if (this.rigidBody.isInWater) {
+                this.rigidBody.velocity.y = this.jumpForce * 0.85;
+            }
         }
     }
 }

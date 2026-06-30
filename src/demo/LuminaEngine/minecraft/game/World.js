@@ -10,23 +10,27 @@ const SECTION_HEIGHT = 32;
 const SECTIONS_PER_CHUNK = WORLD_HEIGHT / SECTION_HEIGHT;
 
 const PX = CHUNK_SIZE + 2;
-const PY = SECTION_HEIGHT + 2;
+const PY = SECTION_HEIGHT + 3;
 const PZ = CHUNK_SIZE + 2;
 
 class Chunk {
     constructor(x, z) {
         this.x = x;
         this.z = z;
-        this.data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
+        this.data = new Uint16Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
         this.isGenerated = false;
     }
     getVoxel(x, y, z) {
         if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= CHUNK_SIZE) return 0;
-        return this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x];
+        return this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] & 0xFF;
     }
-    setVoxel(x, y, z, value) {
+    getMeta(x, y, z) {
+        if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= CHUNK_SIZE) return 0;
+        return (this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] >> 8) & 0xFF;
+    }
+    setVoxel(x, y, z, value, meta = 0) {
         if (x >= 0 && x < CHUNK_SIZE && y >= 0 && y < WORLD_HEIGHT && z >= 0 && z < CHUNK_SIZE) {
-            this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = value;
+            this.data[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = (value & 0xFF) | ((meta & 0xFF) << 8);
         }
     }
 }
@@ -82,7 +86,7 @@ class WorldRegion {
             this.sectionSpheres.push(new THREE.Sphere(new THREE.Vector3(this.chunkX + CHUNK_SIZE/2, centerY, this.chunkZ + CHUNK_SIZE/2), radius + 2.0));
         }
 
-        this.paddedCache = new Int32Array(PX * PY * PZ);
+        this.paddedCache = new Uint16Array(PX * PY * PZ);
         this.mask = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT);
     }
 
@@ -110,21 +114,52 @@ class WorldRegion {
     }
 
     fillPaddedCache(startY) {
-        for (let y = -1; y <= SECTION_HEIGHT; y++) {
+        for (let y = -1; y <= SECTION_HEIGHT + 1; y++) {
             for (let z = -1; z <= CHUNK_SIZE; z++) {
                 for (let x = -1; x <= CHUNK_SIZE; x++) {
                     const idx = (y + 1) * PX * PZ + (z + 1) * PX + (x + 1);
-                    this.paddedCache[idx] = this.world.getVoxel(this.chunkX + x, startY + y, this.chunkZ + z);
+                    if (startY + y < 0 || startY + y >= WORLD_HEIGHT) {
+                        this.paddedCache[idx] = 0;
+                    } else {
+                        this.paddedCache[idx] = this.world.getRawVoxel(this.chunkX + x, startY + y, this.chunkZ + z);
+                    }
                 }
             }
         }
     }
 
-    getCacheVoxel(x, y, z) { return this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)]; }
+    getCacheVoxelRaw(x, y, z) { return this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)]; }
     
     isCacheSolid(x, y, z) {
-        const v = this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
+        const raw = this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
+        const v = raw & 0xFF;
         return v !== BLOCK.AIR && BLOCK.get(v).isSolid ? 1 : 0;
+    }
+
+    getWaterOffset(lx, ly, lz, dx, dz) {
+        let sumHeight = 0;
+        let count = 0;
+        
+        for (let i = 0; i < 2; i++) {
+            for (let j = 0; j < 2; j++) {
+                const nx = lx + dx - i;
+                const nz = lz + dz - j;
+                
+                const rawAbove = this.getCacheVoxelRaw(nx, ly + 1, nz);
+                if ((rawAbove & 0xFF) === BLOCK.WATER) return 0.0;
+                
+                const raw = this.getCacheVoxelRaw(nx, ly, nz);
+                if ((raw & 0xFF) === BLOCK.WATER) {
+                    const meta = (raw >> 8) & 0xFF;
+                    let height = meta === 8 ? 0.9 : (meta / 8.0);
+                    sumHeight += height;
+                    count++;
+                }
+            }
+        }
+        
+        if (count === 0) return 0.1;
+        return 1.0 - (sumHeight / count);
     }
 
     generateSection(sectionIndex, chunk) {
@@ -168,26 +203,31 @@ class WorldRegion {
                         let y = face.axis === 1 ? d : (face.uAxis === 1 ? u : v);
                         let z = face.axis === 2 ? d : (face.uAxis === 2 ? u : v);
 
-                        const voxel = this.getCacheVoxel(x, y, z);
+                        const raw = this.getCacheVoxelRaw(x, y, z);
+                        const voxel = raw & 0xFF;
                         if (voxel === BLOCK.AIR) continue;
 
                         let nx = x + (face.axis === 0 ? face.sign : 0);
                         let ny = y + (face.axis === 1 ? face.sign : 0);
                         let nz = z + (face.axis === 2 ? face.sign : 0);
 
-                        const neighborId = this.getCacheVoxel(nx, ny, nz);
+                        const neighborRaw = this.getCacheVoxelRaw(nx, ny, nz);
+                        const neighborId = neighborRaw & 0xFF;
                         const nProps = BLOCK.get(neighborId);
                         const bProps = BLOCK.get(voxel);
 
                         let draw = false;
                         if (neighborId === BLOCK.AIR) draw = true;
-                        else if (nProps.isTransparent) draw = !(bProps.isTransparent && voxel === neighborId);
+                        else if (nProps.isTransparent) {
+                            if (bProps.isTransparent && voxel === neighborId) draw = false;
+                            else draw = true;
+                        }
 
                         if (draw) {
                             const texIdx = getTextureIdx(bProps, face.dirName);
                             let ao0=10, ao1=10, ao2=10, ao3=10;
 
-                            if (useAO) {
+                            if (useAO && voxel !== BLOCK.WATER) { 
                                 let baseLight = (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) ? 6 : 10;
                                 ao0 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 0));
                                 ao1 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 1));
@@ -205,16 +245,21 @@ class WorldRegion {
                     for (let u = 0; u < uSize; u++) {
                         const maskVal = this.mask[v * uSize + u];
                         if (maskVal !== 0) {
+                            const voxelId = maskVal & 0xFF;
+                            const isWater = (voxelId === BLOCK.WATER);
+
                             let w = 1, h = 1;
 
-                            while (u + w < uSize && this.mask[v * uSize + (u + w)] === maskVal) w++;
+                            if (!isWater) { // Water does not merge to form smooth peaks!
+                                while (u + w < uSize && this.mask[v * uSize + (u + w)] === maskVal) w++;
 
-                            let done = false;
-                            while (v + h < vSize && !done) {
-                                for (let i = 0; i < w; i++) {
-                                    if (this.mask[(v + h) * uSize + (u + i)] !== maskVal) { done = true; break; }
+                                let done = false;
+                                while (v + h < vSize && !done) {
+                                    for (let i = 0; i < w; i++) {
+                                        if (this.mask[(v + h) * uSize + (u + i)] !== maskVal) { done = true; break; }
+                                    }
+                                    if (!done) h++;
                                 }
-                                if (!done) h++;
                             }
 
                             for (let j = 0; j < h; j++) {
@@ -233,7 +278,19 @@ class WorldRegion {
                             const aoHash = (maskVal >> 16) & 0xFFFF;
                             const ao = [ (aoHash & 0xF)/10, ((aoHash>>4) & 0xF)/10, ((aoHash>>8) & 0xF)/10, ((aoHash>>12) & 0xF)/10 ];
 
-                            this.addFacePacked(builder, wx, wy, wz, face.n, face.buildCorners(w, h), face.buildUVs(w, h), texIdx, ao);
+                            const corners = face.buildCorners(w, h);
+                            const yOffsets = [0, 0, 0, 0];
+
+                            // Water smoothing
+                            if (isWater) {
+                                for (let i = 0; i < 4; i++) {
+                                    if (corners[i][1] > 0) {
+                                        yOffsets[i] = this.getWaterOffset(x, y, z, corners[i][0], corners[i][2]);
+                                    }
+                                }
+                            }
+
+                            this.addFacePacked(builder, wx, wy, wz, face.n, corners, face.buildUVs(w, h), texIdx, ao, yOffsets);
                         }
                     }
                 }
@@ -290,7 +347,7 @@ class WorldRegion {
         return 1.0 - (s1 + s2 + c) * 0.2;
     }
 
-    addFacePacked(builder, wx, y, wz, n, corners, uvs, matIdx, ao) {
+    addFacePacked(builder, wx, y, wz, n, corners, uvs, matIdx, ao, yOffsets) {
         builder.ensureCapacity(4, 6);
         const vBase = builder.vCount;
         let pIdx = vBase * 3, uIdx = vBase * 2;
@@ -302,7 +359,7 @@ class WorldRegion {
 
         for (let i = 0; i < 4; i++) {
             builder.positions[pIdx] = corners[i][0] + wx;
-            builder.positions[pIdx+1] = corners[i][1] + y;
+            builder.positions[pIdx+1] = corners[i][1] - (yOffsets ? yOffsets[i] : 0) + y;
             builder.positions[pIdx+2] = corners[i][2] + wz;
             builder.normals[pIdx] = n[0]; builder.normals[pIdx+1] = n[1]; builder.normals[pIdx+2] = n[2];
             
@@ -340,6 +397,13 @@ export class World {
         this.textureGenerator = new TextureGenerator();
         this.materials = [];
         this.materialMap = {};
+        
+        this.waterTexture = null;
+        this.waterUniforms = { 
+            time: { value: 0 },
+            skyColor: { value: new THREE.Color() }
+        };
+        
         this.initMaterials();
 
         this.frustum = new THREE.Frustum();
@@ -348,9 +412,12 @@ export class World {
         
         this.cullFrameId = 0;
         
-        // Очереди
         this.chunkGenQueue = [];
         this.meshBuildQueue = [];
+
+        this.fluidQueue = [];
+        this.fluidSet = new Set();
+        this.fluidTimer = 0;
     }
 
     initMaterials() {
@@ -368,9 +435,54 @@ export class World {
                     texture.wrapS = THREE.RepeatWrapping; texture.wrapT = THREE.RepeatWrapping;
                     const isTrans = p.isTransparent || genKey.includes('glass') || genKey.includes('leaves') || genKey.includes('water');
                     
-                    this.materials.push(new THREE.MeshLambertMaterial({
-                        map: texture, transparent: isTrans, alphaTest: isTrans ? 0.3 : 0, side: THREE.FrontSide, vertexColors: true
-                    }));
+                    if (genKey.includes('water')) {
+                        this.waterTexture = texture;
+                        const mat = new THREE.MeshLambertMaterial({
+                            map: texture, transparent: true, opacity: 0.85, side: THREE.DoubleSide, vertexColors: true, depthWrite: false
+                        });
+
+                        mat.onBeforeCompile = (shader) => {
+                            shader.uniforms.time = this.waterUniforms.time;
+                            shader.uniforms.skyColor = this.waterUniforms.skyColor;
+                            
+                            shader.vertexShader = `
+                                uniform float time;
+                                varying vec3 vWorldPosW;
+                                ${shader.vertexShader}
+                            `.replace(
+                                `#include <begin_vertex>`,
+                                `
+                                #include <begin_vertex>
+                                vWorldPosW = (modelMatrix * vec4(position, 1.0)).xyz;
+                                if (normal.y > 0.5) {
+                                    float wave = sin(vWorldPosW.x * 2.0 + time * 3.0) * 0.05 + cos(vWorldPosW.z * 2.0 + time * 2.5) * 0.05;
+                                    transformed.y += wave;
+                                }
+                                `
+                            );
+
+                            shader.fragmentShader = `
+                                uniform vec3 skyColor;
+                                varying vec3 vWorldPosW;
+                                ${shader.fragmentShader}
+                            `.replace(
+                                `#include <fog_fragment>`,
+                                `
+                                vec3 viewDirW = normalize(cameraPosition - vWorldPosW);
+                                float fresnel = 1.0 - max(dot(viewDirW, vec3(0.0, 1.0, 0.0)), 0.0);
+                                fresnel = pow(fresnel, 3.0);
+                                gl_FragColor.rgb = mix(gl_FragColor.rgb, skyColor, fresnel * 0.8);
+                                gl_FragColor.a = max(gl_FragColor.a, fresnel * 0.9);
+                                #include <fog_fragment>
+                                `
+                            );
+                        };
+                        this.materials.push(mat);
+                    } else {
+                        this.materials.push(new THREE.MeshLambertMaterial({
+                            map: texture, transparent: isTrans, alphaTest: isTrans ? 0.3 : 0, side: THREE.FrontSide, vertexColors: true
+                        }));
+                    }
                     this.materialMap[genKey] = mi++;
                 }
             });
@@ -382,11 +494,25 @@ export class World {
     getRegionKey(x, z) { return `${x},${z}`; }
     getChunk(cx, cz) { return this.chunks[this.getChunkKey(cx, cz)]; }
     getRegion(rx, rz) { return this.regions[this.getRegionKey(rx, rz)]; }
+    isChunkLoaded(x, z) { return !!this.getChunk(Math.floor(x/16), Math.floor(z/16)); }
+
+    getRawVoxel(x, y, z) {
+        const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
+        let c = this.getChunk(cx, cz);
+        if (!c) return 0;
+        return c.data[y * CHUNK_SIZE * CHUNK_SIZE + (z - cz * CHUNK_SIZE) * CHUNK_SIZE + (x - cx * CHUNK_SIZE)];
+    }
 
     getVoxel(x, y, z) {
         const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
         let c = this.getChunk(cx, cz);
         return c ? c.getVoxel(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE) : 0;
+    }
+
+    getMeta(x, y, z) {
+        const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
+        let c = this.getChunk(cx, cz);
+        return c ? c.getMeta(x - cx * CHUNK_SIZE, y, z - cz * CHUNK_SIZE) : 0;
     }
 
     getTerrainHeight(x, z) {
@@ -401,7 +527,7 @@ export class World {
         return v !== BLOCK.AIR && BLOCK.get(v).isSolid;
     }
 
-    setVoxel(x, y, z, v) {
+    setVoxel(x, y, z, v, meta = 0) {
         const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
         let c = this.getChunk(cx, cz);
         if (!c) {
@@ -409,8 +535,10 @@ export class World {
             c = this.getChunk(cx, cz);
         }
 
+        if (v === BLOCK.WATER && meta === 0) meta = 8;
+
         const lx = x - cx * CHUNK_SIZE, lz = z - cz * CHUNK_SIZE;
-        c.setVoxel(lx, y, lz, v);
+        c.setVoxel(lx, y, lz, v, meta);
 
         const flagUpdate = (dx, dz) => { const r = this.getRegion(cx+dx, cz+dz); if(r) r.needsUpdate = true; };
         flagUpdate(0,0);
@@ -421,6 +549,84 @@ export class World {
             const above = this.getVoxel(x, y+1, z);
             if(BLOCK.get(above).falling) this.spawnFallingBlock(x, y+1, z, above);
         } else if (BLOCK.get(v).falling) this.spawnFallingBlock(x, y, z, v);
+
+        // Waking up the neighbors for water
+        this.scheduleFluidUpdate(x, y, z);
+        this.scheduleFluidUpdate(x+1, y, z);
+        this.scheduleFluidUpdate(x-1, y, z);
+        this.scheduleFluidUpdate(x, y+1, z);
+        this.scheduleFluidUpdate(x, y-1, z);
+        this.scheduleFluidUpdate(x, y, z+1);
+        this.scheduleFluidUpdate(x, y, z-1);
+    }
+
+    scheduleFluidUpdate(x, y, z) {
+        const key = `${x},${y},${z}`;
+        if (!this.fluidSet.has(key)) {
+            this.fluidSet.add(key);
+            this.fluidQueue.push({x, y, z});
+        }
+    }
+
+    updateFluidBlock(x, y, z) {
+        const voxel = this.getVoxel(x, y, z);
+        if (voxel !== BLOCK.WATER) return;
+
+        const meta = this.getMeta(x, y, z);
+        let expectedLevel = 0;
+
+        if (meta === 8) {
+            expectedLevel = 8;
+        } else {
+            if (this.getVoxel(x, y+1, z) === BLOCK.WATER) {
+                expectedLevel = 7;
+            } else {
+                let maxNeighbor = 0;
+                const dirs = [[1,0,0], [-1,0,0], [0,0,1], [0,0,-1]];
+                for(let d of dirs) {
+                    const nx = x+d[0], nz = z+d[2];
+                    if (!this.isChunkLoaded(nx, nz)) continue;
+                    if(this.getVoxel(nx, y, nz) === BLOCK.WATER) {
+                        let nMeta = this.getMeta(nx, y, nz);
+                        if (nMeta === 8) maxNeighbor = Math.max(maxNeighbor, 7);
+                        else maxNeighbor = Math.max(maxNeighbor, nMeta - 1);
+                    }
+                }
+                expectedLevel = maxNeighbor;
+            }
+        }
+
+        if (meta !== 8 && meta !== expectedLevel) {
+            if (expectedLevel <= 0) {
+                this.setVoxel(x, y, z, BLOCK.AIR, 0);
+                return;
+            } else {
+                this.setVoxel(x, y, z, BLOCK.WATER, expectedLevel);
+            }
+        }
+
+        if (expectedLevel > 0 && y > 0) {
+            const below = this.getVoxel(x, y-1, z);
+            if (below === BLOCK.AIR) {
+                this.setVoxel(x, y-1, z, BLOCK.WATER, 7);
+            } else if (below !== BLOCK.WATER && BLOCK.get(below).isSolid) {
+                if (expectedLevel > 1) {
+                    const dirs = [[1,0,0], [-1,0,0], [0,0,1], [0,0,-1]];
+                    for(let d of dirs) {
+                        const nx = x+d[0], nz = z+d[2];
+                        if (!this.isChunkLoaded(nx, nz)) continue;
+                        const side = this.getVoxel(nx, y, nz);
+                        const sideMeta = this.getMeta(nx, y, nz);
+                        
+                        if (side === BLOCK.AIR) {
+                            this.setVoxel(nx, y, nz, BLOCK.WATER, expectedLevel - 1);
+                        } else if (side === BLOCK.WATER && sideMeta < expectedLevel - 1 && sideMeta !== 8) {
+                            this.setVoxel(nx, y, nz, BLOCK.WATER, expectedLevel - 1);
+                        }
+                    }
+                }
+            }
+        }
     }
 
     spawnFallingBlock(x, y, z, id) {
@@ -455,7 +661,7 @@ export class World {
         let cx = lx, cy = ly, cz = lz;
         for (let i = 0; i < size; i++) {
             if (cx >= 0 && cx < CHUNK_SIZE && cy > 0 && cy < WORLD_HEIGHT && cz >= 0 && cz < CHUNK_SIZE) {
-                if (chunk.getVoxel(cx, cy, cz) === BLOCK.STONE) chunk.setVoxel(cx, cy, cz, blockId);
+                if ((chunk.getVoxel(cx, cy, cz) & 0xFF) === BLOCK.STONE) chunk.setVoxel(cx, cy, cz, blockId);
             }
             const d = Math.floor(Math.random() * 6);
             if (d === 0) cx++; else if (d === 1) cx--; else if (d === 2) cy++; else if (d === 3) cy--; else if (d === 4) cz++; else cz--;
@@ -470,26 +676,45 @@ export class World {
         this.chunks[k] = c;
 
         const hMap = this.gpuGenerator.generateHeightMap(cx, cz);
+        const SEA_LEVEL = 60;
 
-        for (let x = 0; x < CHUNK_SIZE; x++) for (let z = 0; z < CHUNK_SIZE; z++) {
-            const h = Math.floor(hMap[z * CHUNK_SIZE + x] * 60) + 50;
-            const wx = cx * CHUNK_SIZE + x, wz = cz * CHUNK_SIZE + z;
+        for (let x = 0; x < CHUNK_SIZE; x++) {
+            for (let z = 0; z < CHUNK_SIZE; z++) {
+                const h = Math.floor(hMap[z * CHUNK_SIZE + x] * 80) + 30;
+                const wx = cx * CHUNK_SIZE + x, wz = cz * CHUNK_SIZE + z;
+                
+                const isBeach = (h >= SEA_LEVEL - 2 && h <= SEA_LEVEL + 1);
 
-            for (let y = 0; y < WORLD_HEIGHT; y++) {
-                if (y === 0) c.setVoxel(x, y, z, BLOCK.BEDROCK);
-                else if (y < h) {
-                    const cave = (this.caveNoise.noise3D(wx * 0.03, y * 0.045, wz * 0.03) + 1) / 2;
-                    if (y > 2 && y < h - 4 && cave > 0.6) c.setVoxel(x, y, z, BLOCK.AIR);
-                    else if (y < h - 4) c.setVoxel(x, y, z, BLOCK.STONE);
-                    else c.setVoxel(x, y, z, BLOCK.DIRT);
-                } else if (y === h && c.getVoxel(x, y - 1, z) !== BLOCK.AIR) c.setVoxel(x, y, z, BLOCK.GRASS);
-            }
-            if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > 45 && Math.random() > 0.98 && x > 2 && x < 14 && z > 2 && z < 14) {
-                for (let i = 0; i < 5; i++) if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
-                for (let dx = -2; dx <= 2; dx++) for (let dy = 2; dy <= 5; dy++) for (let dz = -2; dz <= 2; dz++)
-                    if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) if (c.getVoxel(x + dx, h + 1 + dy, z + dz) === BLOCK.AIR) c.setVoxel(x + dx, h + 1 + dy, z + dz, BLOCK.OAK_LEAVES);
+                for (let y = 0; y < WORLD_HEIGHT; y++) {
+                    if (y === 0) {
+                        c.setVoxel(x, y, z, BLOCK.BEDROCK);
+                    } else if (y <= h) {
+                        const cave = (this.caveNoise.noise3D(wx * 0.03, y * 0.045, wz * 0.03) + 1) / 2;
+                        
+                        if (y > 2 && y < h - 4 && cave > 0.6) {
+                            c.setVoxel(x, y, z, BLOCK.AIR);
+                        } else if (y === h && c.getVoxel(x, y - 1, z) !== BLOCK.AIR) {
+                            if (isBeach) c.setVoxel(x, y, z, BLOCK.SAND);
+                            else if (h < SEA_LEVEL) c.setVoxel(x, y, z, (Math.random() > 0.3 ? BLOCK.SAND : BLOCK.DIRT));
+                            else c.setVoxel(x, y, z, BLOCK.GRASS);
+                        } else if (y < h - 4) {
+                            c.setVoxel(x, y, z, BLOCK.STONE);
+                        } else {
+                            c.setVoxel(x, y, z, (isBeach || h < SEA_LEVEL) ? BLOCK.SAND : BLOCK.DIRT);
+                        }
+                    } else if (y <= SEA_LEVEL) {
+                        c.setVoxel(x, y, z, BLOCK.WATER, 8);
+                    }
+                }
+                
+                if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > SEA_LEVEL && Math.random() > 0.98 && x > 2 && x < 14 && z > 2 && z < 14) {
+                    for (let i = 0; i < 5; i++) if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
+                    for (let dx = -2; dx <= 2; dx++) for (let dy = 2; dy <= 5; dy++) for (let dz = -2; dz <= 2; dz++)
+                        if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) if (c.getVoxel(x + dx, h + 1 + dy, z + dz) === BLOCK.AIR) c.setVoxel(x + dx, h + 1 + dy, z + dz, BLOCK.OAK_LEAVES);
+                }
             }
         }
+        
         for (let x = 0; x < CHUNK_SIZE; x++) for (let z = 0; z < CHUNK_SIZE; z++) for (let y = 1; y < WORLD_HEIGHT - 5; y++) {
             if (c.getVoxel(x, y, z) === BLOCK.STONE) {
                 if (Math.random() < 0.006) this.generateVein(c, x, y, z, BLOCK.COAL_ORE, Math.floor(Math.random() * 4) + 2);
@@ -516,19 +741,15 @@ export class World {
 
                 if (!this.regions[regionKey]) {
                     this.regions[regionKey] = new WorldRegion(targetCx, targetCz, this);
-                    
-                    // Помещаем в очередь генерации (не генерируем мгновенно!)
                     this.chunkGenQueue.push({ cx: targetCx, cz: targetCz, key: regionKey });
                 }
             }
         }
 
-        // Очистка старых регионов
         for (let k in this.regions) {
             if (!v.has(k)) {
                 this.regions[k].dispose();
                 this.meshBuildQueue = this.meshBuildQueue.filter(task => task.region !== this.regions[k]);
-                // Также удаляем из очереди генерации, если игрок убежал до того, как чанк загрузился
                 this.chunkGenQueue = this.chunkGenQueue.filter(task => task.key !== k);
                 delete this.regions[k];
             }
@@ -536,18 +757,33 @@ export class World {
     }
 
     update(p, camera) {
+        const t = performance.now() / 1000.0;
+        if (this.waterUniforms) {
+            this.waterUniforms.time.value = t;
+            if (this.waterTexture) this.waterTexture.offset.set(t * 0.1, t * 0.05);
+        }
+
         this.updateFallingBlocks(1/30);
         
-        // --- 1. ГЕНЕРАЦИЯ ДАННЫХ (1 ЧАНК ЗА КАДР) ---
-        // Генерируем только один чанк за кадр, чтобы не вешать браузер
+        // Smooth spreading: 5 ticks per second (0.2s)
+        if (t - this.fluidTimer > 0.2) {
+            this.fluidTimer = t;
+            let count = 0;
+            // Process up to 2 water blocks per tick
+            while(this.fluidQueue.length > 0 && count < 2) {
+                const pos = this.fluidQueue.shift();
+                this.fluidSet.delete(`${pos.x},${pos.y},${pos.z}`);
+                this.updateFluidBlock(pos.x, pos.y, pos.z);
+                count++;
+            }
+        }
+        
         if (this.chunkGenQueue.length > 0) {
             const task = this.chunkGenQueue.shift();
-            // Проверяем, что игрок не убежал от этого чанка
             if (this.regions[task.key]) {
                 this.generateChunkData(task.cx, task.cz);
                 this.regions[task.key].needsUpdate = true;
 
-                // Обновляем соседей (чтобы пересчитались грани)
                 const flagUpdate = (dx, dz) => { 
                     const nk = this.getRegionKey(task.cx + dx, task.cz + dz); 
                     if (this.regions[nk] && this.chunks[nk]?.isGenerated) this.regions[nk].needsUpdate = true; 
@@ -556,11 +792,8 @@ export class World {
             }
         }
 
-        // --- 2. ПОСТРОЕНИЕ СЕТКИ (ЛИМИТ ПО ВРЕМЕНИ) ---
-        // Строим геометрию, пока на это не уйдет больше 8 миллисекунд в кадре
         const meshStartTime = performance.now();
         while (this.meshBuildQueue.length > 0) {
-            // Если вычисления в этом кадре заняли больше 8мс, прерываем цикл.
             if (performance.now() - meshStartTime > 8) break; 
             
             const task = this.meshBuildQueue.shift();
@@ -569,7 +802,6 @@ export class World {
             }
         }
 
-        // Обновление сетки чанков вокруг игрока
         if (p) this.updateChunks(p);
 
         if (camera) {
@@ -580,7 +812,6 @@ export class World {
         const regionKeys = Object.keys(this.regions);
         for (let k of regionKeys) this.regions[k].checkUpdates();
 
-        // Сброс видимости для Frustum Culling
         for (let k of regionKeys) {
             for (let i=0; i<SECTIONS_PER_CHUNK; i++) if(this.regions[k].sections[i]) this.regions[k].sections[i].visible = false;
         }
@@ -637,7 +868,7 @@ export class World {
         for (const k in d.chunks) {
             const [x, z] = k.split(',').map(Number);
             const c = new Chunk(x, z);
-            c.data = new Uint8Array(d.chunks[k]);
+            c.data = new Uint16Array(d.chunks[k]); 
             c.isGenerated = true;
             this.chunks[k] = c;
         }
