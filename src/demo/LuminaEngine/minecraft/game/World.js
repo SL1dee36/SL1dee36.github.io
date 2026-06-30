@@ -9,7 +9,6 @@ const WORLD_HEIGHT = 256;
 const SECTION_HEIGHT = 32;
 const SECTIONS_PER_CHUNK = WORLD_HEIGHT / SECTION_HEIGHT;
 
-// Константы для кэша (Чанк + рамка в 1 блок со всех сторон для мгновенного доступа к соседям)
 const PX = CHUNK_SIZE + 2;
 const PY = SECTION_HEIGHT + 2;
 const PZ = CHUNK_SIZE + 2;
@@ -19,6 +18,7 @@ class Chunk {
         this.x = x;
         this.z = z;
         this.data = new Uint8Array(CHUNK_SIZE * WORLD_HEIGHT * CHUNK_SIZE);
+        this.isGenerated = false;
     }
     getVoxel(x, y, z) {
         if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= WORLD_HEIGHT || z < 0 || z >= CHUNK_SIZE) return 0;
@@ -31,7 +31,6 @@ class Chunk {
     }
 }
 
-// Утилита для быстрой сборки геометрии без сборщика мусора
 class GeometryBuilder {
     constructor(initialCapacity = 10000) {
         this.positions = new Float32Array(initialCapacity * 3);
@@ -67,25 +66,22 @@ class WorldRegion {
 
         this.sections = new Array(SECTIONS_PER_CHUNK).fill(null);
         this.sectionVisFrame = new Int32Array(SECTIONS_PER_CHUNK).fill(-1);
-
         this.sectionPassability = new Array(SECTIONS_PER_CHUNK).fill(null).map(() => ({
             xp: true, xn: true, yp: true, yn: true, zp: true, zn: true
         }));
 
-        this.needsUpdate = true;
+        this.needsUpdate = false;
         this.chunkX = rx * CHUNK_SIZE;
         this.chunkZ = rz * CHUNK_SIZE;
 
         this.sectionSpheres = [];
         const radius = Math.sqrt(CHUNK_SIZE*CHUNK_SIZE + SECTION_HEIGHT*SECTION_HEIGHT + CHUNK_SIZE*CHUNK_SIZE) / 2;
-        const frustumPadding = 2.0;
-
+        
         for(let i=0; i < SECTIONS_PER_CHUNK; i++) {
             const centerY = (i * SECTION_HEIGHT) + (SECTION_HEIGHT / 2);
-            this.sectionSpheres.push(new THREE.Sphere(new THREE.Vector3(this.chunkX + CHUNK_SIZE/2, centerY, this.chunkZ + CHUNK_SIZE/2), radius + frustumPadding));
+            this.sectionSpheres.push(new THREE.Sphere(new THREE.Vector3(this.chunkX + CHUNK_SIZE/2, centerY, this.chunkZ + CHUNK_SIZE/2), radius + 2.0));
         }
 
-        // Переиспользуемые буферы для генерации
         this.paddedCache = new Int32Array(PX * PY * PZ);
         this.mask = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT);
     }
@@ -103,18 +99,17 @@ class WorldRegion {
     checkUpdates() {
         if (this.needsUpdate) {
             const chunk = this.world.getChunk(this.rx, this.rz);
-            if (chunk) {
+            if (chunk && chunk.isGenerated) {
                 for (let i = 0; i < SECTIONS_PER_CHUNK; i++) {
                     const exists = this.world.meshBuildQueue.find(t => t.region === this && t.sectionIndex === i);
                     if (!exists) this.world.meshBuildQueue.push({ region: this, sectionIndex: i, chunk: chunk });
                 }
+                this.needsUpdate = false;
             }
-            this.needsUpdate = false;
         }
     }
 
     fillPaddedCache(startY) {
-        // Заполняем кэш секции + 1 блок вокруг. Это уберет тысячи проверок границ!
         for (let y = -1; y <= SECTION_HEIGHT; y++) {
             for (let z = -1; z <= CHUNK_SIZE; z++) {
                 for (let x = -1; x <= CHUNK_SIZE; x++) {
@@ -125,10 +120,8 @@ class WorldRegion {
         }
     }
 
-    getCacheVoxel(x, y, z) {
-        return this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
-    }
-
+    getCacheVoxel(x, y, z) { return this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)]; }
+    
     isCacheSolid(x, y, z) {
         const v = this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
         return v !== BLOCK.AIR && BLOCK.get(v).isSolid ? 1 : 0;
@@ -167,7 +160,7 @@ class WorldRegion {
             const dSize = face.axis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
 
             for (let d = 0; d < dSize; d++) {
-                this.mask.fill(0); // 0 значит блок не рисуем
+                this.mask.fill(0);
 
                 for (let v = 0; v < vSize; v++) {
                     for (let u = 0; u < uSize; u++) {
@@ -202,25 +195,20 @@ class WorldRegion {
                                 ao3 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 3));
                             }
 
-                            // Пакуем данные в 32-bit Integer: 
-                            // [8 bit Voxel] | [8 bit TexIdx] | [16 bit AO Hash]
                             const aoHash = (ao0) | (ao1 << 4) | (ao2 << 8) | (ao3 << 12);
                             this.mask[v * uSize + u] = voxel | (texIdx << 8) | (aoHash << 16);
                         }
                     }
                 }
 
-                // Жадное объединение (Greedy Meshing)
                 for (let v = 0; v < vSize; v++) {
                     for (let u = 0; u < uSize; u++) {
                         const maskVal = this.mask[v * uSize + u];
                         if (maskVal !== 0) {
                             let w = 1, h = 1;
 
-                            // Расширяем в ширину
                             while (u + w < uSize && this.mask[v * uSize + (u + w)] === maskVal) w++;
 
-                            // Расширяем в высоту
                             let done = false;
                             while (v + h < vSize && !done) {
                                 for (let i = 0; i < w; i++) {
@@ -229,7 +217,6 @@ class WorldRegion {
                                 if (!done) h++;
                             }
 
-                            // Очищаем маску
                             for (let j = 0; j < h; j++) {
                                 for (let i = 0; i < w; i++) this.mask[(v + j) * uSize + (u + i)] = 0;
                             }
@@ -242,7 +229,6 @@ class WorldRegion {
                             const wy = startY + y;
                             const wz = this.chunkZ + z;
                             
-                            // Распаковываем
                             const texIdx = (maskVal >> 8) & 0xFF;
                             const aoHash = (maskVal >> 16) & 0xFFFF;
                             const ao = [ (aoHash & 0xF)/10, ((aoHash>>4) & 0xF)/10, ((aoHash>>8) & 0xF)/10, ((aoHash>>12) & 0xF)/10 ];
@@ -278,7 +264,7 @@ class WorldRegion {
     }
 
     calcAO(x, y, z, dir, vIdx) {
-        const s = (dx, dy, dz) => this.isCacheSolid(x+dx, y+dy, z+dz) ? 1 : 0;
+        const s = (dx, dy, dz) => this.isCacheSolid(x+dx, y+dy, z+dz);
         let s1=0, s2=0, c=0;
 
         if (dir === 'top') {
@@ -359,7 +345,11 @@ export class World {
         this.frustum = new THREE.Frustum();
         this.projScreenMatrix = new THREE.Matrix4();
         this.fallingBlocks = [];
+        
         this.cullFrameId = 0;
+        
+        // Очереди
+        this.chunkGenQueue = [];
         this.meshBuildQueue = [];
     }
 
@@ -414,7 +404,10 @@ export class World {
     setVoxel(x, y, z, v) {
         const cx = Math.floor(x / CHUNK_SIZE), cz = Math.floor(z / CHUNK_SIZE);
         let c = this.getChunk(cx, cz);
-        if (!c) c = this.generateChunkData(cx, cz);
+        if (!c) {
+            this.generateChunkData(cx, cz);
+            c = this.getChunk(cx, cz);
+        }
 
         const lx = x - cx * CHUNK_SIZE, lz = z - cz * CHUNK_SIZE;
         c.setVoxel(lx, y, lz, v);
@@ -471,8 +464,9 @@ export class World {
 
     generateChunkData(cx, cz) {
         const k = this.getChunkKey(cx, cz);
-        if (this.chunks[k]) return this.chunks[k];
-        const c = new Chunk(cx, cz);
+        if (this.chunks[k] && this.chunks[k].isGenerated) return this.chunks[k];
+        
+        const c = this.chunks[k] || new Chunk(cx, cz);
         this.chunks[k] = c;
 
         const hMap = this.gpuGenerator.generateHeightMap(cx, cz);
@@ -502,6 +496,8 @@ export class World {
                 if (y < 60 && Math.random() < 0.004) this.generateVein(c, x, y, z, BLOCK.IRON_ORE, Math.floor(Math.random() * 3) + 2);
             }
         }
+        
+        c.isGenerated = true;
         return c;
     }
 
@@ -520,19 +516,20 @@ export class World {
 
                 if (!this.regions[regionKey]) {
                     this.regions[regionKey] = new WorldRegion(targetCx, targetCz, this);
-                    this.generateChunkData(targetCx, targetCz);
-                    this.regions[regionKey].needsUpdate = true;
-
-                    const flagUpdate = (dx, dz) => { const nk = this.getRegionKey(targetCx + dx, targetCz + dz); if(this.regions[nk]) this.regions[nk].needsUpdate = true; };
-                    flagUpdate(1, 0); flagUpdate(-1, 0); flagUpdate(0, 1); flagUpdate(0, -1);
+                    
+                    // Помещаем в очередь генерации (не генерируем мгновенно!)
+                    this.chunkGenQueue.push({ cx: targetCx, cz: targetCz, key: regionKey });
                 }
             }
         }
 
+        // Очистка старых регионов
         for (let k in this.regions) {
             if (!v.has(k)) {
                 this.regions[k].dispose();
                 this.meshBuildQueue = this.meshBuildQueue.filter(task => task.region !== this.regions[k]);
+                // Также удаляем из очереди генерации, если игрок убежал до того, как чанк загрузился
+                this.chunkGenQueue = this.chunkGenQueue.filter(task => task.key !== k);
                 delete this.regions[k];
             }
         }
@@ -540,16 +537,39 @@ export class World {
 
     update(p, camera) {
         this.updateFallingBlocks(1/30);
+        
+        // --- 1. ГЕНЕРАЦИЯ ДАННЫХ (1 ЧАНК ЗА КАДР) ---
+        // Генерируем только один чанк за кадр, чтобы не вешать браузер
+        if (this.chunkGenQueue.length > 0) {
+            const task = this.chunkGenQueue.shift();
+            // Проверяем, что игрок не убежал от этого чанка
+            if (this.regions[task.key]) {
+                this.generateChunkData(task.cx, task.cz);
+                this.regions[task.key].needsUpdate = true;
 
-        let builds = 0;
-        while (this.meshBuildQueue.length > 0 && builds < 2) {
-            const task = this.meshBuildQueue.shift();
-            if (this.regions[task.region.rx + ',' + task.region.rz] === task.region) {
-                task.region.generateSection(task.sectionIndex, task.chunk);
-                builds++;
+                // Обновляем соседей (чтобы пересчитались грани)
+                const flagUpdate = (dx, dz) => { 
+                    const nk = this.getRegionKey(task.cx + dx, task.cz + dz); 
+                    if (this.regions[nk] && this.chunks[nk]?.isGenerated) this.regions[nk].needsUpdate = true; 
+                };
+                flagUpdate(1, 0); flagUpdate(-1, 0); flagUpdate(0, 1); flagUpdate(0, -1);
             }
         }
 
+        // --- 2. ПОСТРОЕНИЕ СЕТКИ (ЛИМИТ ПО ВРЕМЕНИ) ---
+        // Строим геометрию, пока на это не уйдет больше 8 миллисекунд в кадре
+        const meshStartTime = performance.now();
+        while (this.meshBuildQueue.length > 0) {
+            // Если вычисления в этом кадре заняли больше 8мс, прерываем цикл.
+            if (performance.now() - meshStartTime > 8) break; 
+            
+            const task = this.meshBuildQueue.shift();
+            if (this.regions[task.region.rx + ',' + task.region.rz] === task.region) {
+                task.region.generateSection(task.sectionIndex, task.chunk);
+            }
+        }
+
+        // Обновление сетки чанков вокруг игрока
         if (p) this.updateChunks(p);
 
         if (camera) {
@@ -560,7 +580,7 @@ export class World {
         const regionKeys = Object.keys(this.regions);
         for (let k of regionKeys) this.regions[k].checkUpdates();
 
-        // Сброс видимости
+        // Сброс видимости для Frustum Culling
         for (let k of regionKeys) {
             for (let i=0; i<SECTIONS_PER_CHUNK; i++) if(this.regions[k].sections[i]) this.regions[k].sections[i].visible = false;
         }
@@ -618,6 +638,7 @@ export class World {
             const [x, z] = k.split(',').map(Number);
             const c = new Chunk(x, z);
             c.data = new Uint8Array(d.chunks[k]);
+            c.isGenerated = true;
             this.chunks[k] = c;
         }
     }
