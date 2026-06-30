@@ -34,7 +34,6 @@ class WorldRegion {
         this.world = world;
 
         this.sections = new Array(SECTIONS_PER_CHUNK).fill(null);
-
         this.sectionVisFrame = new Int32Array(SECTIONS_PER_CHUNK).fill(-1);
 
         this.sectionPassability = new Array(SECTIONS_PER_CHUNK).fill(null).map(() => ({
@@ -164,59 +163,170 @@ class WorldRegion {
             zn: !solidZN, zp: !solidZP
         };
 
-        // --- Mesh Gen ---
-        for (let y = startY; y < endY; y++) {
+        // --- Cache Voxel Data ---
+        const voxelCache = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT * CHUNK_SIZE);
+        for (let y = 0; y < SECTION_HEIGHT; y++) {
             for (let z = 0; z < CHUNK_SIZE; z++) {
                 for (let x = 0; x < CHUNK_SIZE; x++) {
-                    const voxel = chunk.getVoxel(x, y, z);
-                    if (voxel === BLOCK.AIR) continue;
+                    voxelCache[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x] = chunk.getVoxel(x, startY + y, z);
+                }
+            }
+        }
 
-                    const blockProps = BLOCK.get(voxel);
-                    const wx = this.chunkX + x;
-                    const wz = this.chunkZ + z;
+        const getLocalVoxel = (x, y, z) => {
+            if (x < 0 || x >= CHUNK_SIZE || y < 0 || y >= SECTION_HEIGHT || z < 0 || z >= CHUNK_SIZE) {
+                return this.world.getVoxel(this.chunkX + x, startY + y, this.chunkZ + z);
+            }
+            return voxelCache[y * CHUNK_SIZE * CHUNK_SIZE + z * CHUNK_SIZE + x];
+        };
 
-                    let baseLight = 1.0;
-                    if (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) baseLight = 0.6;
+        const canMerge = (a, b) => {
+            if (!a || !b) return false;
+            if (a.voxel !== b.voxel) return false;
+            if (a.texName !== b.texName) return false;
+            if (!a.isUniform || !b.isUniform) return false;
+            if (a.ao[0] !== b.ao[0]) return false;
+            return true;
+        };
 
-                    const checkAndAdd = (nx, ny, nz, dirVec, dirName, corners, uvCoords) => {
-                        const neighborId = this.world.getVoxel(nx, ny, nz);
+        const faces = [
+            {
+                dirName: 'side', normal: [1, 0, 0], axis: 0, sign: 1, uAxis: 2, vAxis: 1,
+                buildCorners: (w, h) => [[1, 0, 0], [1, h, 0], [1, 0, w], [1, h, w]],
+                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
+            },
+            {
+                dirName: 'side', normal: [-1, 0, 0], axis: 0, sign: -1, uAxis: 2, vAxis: 1,
+                buildCorners: (w, h) => [[0, 0, w], [0, h, w], [0, 0, 0], [0, h, 0]],
+                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
+            },
+            {
+                dirName: 'top', normal: [0, 1, 0], axis: 1, sign: 1, uAxis: 0, vAxis: 2,
+                buildCorners: (w, h) => [[0, 1, h], [w, 1, h], [0, 1, 0], [w, 1, 0]],
+                buildUVs: (w, h) => [0,0, w,0, 0,h, w,h]
+            },
+            {
+                dirName: 'bottom', normal: [0, -1, 0], axis: 1, sign: -1, uAxis: 0, vAxis: 2,
+                buildCorners: (w, h) => [[0, 0, 0], [w, 0, 0], [0, 0, h], [w, 0, h]],
+                buildUVs: (w, h) => [0,0, w,0, 0,h, w,h]
+            },
+            {
+                dirName: 'front', normal: [0, 0, 1], axis: 2, sign: 1, uAxis: 0, vAxis: 1,
+                buildCorners: (w, h) => [[w, 0, 1], [w, h, 1], [0, 0, 1], [0, h, 1]],
+                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
+            },
+            {
+                dirName: 'side', normal: [0, 0, -1], axis: 2, sign: -1, uAxis: 0, vAxis: 1,
+                buildCorners: (w, h) => [[0, 0, 0], [0, h, 0], [w, 0, 0], [w, h, 0]],
+                buildUVs: (w, h) => [0,0, 0,h, w,0, w,h]
+            }
+        ];
+
+        const mask = new Array(CHUNK_SIZE * SECTION_HEIGHT).fill(null);
+
+        // --- Greedy Meshing ---
+        for (const face of faces) {
+            const uSize = face.uAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
+            const vSize = face.vAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
+            const dSize = face.axis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
+
+            for (let d = 0; d < dSize; d++) {
+                mask.fill(null);
+
+                for (let v = 0; v < vSize; v++) {
+                    for (let u = 0; u < uSize; u++) {
+                        let x = 0, y = 0, z = 0;
+                        if (face.axis === 0) x = d; else if (face.axis === 1) y = d; else z = d;
+                        if (face.uAxis === 0) x = u; else if (face.uAxis === 1) y = u; else z = u;
+                        if (face.vAxis === 0) x = v; else if (face.vAxis === 1) y = v; else z = v;
+
+                        const voxel = getLocalVoxel(x, y, z);
+                        if (voxel === BLOCK.AIR) continue;
+
+                        let nx = x, ny = y, nz = z;
+                        if (face.axis === 0) nx += face.sign;
+                        else if (face.axis === 1) ny += face.sign;
+                        else nz += face.sign;
+
+                        const neighborId = getLocalVoxel(nx, ny, nz);
                         const neighborProps = BLOCK.get(neighborId);
+                        const blockProps = BLOCK.get(voxel);
 
                         let draw = false;
-
                         if (neighborId === BLOCK.AIR) {
                             draw = true;
-                        }
-                        else if (neighborProps.isTransparent) {
+                        } else if (neighborProps.isTransparent) {
                             if (blockProps.isTransparent && voxel === neighborId) draw = false;
                             else draw = true;
                         }
-                        else {
-                            draw = false;
-                        }
 
                         if (draw) {
-                            const vertexLights = [];
+                            const texName = getTexture(blockProps, face.dirName);
+                            const wx = this.chunkX + x;
+                            const wy = startY + y;
+                            const wz = this.chunkZ + z;
+                            
+                            let baseLight = 1.0;
+                            if (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) baseLight = 0.6;
+
+                            const ao = [baseLight, baseLight, baseLight, baseLight];
                             if (useAO) {
                                 for(let k=0; k<4; k++) {
-                                    vertexLights.push(baseLight * this.calculateVertexAO(wx, y, wz, dirName, k));
+                                    ao[k] = baseLight * this.calculateVertexAO(wx, wy, wz, face.dirName, k);
                                 }
-                            } else {
-                                vertexLights.push(baseLight, baseLight, baseLight, baseLight);
                             }
 
-                            this.addFace(positions, normals, uvs, colors, indices, wx, y, wz,
-                                dirVec, corners, uvCoords,
-                                getTexture(blockProps, dirName), vertexLights, geometry);
+                            mask[v * uSize + u] = { 
+                                voxel, texName, ao, 
+                                isUniform: ao[0] === ao[1] && ao[1] === ao[2] && ao[2] === ao[3] 
+                            };
                         }
-                    };
+                    }
+                }
 
-                    checkAndAdd(wx + 1, y, wz, [1,0,0], 'side', [[1,0,0],[1,1,0],[1,0,1],[1,1,1]], [0,0, 0,1, 1,0, 1,1]);
-                    checkAndAdd(wx - 1, y, wz, [-1,0,0], 'side', [[0,0,1],[0,1,1],[0,0,0],[0,1,0]], [0,0, 0,1, 1,0, 1,1]);
-                    checkAndAdd(wx, y + 1, wz, [0,1,0], 'top', [[0,1,1],[1,1,1],[0,1,0],[1,1,0]], [0,0, 1,0, 0,1, 1,1]);
-                    checkAndAdd(wx, y - 1, wz, [0,-1,0], 'bottom', [[0,0,0],[1,0,0],[0,0,1],[1,0,1]], [0,0, 1,0, 0,1, 1,1]);
-                    checkAndAdd(wx, y, wz + 1, [0,0,1], 'front', [[1,0,1],[1,1,1],[0,0,1],[0,1,1]], [0,0, 0,1, 1,0, 1,1]);
-                    checkAndAdd(wx, y, wz - 1, [0,0,-1], 'side', [[0,0,0],[0,1,0],[1,0,0],[1,1,0]], [0,0, 0,1, 1,0, 1,1]);
+                for (let v = 0; v < vSize; v++) {
+                    for (let u = 0; u < uSize; u++) {
+                        const index = v * uSize + u;
+                        const current = mask[index];
+                        if (current) {
+                            let w = 1;
+                            while (u + w < uSize && canMerge(current, mask[v * uSize + (u + w)])) {
+                                w++;
+                            }
+
+                            let h = 1;
+                            let done = false;
+                            while (v + h < vSize && !done) {
+                                for (let i = 0; i < w; i++) {
+                                    if (!canMerge(current, mask[(v + h) * uSize + (u + i)])) {
+                                        done = true;
+                                        break;
+                                    }
+                                }
+                                if (!done) h++;
+                            }
+
+                            for (let j = 0; j < h; j++) {
+                                for (let i = 0; i < w; i++) {
+                                    mask[(v + j) * uSize + (u + i)] = null;
+                                }
+                            }
+
+                            let x = 0, y = 0, z = 0;
+                            if (face.axis === 0) x = d; else if (face.axis === 1) y = d; else z = d;
+                            if (face.uAxis === 0) x = u; else if (face.uAxis === 1) y = u; else z = u;
+                            if (face.vAxis === 0) x = v; else if (face.vAxis === 1) y = v; else z = v;
+
+                            const wx = this.chunkX + x;
+                            const wy = startY + y;
+                            const wz = this.chunkZ + z;
+
+                            const corners = face.buildCorners(w, h);
+                            const uvCoords = face.buildUVs(w, h);
+                            
+                            this.addFace(positions, normals, uvs, colors, indices, wx, wy, wz, face.normal, corners, uvCoords, current.texName, current.ao, geometry);
+                        }
+                    }
                 }
             }
         }
@@ -325,11 +435,7 @@ export class World {
         this.projScreenMatrix = new THREE.Matrix4();
 
         this.fallingBlocks = [];
-
-        // Глобальный счетчик кадров для BFS (чтобы не чистить массивы)
         this.cullFrameId = 0;
-
-        // Очередь для построения чанков
         this.meshBuildQueue = [];
     }
 
@@ -354,6 +460,12 @@ export class World {
                 if (!processed.has(genKey)) {
                     processed.add(genKey);
                     const texture = this.textureGenerator.generate(genKey);
+                    
+                    // --- ОБЯЗАТЕЛЬНО ДЛЯ GREEDY MESHING ---
+                    // Позволяет тайлить текстуру для огромных полигонов
+                    texture.wrapS = THREE.RepeatWrapping;
+                    texture.wrapT = THREE.RepeatWrapping;
+
                     const isTransparent = p.isTransparent || genKey.includes('glass') || genKey.includes('leaves') || genKey.includes('water');
 
                     const mat = new THREE.MeshLambertMaterial({
@@ -565,10 +677,7 @@ export class World {
             if (!v.has(k)) {
                 const reg = this.regions[k];
                 reg.dispose();
-
-                // Чистим очередь от удаляемого региона
                 this.meshBuildQueue = this.meshBuildQueue.filter(task => task.region !== reg);
-
                 delete this.regions[k];
             }
         }
@@ -577,13 +686,10 @@ export class World {
     update(p, camera) {
         this.updateFallingBlocks(1/30);
 
-        // Обработка очереди геометрии (Time-slicing)
-        // Генерируем не более 2-х секций за один кадр.
         const MAX_BUILDS_PER_FRAME = 2;
         let builds = 0;
         while (this.meshBuildQueue.length > 0 && builds < MAX_BUILDS_PER_FRAME) {
             const task = this.meshBuildQueue.shift();
-            // Если регион еще существует (не был выгружен)
             if (this.regions[task.region.rx + ',' + task.region.rz] === task.region) {
                 task.region.generateSection(task.sectionIndex, task.chunk);
                 builds++;
@@ -603,7 +709,6 @@ export class World {
         }
 
         // --- OPTIMIZED BFS CULLING ---
-        // 1. Hide Everything
         for (let k of regionKeys) {
             const r = this.regions[k];
             for (let i=0; i<SECTIONS_PER_CHUNK; i++) {
@@ -620,15 +725,12 @@ export class World {
 
         if (!startRegion) return;
 
-        // BFS Setup
         this.cullFrameId++;
         const queue = [];
         const rd = this.settings ? this.settings.get('renderDistance') : 4;
 
-        // Start from player position
         const safeY = Math.max(0, Math.min(SECTIONS_PER_CHUNK-1, pcy));
 
-        // Mark start as visited using frame ID
         startRegion.sectionVisFrame[safeY] = this.cullFrameId;
         queue.push({ r: startRegion, y: safeY, rx: pcx, rz: pcz });
 
@@ -637,7 +739,6 @@ export class World {
             const ny = curr.y + dy;
             const nz = curr.rz + dz;
 
-            // Distance & Bounds Check
             if (ny < 0 || ny >= SECTIONS_PER_CHUNK) return;
             if (Math.abs(nx - pcx) > rd || Math.abs(nz - pcz) > rd) return;
 
@@ -645,21 +746,16 @@ export class World {
             const nRegion = this.regions[nKey];
 
             if (!nRegion) return;
-
-            // Fast Visited Check using Frame ID
             if (nRegion.sectionVisFrame[ny] === this.cullFrameId) return;
 
-            // 1. Frustum Check
             let inFrustum = true;
             inFrustum = this.frustum.intersectsSphere(nRegion.sectionSpheres[ny]);
 
             if (!inFrustum) return;
 
-            // 2. Passability Check
             const pass = curr.r.sectionPassability[curr.y][boundaryFaceName];
             if (!pass) return;
 
-            // Add to queue
             nRegion.sectionVisFrame[ny] = this.cullFrameId;
             queue.push({ r: nRegion, y: ny, rx: nx, rz: nz });
         };
