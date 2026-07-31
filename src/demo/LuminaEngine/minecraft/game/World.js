@@ -770,7 +770,7 @@ export class World {
             this.fluidTimer = t;
             let count = 0;
             // Process up to 2 water blocks per tick
-            while(this.fluidQueue.length > 0 && count < 2) {
+            while(this.fluidQueue.length > 0 && count < 100) {
                 const pos = this.fluidQueue.shift();
                 this.fluidSet.delete(`${pos.x},${pos.y},${pos.z}`);
                 this.updateFluidBlock(pos.x, pos.y, pos.z);
