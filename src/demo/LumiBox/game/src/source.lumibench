@@ -1,0 +1,714 @@
+{
+  "id": "source",
+  "name": "LumiBox Core Resources",
+  "version": "1.0.0",
+  "atlas": "source-atlas.png",
+  "tileSize": 16,
+  "atlasSize": 256,
+  "textures": {
+    "bedrock": [
+      0,
+      0
+    ],
+    "stone": [
+      1,
+      0
+    ],
+    "cobblestone": [
+      2,
+      0
+    ],
+    "dirt": [
+      3,
+      0
+    ],
+    "grass_top": [
+      4,
+      0
+    ],
+    "grass_side": [
+      5,
+      0
+    ],
+    "log_side": [
+      6,
+      0
+    ],
+    "log_top": [
+      7,
+      0
+    ],
+    "leaves": [
+      8,
+      0
+    ],
+    "planks": [
+      9,
+      0
+    ],
+    "sand": [
+      10,
+      0
+    ],
+    "gravel": [
+      11,
+      0
+    ],
+    "coal_ore": [
+      12,
+      0
+    ],
+    "iron_ore": [
+      13,
+      0
+    ],
+    "glass": [
+      14,
+      0
+    ],
+    "water": [
+      15,
+      0
+    ],
+    "sandstone_side": [
+      0,
+      1
+    ],
+    "sandstone_top": [
+      1,
+      1
+    ],
+    "sandstone_bottom": [
+      2,
+      1
+    ],
+    "crafting_table_top": [
+      3,
+      1
+    ],
+    "crafting_table_side": [
+      4,
+      1
+    ],
+    "crafting_table_front": [
+      5,
+      1
+    ],
+    "furnace_front": [
+      6,
+      1
+    ],
+    "furnace_side": [
+      7,
+      1
+    ],
+    "furnace_top": [
+      8,
+      1
+    ],
+    "tall_grass": [
+      9,
+      1
+    ],
+    "double_grass_bottom": [
+      10,
+      1
+    ],
+    "double_grass_top": [
+      11,
+      1
+    ],
+    "item_stick": [
+      12,
+      1
+    ],
+    "item_coal": [
+      13,
+      1
+    ],
+    "item_iron_ingot": [
+      14,
+      1
+    ],
+    "tool_wood_pick": [
+      15,
+      1
+    ],
+    "tool_wood_axe": [
+      0,
+      2
+    ],
+    "tool_wood_shovel": [
+      1,
+      2
+    ],
+    "tool_stone_pick": [
+      2,
+      2
+    ],
+    "tool_stone_axe": [
+      3,
+      2
+    ],
+    "tool_stone_shovel": [
+      4,
+      2
+    ],
+    "tool_iron_pick": [
+      5,
+      2
+    ],
+    "tool_iron_axe": [
+      6,
+      2
+    ],
+    "tool_iron_shovel": [
+      7,
+      2
+    ]
+  },
+  "blocks": [
+    {
+      "id": 1,
+      "name": "bedrock",
+      "isSolid": true,
+      "isTransparent": false,
+      "isBreakable": false,
+      "texture": "source:bedrock"
+    },
+    {
+      "id": 2,
+      "name": "stone",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:stone",
+      "drop": 3
+    },
+    {
+      "id": 3,
+      "name": "cobblestone",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:cobblestone"
+    },
+    {
+      "id": 4,
+      "name": "dirt",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:dirt"
+    },
+    {
+      "id": 5,
+      "name": "grass",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": {
+        "top": "source:grass_top",
+        "bottom": "source:dirt",
+        "side": "source:grass_side"
+      },
+      "drop": 4
+    },
+    {
+      "id": 6,
+      "name": "oak_log",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": {
+        "top": "source:log_top",
+        "bottom": "source:log_top",
+        "side": "source:log_side"
+      }
+    },
+    {
+      "id": 7,
+      "name": "oak_leaves",
+      "isSolid": true,
+      "isTransparent": true,
+      "texture": "source:leaves"
+    },
+    {
+      "id": 8,
+      "name": "coal_ore",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:coal_ore",
+      "drop": 100
+    },
+    {
+      "id": 9,
+      "name": "iron_ore",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:iron_ore",
+      "drop": 9
+    },
+    {
+      "id": 10,
+      "name": "glass",
+      "isSolid": true,
+      "isTransparent": true,
+      "isBreakable": true,
+      "texture": "source:glass",
+      "drop": 0
+    },
+    {
+      "id": 11,
+      "name": "planks",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:planks"
+    },
+    {
+      "id": 12,
+      "name": "sand",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:sand",
+      "falling": true
+    },
+    {
+      "id": 13,
+      "name": "water",
+      "isSolid": false,
+      "isTransparent": true,
+      "texture": "source:water"
+    },
+    {
+      "id": 14,
+      "name": "gravel",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": "source:gravel",
+      "falling": true
+    },
+    {
+      "id": 15,
+      "name": "sandstone",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": {
+        "top": "source:sandstone_top",
+        "bottom": "source:sandstone_bottom",
+        "side": "source:sandstone_side"
+      }
+    },
+    {
+      "id": 16,
+      "name": "crafting_table",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": {
+        "top": "source:crafting_table_top",
+        "bottom": "source:planks",
+        "side": "source:crafting_table_side",
+        "front": "source:crafting_table_front"
+      }
+    },
+    {
+      "id": 17,
+      "name": "furnace",
+      "isSolid": true,
+      "isTransparent": false,
+      "texture": {
+        "top": "source:furnace_top",
+        "bottom": "source:cobblestone",
+        "side": "source:furnace_side",
+        "front": "source:furnace_front"
+      }
+    },
+    {
+      "id": 18,
+      "name": "tall_grass",
+      "isPlant": true,
+      "isSolid": false,
+      "isTransparent": true,
+      "texture": "source:tall_grass",
+      "drop": 0
+    },
+    {
+      "id": 19,
+      "name": "double_tall_grass_bottom",
+      "isPlant": true,
+      "isSolid": false,
+      "isTransparent": true,
+      "texture": "source:double_grass_bottom",
+      "drop": 0
+    },
+    {
+      "id": 20,
+      "name": "double_tall_grass_top",
+      "isPlant": true,
+      "isSolid": false,
+      "isTransparent": true,
+      "texture": "source:double_grass_top",
+      "drop": 0
+    }
+  ],
+  "items": [
+    {
+      "id": 100,
+      "name": "coal",
+      "isItem": true,
+      "texture": "source:item_coal"
+    },
+    {
+      "id": 101,
+      "name": "iron_ingot",
+      "isItem": true,
+      "texture": "source:item_iron_ingot"
+    },
+    {
+      "id": 102,
+      "name": "stick",
+      "isItem": true,
+      "texture": "source:item_stick"
+    },
+    {
+      "id": 200,
+      "name": "wooden_pickaxe",
+      "isItem": true,
+      "texture": "source:tool_wood_pick"
+    },
+    {
+      "id": 201,
+      "name": "wooden_axe",
+      "isItem": true,
+      "texture": "source:tool_wood_axe"
+    },
+    {
+      "id": 202,
+      "name": "wooden_shovel",
+      "isItem": true,
+      "texture": "source:tool_wood_shovel"
+    },
+    {
+      "id": 203,
+      "name": "stone_pickaxe",
+      "isItem": true,
+      "texture": "source:tool_stone_pick"
+    },
+    {
+      "id": 204,
+      "name": "stone_axe",
+      "isItem": true,
+      "texture": "source:tool_stone_axe"
+    },
+    {
+      "id": 205,
+      "name": "stone_shovel",
+      "isItem": true,
+      "texture": "source:tool_stone_shovel"
+    },
+    {
+      "id": 206,
+      "name": "iron_pickaxe",
+      "isItem": true,
+      "texture": "source:tool_iron_pick"
+    },
+    {
+      "id": 207,
+      "name": "iron_axe",
+      "isItem": true,
+      "texture": "source:tool_iron_axe"
+    },
+    {
+      "id": 208,
+      "name": "iron_shovel",
+      "isItem": true,
+      "texture": "source:tool_iron_shovel"
+    }
+  ],
+  "recipes": {
+    "crafting": [
+      {
+        "result": {
+          "id": 11,
+          "count": 4
+        },
+        "pattern": [
+          [
+            6
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 102,
+          "count": 4
+        },
+        "pattern": [
+          [
+            11
+          ],
+          [
+            11
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 16,
+          "count": 1
+        },
+        "pattern": [
+          [
+            11,
+            11
+          ],
+          [
+            11,
+            11
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 17,
+          "count": 1
+        },
+        "pattern": [
+          [
+            3,
+            3,
+            3
+          ],
+          [
+            3,
+            0,
+            3
+          ],
+          [
+            3,
+            3,
+            3
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 200,
+          "count": 1
+        },
+        "pattern": [
+          [
+            11,
+            11,
+            11
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 201,
+          "count": 1
+        },
+        "pattern": [
+          [
+            11,
+            11,
+            0
+          ],
+          [
+            11,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 202,
+          "count": 1
+        },
+        "pattern": [
+          [
+            0,
+            11,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 203,
+          "count": 1
+        },
+        "pattern": [
+          [
+            3,
+            3,
+            3
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 204,
+          "count": 1
+        },
+        "pattern": [
+          [
+            3,
+            3,
+            0
+          ],
+          [
+            3,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 205,
+          "count": 1
+        },
+        "pattern": [
+          [
+            0,
+            3,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 206,
+          "count": 1
+        },
+        "pattern": [
+          [
+            101,
+            101,
+            101
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 207,
+          "count": 1
+        },
+        "pattern": [
+          [
+            101,
+            101,
+            0
+          ],
+          [
+            101,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      },
+      {
+        "result": {
+          "id": 208,
+          "count": 1
+        },
+        "pattern": [
+          [
+            0,
+            101,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ],
+          [
+            0,
+            102,
+            0
+          ]
+        ]
+      }
+    ],
+    "smelting": {
+      "3": 2,
+      "6": 100,
+      "9": 101,
+      "12": 10
+    },
+    "fuels": {
+      "6": 300,
+      "11": 300,
+      "16": 300,
+      "100": 1600,
+      "102": 100,
+      "200": 200,
+      "201": 200,
+      "202": 200
+    }
+  }
+}

@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta charset="UTF-8">
+    <title>LumiBox</title>
+    <link rel="icon" href="game/ui/lucraft-logo.png">
+    <link rel="stylesheet" href="game/ui/style.css">
+</head>
+<body>
+    <canvas id="game-canvas"></canvas>
+    
+    <div id="ui-container">
+        <div id="debug-info">
+            <div id="fps-display">FPS: 0</div>
+            <div id="coords-display"></div>
+        </div>
+
+        <div id="crosshair"></div>
+
+        <!-- HUD: Здоровье (10 сердец / 20 HP) и Хотбар -->
+        <div id="hud-wrapper">
+            <div id="hearts-container"></div>
+            <div id="hotbar"></div>
+        </div>
+        
+        <div id="inventory">
+            <div class="inv-title">Inventory</div>
+            <div class="inventory-grid" id="main-inventory-grid"></div>
+            <div style="height: 15px;"></div>
+            <div class="inv-title">Hotbar</div>
+            <div class="inventory-grid" id="hotbar-inventory-grid"></div>
+        </div>
+
+        <div id="mobile-controls">
+            <div id="joystick-zone"><div id="joystick-knob"></div></div>
+            <div id="action-buttons">
+                <button id="btn-jump" class="touch-btn">JUMP</button>
+                <button id="btn-run" class="touch-btn">RUN</button>
+            </div>
+            <button id="btn-inv-mobile" class="top-btn" style="right: 10px;">INV</button>
+            <button id="btn-pause-mobile" class="top-btn" style="right: 70px;">||</button>
+        </div>
+        <div id="drag-icon"></div>
+    </div>
+
+    <!-- 1. Главное меню (Титульный экран) -->
+    <div id="main-menu-screen" class="menu-screen mc-bg" style="display: flex;">
+        <div class="menu-title">LuminaCraft</div>
+        <button class="menu-btn" id="menu-singleplayer-btn">Singleplayer</button>
+        <button class="menu-btn" id="menu-options-btn">Options...</button>
+        <button class="menu-btn" id="menu-quit-btn" style="margin-top: 15px;">Quit Game</button>
+    </div>
+
+    <!-- 2. Меню выбора мира -->
+    <div id="worlds-menu-screen" class="menu-screen mc-bg">
+        <div class="menu-title" style="font-size: 36px;">Select World</div>
+        <div class="scroll-container world-list-container" id="worlds-list"></div>
+        <div class="menu-btn-row">
+            <button class="menu-btn half-btn" id="world-play-btn" disabled>Play Selected</button>
+            <button class="menu-btn half-btn" id="world-create-btn">Create New</button>
+        </div>
+        <div class="menu-btn-row">
+            <button class="menu-btn half-btn" id="world-delete-btn" disabled>Delete</button>
+            <button class="menu-btn half-btn" id="world-back-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- 3. Меню создания мира -->
+    <div id="create-world-screen" class="menu-screen mc-bg">
+        <div class="menu-title" style="font-size: 36px;">Create New World</div>
+        <div class="form-container">
+            <label class="form-label">World Name:</label>
+            <input type="text" id="new-world-name" class="mc-input" value="New World" maxlength="24">
+
+            <label class="form-label">Game Mode:</label>
+            <button class="menu-btn" id="new-world-mode-btn" style="width: 100%;">Mode: Survival</button>
+
+            <label class="form-label">Seed (Optional):</label>
+            <input type="text" id="new-world-seed" class="mc-input" placeholder="Leave blank for random">
+        </div>
+        <div class="menu-btn-row" style="margin-top: 20px;">
+            <button class="menu-btn half-btn" id="create-world-confirm-btn">Create</button>
+            <button class="menu-btn half-btn" id="create-world-cancel-btn">Cancel</button>
+        </div>
+    </div>
+
+    <!-- Пауза -->
+    <div id="pause-menu" class="menu-screen">
+        <div class="menu-title">Game Menu</div>
+        <button class="menu-btn" id="resume-btn">Back to Game</button>
+        <button class="menu-btn" id="pause-options-btn">Options...</button>
+        <button class="menu-btn" id="stats-btn">Statistics</button>
+        <button class="menu-btn" id="save-quit-btn" style="margin-top: 20px;">Save and Quit to Title</button>
+    </div>
+
+    <!-- Настройки -->
+    <div id="options-menu" class="menu-screen mc-bg">
+        <div class="menu-title">Options</div>
+        <div class="scroll-container">
+            <div class="options-grid">
+                <div class="option-item slider-container">
+                    <span class="slider-label">Render Distance: <span id="val-render-dist">4</span></span>
+                    <input type="range" id="opt-render-dist" min="1" max="8" step="1">
+                </div>
+                <div class="option-item">
+                    <button id="opt-render-mode" style="width: 100%;">Mode: Smart</button>
+                </div>
+                <div class="option-item">
+                    <button id="opt-shadow-res" style="width: 100%;">Shadows: 1024</button>
+                </div>
+                <div class="option-item slider-container">
+                    <span class="slider-label">Shadow Dist: <span id="val-shadow-dist">50</span></span>
+                    <input type="range" id="opt-shadow-dist" min="20" max="200" step="10">
+                </div>
+                <div class="option-item slider-container">
+                    <span class="slider-label">Fog: <span id="val-fog">0.8</span></span>
+                    <input type="range" id="opt-fog" min="0" max="1" step="0.05">
+                </div>
+                <div class="option-item slider-container">
+                    <span class="slider-label">Sound Volume: <span id="val-volume">50%</span></span>
+                    <input type="range" id="opt-volume" min="0" max="1" step="0.05">
+                </div>
+                <div class="option-item slider-container">
+                    <span class="slider-label">Sensitivity: <span id="val-sensitivity">100%</span></span>
+                    <input type="range" id="opt-sensitivity" min="0.0001" max="0.010" step="0.0001">
+                </div>
+                <div class="option-item slider-container">
+                    <span class="slider-label">Time Speed: <span id="val-time-speed">1.0</span></span>
+                    <input type="range" id="opt-time-speed" min="0" max="100" step="0.5">
+                </div>
+                <div class="option-item"><button id="opt-show-hand" style="width: 100%;">Hand: ON</button></div>
+                <div class="option-item"><button id="opt-show-clouds" style="width: 100%;">Clouds: ON</button></div>
+                <div class="option-item"><button id="opt-show-stars" style="width: 100%;">Stars: ON</button></div>
+                <div class="option-item"><button id="opt-show-sky" style="width: 100%;">Sun/Moon: ON</button></div>
+                <div class="option-item"><button id="opt-ao" style="width: 100%;">Smooth Lighting: ON</button></div>
+            </div>
+            <button class="menu-btn" id="options-back-btn" style="width: 200px;">Done</button>
+        </div>
+    </div>
+
+    <div id="stats-menu" class="menu-screen mc-bg">
+        <div class="menu-title">Statistics</div>
+        <div id="stats-content" style="text-align: center; line-height: 2; font-size: 18px; color: #aaa;"></div>
+        <button class="menu-btn" id="stats-back-btn" style="margin-top: 20px;">Done</button>
+    </div>
+
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+    <script type="module" src="Lumina/js/main.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+</body>
+</html>

@@ -1,0 +1,310 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LumiBench Studio — 3D Model & Texture Suite</title>
+    <link rel="icon" href="game/ui/lucraft-logo.png">
+    <link rel="stylesheet" href="lumiBench.css">
+    
+    <!-- JSZip Library -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.1/jszip.min.js"></script>
+
+    <!-- Three.js & Controls Importmap -->
+    <script type="importmap">
+    {
+        "imports": {
+            "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+            "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+        }
+    }
+    </script>
+</head>
+<body>
+
+    <!-- Main Menu (Blockbench Style) -->
+    <div class="main-menu-overlay" id="main-menu-overlay">
+        <div class="main-menu-sidebar">
+            <div class="logo-group">
+                <div>
+                    <span class="logo-box">LB</span>
+                    <span class="logo-title">LumiBench</span>
+                </div>
+                <span class="logo-ver">Studio v2.3</span>
+            </div>
+            <button class="menu-nav-btn active">🏠 Главная</button>
+            <button class="menu-nav-btn" onclick="alert('Настройки в разработке')">⚙️ Настройки</button>
+        </div>
+        <div class="main-menu-content">
+            <h1>Добро пожаловать</h1>
+            <div class="menu-cards-grid">
+                <div class="menu-card" id="menu-btn-new">
+                    <div class="menu-card-icon">📄</div>
+                    <h3>Новый проект</h3>
+                    <p>Создать новый пустой модуль для создания воксельных модов и текстур с нуля.</p>
+                </div>
+                <div class="menu-card" id="menu-btn-open">
+                    <div class="menu-card-icon">📂</div>
+                    <h3>Открыть проект</h3>
+                    <p>Загрузить ранее созданный .zip архив мода или файл манифеста .lumibench.</p>
+                </div>
+                <div class="menu-card" id="menu-btn-continue">
+                    <div class="menu-card-icon">🚀</div>
+                    <h3>Продолжить работу</h3>
+                    <p>Закрыть это меню и вернуться в текущее рабочее пространство.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Header Navigation -->
+    <header class="app-header">
+        <div class="logo-group" id="header-logo-btn" title="В Главное меню">
+            <span class="logo-box">LB</span>
+            <span class="logo-title">LumiBench <span class="logo-ver">v2.2</span></span>
+        </div>
+
+        <div class="menu-bar">
+            <button class="nav-btn" id="btn-new-mod">📄 Новый мод</button>
+            <button class="nav-btn" id="btn-open-zip">📂 Загрузить ZIP...</button>
+            <input type="file" id="file-project-input" accept=".zip,.lumibench,.json" style="display: none;">
+            <button class="nav-btn primary" id="btn-export-zip">📦 Скачать ZIP пакет</button>
+            <div class="nav-divider"></div>
+            <button class="nav-btn" id="btn-gen-source-pack" title="Собрать все 38 канонических текстур игры">⚡ Source Pack</button>
+            <button class="nav-btn" id="btn-export-atlas-png">🖼️ Экспорт PNG</button>
+            <button class="nav-btn" id="btn-export-code">⚡ Код</button>
+        </div>
+
+        <div class="view-mode-selector">
+            <button class="mode-btn active" data-mode="split">🌓 Сплит</button>
+            <button class="mode-btn" data-mode="3d">🎲 3D</button>
+            <button class="mode-btn" data-mode="2d">🎨 2D</button>
+        </div>
+    </header>
+
+    <!-- Main Workspace with Resizable Columns -->
+    <div class="workspace" id="workspace">
+
+        <!-- 1. Left Sidebar: Assets & Cubes -->
+        <aside class="panel left-panel" id="panel-left">
+            <!-- Asset Library -->
+            <div class="panel-section" style="height: 45%;">
+                <div class="section-title-row">
+                    <span class="section-title">Библиотека сущностей</span>
+                    <button class="icon-btn-small" id="btn-add-custom-asset" title="Добавить блок/предмет">➕ Новый</button>
+                </div>
+                <div class="search-box">
+                    <input type="text" id="asset-search" placeholder="Поиск блоков/предметов..." class="lb-input">
+                </div>
+                <div class="asset-list scroll-area" id="asset-list"></div>
+            </div>
+
+            <!-- Cube Hierarchy -->
+            <div class="panel-section flex-grow" style="height: 55%;">
+                <div class="section-title-row">
+                    <span class="section-title">Структура модели (Кубы)</span>
+                    <div style="display: flex; gap: 4px;">
+                        <button class="icon-btn-small" id="btn-duplicate-cube" title="Дублировать куб">📋</button>
+                        <button class="icon-btn-small" id="btn-add-cube" title="Добавить куб">➕</button>
+                    </div>
+                </div>
+                <div class="cube-list scroll-area" id="cube-list"></div>
+            </div>
+        </aside>
+
+        <!-- Resizer 1 -->
+        <div class="resizer" id="resizer-left"></div>
+
+        <!-- 2. Center: 3D Viewport -->
+        <main class="viewport-3d-container" id="container-3d">
+            <!-- 3D Toolbar with Gizmo Controls -->
+            <div class="viewport-toolbar">
+                <div class="tool-group">
+                    <button class="tool-btn active" id="btn-gizmo-translate" title="Перемещение [W]">📍 Позиция</button>
+                    <button class="tool-btn" id="btn-gizmo-scale" title="Растягивание / Сжатие [R]">📐 Размер</button>
+                    <button class="tool-btn" id="btn-gizmo-rotate" title="Вращение [E]">🔄 Поворот</button>
+                    <button class="tool-btn" id="btn-gizmo-off" title="Скрыть манипулятор [Esc]">✖</button>
+                </div>
+                <div class="tool-group">
+                    <button class="tool-btn active" id="btn-view-textured">Текстуры</button>
+                    <button class="tool-btn" id="btn-view-wireframe">Сетка</button>
+                    <button class="tool-btn" id="btn-toggle-grid">Пол: ВКЛ</button>
+                    <button class="tool-btn" id="btn-reset-cam">Сброс камеры</button>
+                </div>
+            </div>
+            <div id="threejs-canvas-host"></div>
+            <div class="hint-overlay">Гизмо: W (Двиг) | R (Масштаб) | E (Вращ) | ПКМ: Меню</div>
+        </main>
+
+        <!-- Resizer 2 -->
+        <div class="resizer" id="resizer-mid"></div>
+
+        <!-- 3. Center: 2D Pixel Editor -->
+        <section class="viewport-2d-container" id="container-2d">
+            <div class="editor-header">
+                <!-- Target Cube Indicator & Mode -->
+                <div class="texture-scope-badge" id="texture-scope-badge">
+                    <span id="scope-cube-name">Общая текстура элемента</span>
+                    <span class="badge-tag" id="scope-mode-tag">🔗 Общая</span>
+                </div>
+
+                <!-- Face Switcher -->
+                <div class="face-tabs" id="face-tabs">
+                    <button class="face-tab active" data-face="all">All / Item</button>
+                    <button class="face-tab" data-face="top">Top (+Y)</button>
+                    <button class="face-tab" data-face="bottom">Bottom (-Y)</button>
+                    <button class="face-tab" data-face="front">Front (+Z)</button>
+                    <button class="face-tab" data-face="side">Side (Sides)</button>
+                </div>
+
+                <!-- 2D Tools Toolbar -->
+                <div class="toolbar-2d">
+                    <button class="tool-btn active" id="tool-brush" title="Кисть (B)">✏️</button>
+                    <button class="tool-btn" id="tool-line" title="Линия (L)">📏</button>
+                    <button class="tool-btn" id="tool-rect" title="Прямоугольник (U)">🔲</button>
+                    <button class="tool-btn" id="tool-bucket" title="Заливка (F)">🪣</button>
+                    <button class="tool-btn" id="tool-picker" title="Пипетка (I)">💧</button>
+                    <button class="tool-btn" id="tool-eraser" title="Ластик">🧹</button>
+                    <button class="tool-btn" id="tool-clear" title="Очистить холст">🗑️</button>
+                    <div class="nav-divider"></div>
+                    <button class="tool-btn" id="tool-undo" title="Отмена (Ctrl+Z)">↩️</button>
+                    <button class="tool-btn" id="tool-redo" title="Повтор (Ctrl+Y)">↪️</button>
+                </div>
+            </div>
+
+            <!-- Canvas Grid with Coordinate readout -->
+            <div class="grid-wrapper">
+                <div class="grid-canvas" id="pixel-grid"></div>
+            </div>
+
+            <!-- Footer: Color Picker & Previews -->
+            <div class="color-footer">
+                <div class="color-picker-box">
+                    <input type="color" id="picker-color" value="#737987">
+                    <span id="color-hex-label">#737987</span>
+                    <span id="pixel-coord-label" style="font-size: 11px; color: var(--text-muted); margin-left: 8px;">X: 0 Y: 0</span>
+                </div>
+                <div class="preview-group">
+                    <canvas id="prev-16" width="16" height="16" class="pixelated-canvas" title="Размер 16x16"></canvas>
+                    <canvas id="prev-64" width="64" height="64" class="pixelated-canvas" title="Размер 64x64"></canvas>
+                </div>
+            </div>
+        </section>
+
+        <!-- Resizer 3 -->
+        <div class="resizer" id="resizer-right"></div>
+
+        <!-- 4. Right Sidebar: Properties, Palettes & Code -->
+        <aside class="panel right-panel" id="panel-right">
+            <!-- 3D Transform Properties -->
+            <div class="panel-section">
+                <div class="section-title">Свойства куба (Transform)</div>
+                <div class="props-grid" id="cube-properties">
+                    <div class="prop-label">Имя:</div>
+                    <input type="text" id="prop-name" class="lb-input" value="cube_main">
+
+                    <div class="prop-label">Позиция:</div>
+                    <div class="triple-input">
+                        <input type="number" id="prop-pos-x" step="0.1" value="0" title="Pos X">
+                        <input type="number" id="prop-pos-y" step="0.1" value="0.5" title="Pos Y">
+                        <input type="number" id="prop-pos-z" step="0.1" value="0" title="Pos Z">
+                    </div>
+
+                    <div class="prop-label">Размер:</div>
+                    <div class="triple-input">
+                        <input type="number" id="prop-size-x" min="0.01" step="0.1" value="1" title="Size X">
+                        <input type="number" id="prop-size-y" min="0.01" step="0.1" value="1" title="Size Y">
+                        <input type="number" id="prop-size-z" min="0.01" step="0.1" value="1" title="Size Z">
+                    </div>
+
+                    <div class="prop-label">Вращение (°):</div>
+                    <div class="triple-input">
+                        <input type="number" id="prop-rot-x" step="5" value="0" title="Rot X">
+                        <input type="number" id="prop-rot-y" step="5" value="0" title="Rot Y">
+                        <input type="number" id="prop-rot-z" step="5" value="0" title="Rot Z">
+                    </div>
+                </div>
+            </div>
+
+            <!-- Palettes -->
+            <div class="panel-section">
+                <div class="section-title-row">
+                    <span class="section-title">Палитры</span>
+                    <button class="icon-btn-small" id="btn-add-current-color" title="Добавить текущий цвет в палитру">➕ Цвет</button>
+                </div>
+                <div class="palette-tabs" id="palette-tabs">
+                    <button class="pal-tab active" data-pal="stone">Камень</button>
+                    <button class="pal-tab" data-pal="wood">Дерево</button>
+                    <button class="pal-tab" data-pal="nature">Природа</button>
+                    <button class="pal-tab" data-pal="ore">Руды</button>
+                    <button class="pal-tab" data-pal="custom">Своя</button>
+                </div>
+                <div class="palette-swatches" id="palette-swatches"></div>
+            </div>
+
+            <!-- Code Output Preview -->
+            <div class="panel-section flex-grow">
+                <div class="section-title-row">
+                    <span class="section-title">Код генератора</span>
+                    <button class="icon-btn-small" id="btn-copy-code" title="Скопировать код">📋</button>
+                </div>
+                <textarea id="code-output" class="code-box" readonly spellcheck="false"></textarea>
+            </div>
+        </aside>
+
+    </div>
+
+    <!-- Export Modal -->
+    <div class="modal-backdrop" id="export-modal" style="display: none;">
+        <div class="modal-dialog">
+            <div class="modal-header">
+                <h2>⚡ Экспорт модуля для LumiBox</h2>
+                <button class="close-btn" id="btn-close-modal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="tab-buttons">
+                    <button class="modal-tab active" id="tab-blocks-js">source.lumibench (JSON)</button>
+                    <button class="modal-tab" id="tab-gen-js">TextureGenerator Code</button>
+                    <button class="modal-tab" id="tab-model-json">3D Box Model JSON</button>
+                </div>
+                <textarea id="modal-code-area" class="code-box large-code" readonly spellcheck="false"></textarea>
+            </div>
+            <div class="modal-footer">
+                <button class="nav-btn primary" id="btn-copy-modal-code">📋 Скопировать</button>
+                <button class="nav-btn" id="btn-download-code">💾 Скачать файл</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Custom Prompt & Confirm Modal Dialog -->
+    <div class="modal-backdrop" id="custom-dialog-backdrop" style="display: none;">
+        <div class="modal-dialog dialog-small">
+            <div class="modal-header">
+                <h2 id="dialog-title">Диалог</h2>
+                <button class="close-btn" id="dialog-close-btn">&times;</button>
+            </div>
+            <div class="modal-body" id="dialog-body">
+                <p id="dialog-message" style="font-size: 13px; color: var(--text-main); margin-bottom: 8px;"></p>
+                <div id="dialog-input-container" style="display: none;">
+                    <label id="dialog-input-label" class="prop-label" style="margin-bottom: 4px; display: block;"></label>
+                    <input type="text" id="dialog-input-field" class="lb-input" style="width: 100%;">
+                    <div id="dialog-options-container" style="margin-top: 10px;"></div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button class="nav-btn" id="dialog-cancel-btn">Отмена</button>
+                <button class="nav-btn primary" id="dialog-confirm-btn">ОК</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Floating Non-Blocking Toast Notifications -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Floating Custom Context Menu -->
+    <div class="custom-context-menu" id="custom-context-menu" style="display: none;"></div>
+
+    <!-- Logic Script -->
+    <script type="module" src="lumiBench.js"></script>
+</body>
+</html>

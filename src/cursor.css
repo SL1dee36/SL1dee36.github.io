@@ -1,0 +1,82 @@
+/* ==========================================================================
+   Organic Living Fluid Cursor (High-Velocity Physical Dynamic)
+   ========================================================================== */
+@media (hover: hover) and (pointer: fine) {
+    *, *::before, *::after {
+        cursor: none !important;
+    }
+}
+
+button,
+a,
+input,
+.header-logo,
+.header-breadcrumb,
+.header-avatar-btn,
+.side-nav-btn,
+.action-btn,
+.blog-tag,
+.skill-chip,
+.contact-card,
+.project-thumb {
+    transition: transform 0.25s cubic-bezier(0.2, 0, 0, 1), background-color 0.15s ease, border-color 0.15s ease !important;
+    transform-origin: center center;
+    will-change: transform;
+}
+
+.custom-cursor-fluid {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 500px;
+    height: 500px;
+    margin-top: -250px;
+    margin-left: -250px;
+    pointer-events: none;
+    z-index: 2147483647 !important;
+    opacity: 0;
+    overflow: visible;
+    contain: layout paint;
+    will-change: transform;
+    transition: opacity 0.25s ease;
+}
+
+.custom-cursor-fluid svg {
+    width: 100%;
+    height: 100%;
+    overflow: visible;
+    filter: drop-shadow(0 4px 14px rgba(0, 0, 0, 0.14));
+}
+
+.fluid-blob-path {
+    fill: url(#fluid-water-grad);
+    stroke: rgba(223, 255, 179, 0.65);
+    stroke-width: 1.2px;
+    transition: fill 0.3s ease, stroke 0.3s ease;
+}
+
+.fluid-cursor-dot {
+    position: absolute;
+    top: 50%;
+    left: 50%;
+    width: 4px;
+    height: 4px;
+    margin-top: -2px;
+    margin-left: -2px;
+    border-radius: 50%;
+    background-color: var(--color-lime-text);
+    pointer-events: none;
+    z-index: 2;
+    transition: opacity 0.15s ease, transform 0.15s ease;
+}
+
+.custom-cursor-fluid.is-snap .fluid-cursor-dot,
+.custom-cursor-fluid.is-text .fluid-cursor-dot {
+    opacity: 0;
+    transform: scale(0);
+}
+
+.custom-cursor-fluid.is-text .fluid-blob-path {
+    fill: var(--color-lime-text);
+    stroke: transparent;
+}

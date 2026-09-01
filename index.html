@@ -1,364 +1,348 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Portfolio</title>
     <link rel="icon" href="src/images/icon.jpg">
+    
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-    <link href="https://fonts.googleapis.com/css2?family=Unbounded:wght@200&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Google+Sans+Flex:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
     <link rel="stylesheet" href="src/style.css">
+    <link rel="stylesheet" href="src/cursor.css">
+    <link rel="stylesheet" href="src/admin.css">
 </head>
-
 <body>
-    <div class="background-container">
-        <img src="src/backgrounds/aesthetic-background-with-gradient-neon-led-light-effect.jpg" alt="Background image" class="background-image">
-        <div class="background"></div>
-        <div class="wrapper">
-            <div class="content">
-                <div class="content-body">
-                    <header>
-                        <h1 id="home-button">Portfolio</h1>
-                        <input type="text" id="search-bar" placeholder="Search projects and blog...">
-                        <nav class="nav-links">
-                            <button class="active">My repositories</button>
-                            <button>Blog</button>
-                            <button>About Me</button>
-                        </nav>
-                        <button class="hamburger">
-                            <span></span>
-                            <span></span>
-                            <span></span>
-                        </button>
-                    </header>
-    
-                    <div class="mobile-nav">
-                        <button class="active">My repositories</button>
-                        <button>Blog</button>
-                        <button>About Me</button>
+
+    <header class="header-container">
+        <div class="header-bar">
+            <div class="header-logo" id="home-button">PORTFOLIO</div>
+            
+            <button class="header-breadcrumb" id="header-breadcrumb-btn" type="button">
+                <span class="arrow">
+                    <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M9.129 15.1667L15.6623 21.7L13.9998 23.3333L4.6665 14L13.9998 4.66667L15.6623 6.3L9.129 12.8333H23.3332V15.1667H9.129Z" fill="#404D2D"/>
+                    </svg>
+                </span>
+                <span class="text" id="breadcrumb-text">main page</span>
+            </button>
+            
+            <div class="header-search-wrap">
+                <span class="search-icon">
+                    <svg width="24" height="24" viewBox="0 0 28 28" fill="none" xmlns="http://www.w3.org/2000/svg">
+                        <path d="M24.5 24.5L19.425 19.425M22.1667 12.8333C22.1667 17.988 17.988 22.1667 12.8333 22.1667C7.67868 22.1667 3.5 17.988 3.5 12.8333C3.5 7.67868 7.67868 3.5 12.8333 3.5C17.988 3.5 22.1667 7.67868 22.1667 12.8333Z" stroke="#404D2D" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"/>
+                    </svg>
+                </span>
+                <input type="text" id="search-bar" placeholder="search here" autocomplete="off" spellcheck="false">
+            </div>
+
+            <button class="header-avatar-btn" id="avatar-btn" title="About" type="button" aria-label="Profile">
+                <span class="avatar-dot"></span>
+            </button>
+        </div>
+    </header>
+
+    <main class="site-layout">
+        <nav class="side-nav" aria-label="Разделы">
+            <button class="side-nav-btn active" data-view="main">
+                <span class="nav-dot"></span>
+                <span class="nav-label">main</span>
+            </button>
+            <button class="side-nav-btn" data-view="best">
+                <span class="nav-dot"></span>
+                <span class="nav-label">best</span>
+            </button>
+            <button class="side-nav-btn" data-view="blog">
+                <span class="nav-dot"></span>
+                <span class="nav-label">blog</span>
+            </button>
+            <button class="side-nav-btn" data-view="about">
+                <span class="nav-dot"></span>
+                <span class="nav-label">about</span>
+            </button>
+        </nav>
+
+        <section class="main-card-viewport">
+            <div class="card-content-scroll" id="card-scroll-area">
+                
+                <div id="view-projects" class="content-view visible">
+                    <div class="section-heading">
+                        <h2>Repositories & Projects</h2>
+                        <span class="counter" id="projects-counter"></span>
                     </div>
-    
-                    <div class="main-container">
-                        <projects id="projects">
-                            <!-- All project will be loaded here -->
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/rayengine.png" alt="RayEngine" class="project-image">
-                                    <div class="project-text">
-                                        <h3>RayEngine</h3>
-                                        <p>make a game in your browser...</p>
-                                        <a href="https://github.com/SL1dee36/raytracing-simulation" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="src/demo/RayEngine/web.html" target="_blank" class="project-link">Try RayEngine</a>
-                                        <a href="docs.html?projectName=raytracing-simulation&githubLink=https://github.com/SL1dee36/raytracing-simulation" class="project-link">Documentation</a>
-                                    </div>
+
+                    <div class="projects-list" id="projects-grid">
+                        <div class="project-item" data-featured="true">
+                            <img src="src/images/le.png" alt="LuminaEngine" class="project-thumb">
+                            <div class="project-info">
+                                <h3>LuminaEngine</h3>
+                                <p>Lightweight 3D game engine built with JavaScript and Three.js based on Entity-Component-System (ECS) architecture.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/LuminaEngine" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" class="action-btn">Docs</a>
+                                    <a href="src/demo/LuminaEngine/minecraft/index.html" target="_blank" class="action-btn accent">Try LuminaCraft</a>
                                 </div>
                             </div>
-    
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/demo/waterPhys/textures/water_caustic.jpg" alt="WaterPhys" class="project-image">
-                                    <div class="project-text">
-                                        <h3>3d Water Simulation</h3>
-                                        <p>make a game in your browser...</p>
-                                        <a href="src/demo/waterPhys/index.html" target="_blank" class="project-link">Try 3d Water Simulation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item" data-featured="true">
+                            <img src="src/images/rayengine.png" alt="RayEngine" class="project-thumb">
+                            <div class="project-info">
+                                <h3>RayEngine</h3>
+                                <p>Real-time raytracing and physics rendering engine directly inside your web browser.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/raytracing-simulation" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="src/demo/RayEngine/web.html" target="_blank" class="action-btn accent">Demo</a>
+                                    <a href="docs.html?projectName=raytracing-simulation&githubLink=https://github.com/SL1dee36/raytracing-simulation" class="action-btn">Docs</a>
                                 </div>
                             </div>
-    
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/le.png" alt="Fire-Grasp" class="project-image">
-                                    <div class="project-text">
-                                        <h3>LuminaEngine</h3>
-                                        <p>LuminaEngine is a lightweight 3D game engine built with JavaScript and THREE.js. It is designed around the Entity-Component-System (ECS) pattern, promoting a modular, flexible, and easy-to-understand approach to game development.</p>
-                                        <a href="https://github.com/SL1dee36/LuminaEngine" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" class="project-link">Documentation</a>
-                                        <a href="src/demo/LuminaEngine/minecraft/index.html" target="_blank" class="project-link">Try LuminaCraft</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item" data-featured="true">
+                            <img src="src/demo/waterPhys/textures/water_caustic.jpg" alt="3D Water Simulation" class="project-thumb">
+                            <div class="project-info">
+                                <h3>3D Water Simulation</h3>
+                                <p>Interactive 3D fluid caustic surface and real-time wave physics experiment in WebGL.</p>
+                                <div class="project-actions">
+                                    <a href="src/demo/waterPhys/index.html" target="_blank" class="action-btn accent">Try Simulation</a>
                                 </div>
                             </div>
-                            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/firegrasp.jpg" alt="Fire-Grasp" class="project-image">
-                                    <div class="project-text">
-                                        <h3>Fire-Grasp</h3>
-                                        <p>Fire-Grasp is an application designed to detect fires in real-time. It uses screenshots from your computer and image processing algorithms to determine the presence of fire.</p>
-                                        <a href="https://github.com/SL1dee36/Fire-Grasp" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=Fire-Grasp&githubLink=https://github.com/SL1dee36/Fire-Grasp" class="project-link">Documentation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item" data-featured="true">
+                            <img src="src/images/connect-ico.png" alt="Connect" class="project-thumb">
+                            <div class="project-info">
+                                <h3>Connect</h3>
+                                <p>Cross-platform messenger and social networking client with modern real-time architecture.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/Connect" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="docs.html?projectName=Connect&githubLink=https://github.com/SL1dee36/Connect" class="action-btn">Docs</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/ufo_logo.png" alt="ufo" class="project-image">
-                                    <div class="project-text">
-                                        <h3>PY-UFO-DB</h3>
-                                        <p>PY-UFO-DB (Python Unified Flexible Object Database) is a lightweight object-oriented database written in Python. It provides a simple interface for creating, managing, and storing structured data in memory and on disk.</p>
-                                        <a href="https://github.com/SL1dee36/pyufo-db" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=pyufo-db&githubLink=https://github.com/SL1dee36/pyufo-db" class="project-link">Documentation</a>
-                                        <a href="https://pypi.org/project/py-ufo-db" target="_blank" class="project-link">Download library from PyPI</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/firegrasp.jpg" alt="Fire-Grasp" class="project-thumb">
+                            <div class="project-info">
+                                <h3>Fire-Grasp</h3>
+                                <p>Real-time computer vision system for wildfire and flame detection using image processing pipelines.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/Fire-Grasp" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="docs.html?projectName=Fire-Grasp&githubLink=https://github.com/SL1dee36/Fire-Grasp" class="action-btn">Docs</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/extension.png" alt="ufo" class="project-image">
-                                    <div class="project-text">
-                                        <h3>QuickTranslate</h3>
-                                        <p>QuickTranslate is a versatile desktop application designed to streamline your translation needs. It allows you to quickly translate selected text using either Google Translate or DeepL, and offers a range of customizable features. The application operates from your system tray and is activated with a customizable hotkey. The translated text is displayed in a small window that appears near your cursor.</p>
-                                        <a href="https://github.com/SL1dee36/QuickTranslate" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=QuickTranslate&githubLink=https://github.com/SL1dee36/QuickTranslate" class="project-link">Documentation</a>
-                                        <a href="https://github.com/SL1dee36/QuickTranslate/releases/" target="_blank" class="project-link">Download install tool</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/ufo_logo.png" alt="PY-UFO-DB" class="project-thumb">
+                            <div class="project-info">
+                                <h3>PY-UFO-DB</h3>
+                                <p>Lightweight, flexible object-oriented embedded database system for structured Python objects.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/pyufo-db" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="https://pypi.org/project/py-ufo-db" target="_blank" class="action-btn">PyPI</a>
                                 </div>
                             </div>
-    
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/white_noise.png" alt="ufo" class="project-image">
-                                    <div class="project-text">
-                                        <h3>White Noise Image Generator</h3>
-                                        <p>This is a simple web-based tool that allows you to generate images simulating white noise. You can customize the image by setting the number of columns, rows, square size, color mode, and bias.</p>
-                                        <a href="https://github.com/SL1dee36/White-Noise-Image-Generator" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=White-Noise-Image-Generator&githubLink=https://github.com/SL1dee36/White-Noise-Image-Generator" class="project-link">Documentation</a>
-                                        <a href="src/demo/webWallpaperGen/index.html" target="_blank" class="project-link">Open WNIG</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/extension.png" alt="QuickTranslate" class="project-thumb">
+                            <div class="project-info">
+                                <h3>QuickTranslate</h3>
+                                <p>System-tray desktop utility for instant cursor-level text translation with Google & DeepL.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/QuickTranslate" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="https://github.com/SL1dee36/QuickTranslate/releases/" target="_blank" class="action-btn">Release</a>
                                 </div>
                             </div>
-                            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/ufo_logo.png" alt="ufo" class="project-image">
-                                    <div class="project-text">
-                                        <h3>UFO-Data-Base-Studio</h3>
-                                        <p>UFO-Data-Base-Studio (Python Unified Flexible Object Database) - Now in a Desktop version for Windows 10+</p>
-                                        <a href="https://github.com/SL1dee36/UFO-Data-Base-Studio" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=UFO-Data-Base-Studio&githubLink=https://github.com/SL1dee36/UFO-Data-Base-Studio" class="project-link">Documentation</a>
-                                        <a href="https://github.com/SL1dee36/UFO-Data-Base-Studio/raw/refs/heads/main/install%20tool/setup.exe" target="_blank" class="project-link">Download install tool</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/white_noise.png" alt="White Noise Generator" class="project-thumb">
+                            <div class="project-info">
+                                <h3>White Noise Image Generator</h3>
+                                <p>Customizable visual tool for generating procedurally distributed noise and wallpaper textures.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/White-Noise-Image-Generator" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="src/demo/webWallpaperGen/index.html" target="_blank" class="action-btn accent">Open WNIG</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/Deep.webp" alt="Deep" class="project-image">
-                                    <div class="project-text">
-                                        <h3>DEEP</h3>
-                                        <p>DEEP is a mobile application designed for employees of the Ministry of Emergency Situations (EMERCOM), divers, sappers, and other specialists who work directly with life-threatening situations or objects. The application provides tools and resources to enhance the safety and efficiency of their work in extreme conditions.</p>
-                                        <a href="https://github.com/SL1dee36/DEEP" target="_blank" class="project-link">Open on GitHub</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/ufo_logo.png" alt="UFO Database Studio" class="project-thumb">
+                            <div class="project-info">
+                                <h3>UFO-Data-Base-Studio</h3>
+                                <p>Full desktop GUI studio for inspection, query execution, and storage management in UFO databases.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/UFO-Data-Base-Studio" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/NeTube.jpg" alt="NeTube" class="project-image">
-                                    <div class="project-text">
-                                        <h3>NeTube</h3>
-                                        <p>NeTube is a simplified video sharing platform built using the Flask framework (Python). It allows users to upload, view, and rate videos.</p>
-                                        <a href="https://github.com/SL1dee36/NeTube" target="_blank" class="project-link">Open on GitHub</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/Deep.webp" alt="DEEP" class="project-thumb">
+                            <div class="project-info">
+                                <h3>DEEP</h3>
+                                <p>Mobile app designed for emergency responders, divers, and sappers to improve safety in critical environments.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/DEEP" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/connect-ico.png" alt="NeTube" class="project-image">
-                                    <div class="project-text">
-                                        <h3>Connect</h3>
-                                        <p>Connect is a cross-platform application that combines the functions of a messenger and a social network. It provides users with an easy and convenient way to communicate with friends, find new acquaintances and share their thoughts and moments in life.</p>
-                                        <a href="https://github.com/SL1dee36/Connect" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=Connect&githubLink=https://github.com/SL1dee36/Connect" class="project-link">Documentation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/NeTube.jpg" alt="NeTube" class="project-thumb">
+                            <div class="project-info">
+                                <h3>NeTube</h3>
+                                <p>Video hosting web platform developed using Python and Flask with video processing workflows.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/NeTube" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <img src="src/images/winp.png" alt="winp" class="project-image">
-                                    <div class="project-text">
-                                        <h3>WinP</h3>
-                                        <p>WinP is an easy-to-use, feature-rich application with a graphical interface.</p>
-                                        <a href="https://github.com/SL1dee36/WinP" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=WinP&githubLink=https://github.com/SL1dee36/WinP" class="project-link">Documentation</a>
-                                        <a href="https://github.com/SL1dee36/WinP/releases" target="_blank" class="project-link">Download</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <img src="src/images/winp.png" alt="WinP" class="project-thumb">
+                            <div class="project-info">
+                                <h3>WinP</h3>
+                                <p>Lightweight Windows utility packed with productivity shortcuts and system management tools.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/WinP" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>Web Chess: vs AI</h3>
-                                        <p>Simple Web chess, where the user can play against the AI.</p>
-                                        <a href="https://github.com/SL1dee36/web-chess" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="src/demo/web_chess.html" target="_blank" class="project-link">Play vs AI</a>
-            
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <div class="project-thumb placeholder-thumb">♟️</div>
+                            <div class="project-info">
+                                <h3>Web Chess vs AI</h3>
+                                <p>Interactive browser chess engine with minimax decision search and evaluation scoring.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/web-chess" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="src/demo/web_chess.html" target="_blank" class="action-btn accent">Play vs AI</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>fluid-simulation</h3>
-                                        <p>This program simulates a 2D fluid using the Smoothed Particle Hydrodynamics (SPH) method. It allows users to interact with the fluid by creating new particles and manipulating existing ones.</p>
-                                        <a href="https://github.com/SL1dee36/fluid-simulation" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=fluid-simulation&githubLink=https://github.com/SL1dee36/fluid-simulation" class="project-link">Documentation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <div class="project-thumb placeholder-thumb">💧</div>
+                            <div class="project-info">
+                                <h3>fluid-simulation</h3>
+                                <p>2D fluid dynamic engine using Smoothed Particle Hydrodynamics (SPH) with mouse interactions.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/fluid-simulation" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>HangmanAI</h3>
-                                        <p>AI is attempting Hangman. (with varying degrees of success)</p>
-                                        <a href="https://github.com/SL1dee36/HangmanAI" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=HangmanAI&githubLink=https://github.com/SL1dee36/HangmanAI" class="project-link">Documentation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <div class="project-thumb placeholder-thumb">🔤</div>
+                            <div class="project-info">
+                                <h3>Asciify</h3>
+                                <p>High-performance Python module converting media files, webcam frames, and images into clean ASCII art.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/Asciify" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>RayMarching</h3>
-                                        <p>Ray marching is a powerful rendering technique that allows you to create stunning visuals by directly tracing rays through a scene and calculating intersections with geometric shapes defined by mathematical functions.</p>
-                                        <a href="https://github.com/SL1dee36/RayMarching" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=RayMarching&githubLink=https://github.com/SL1dee36/RayMarching" class="project-link">Documentation</a>
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <div class="project-thumb placeholder-thumb">📝</div>
+                            <div class="project-info">
+                                <h3>WrdSmth</h3>
+                                <p>Versatile text pre-processing and tokenization toolkit for NLP experiments and machine learning datasets.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/wrdsmth-api" target="_blank" class="action-btn">GitHub</a>
+                                    <a href="https://pypi.org/project/WrdSmth" target="_blank" class="action-btn">PyPI</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>Asciify</h3>
-                                        <p>Asciify is a Python library designed to transform your images and videos into unique, text-based ASCII art representations. It's a simple yet powerful tool for adding a retro touch to your multimedia content.</p>
-                                        <a href="https://github.com/SL1dee36/Asciify" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=Asciify&githubLink=https://github.com/SL1dee36/Asciify" class="project-link">Documentation</a>
-            
-                                    </div>
+                        </div>
+
+                        <div class="project-item">
+                            <div class="project-thumb placeholder-thumb">🎯</div>
+                            <div class="project-info">
+                                <h3>RayMarching</h3>
+                                <p>SDF volumetric renderer simulating complex mathematically defined geometrical scenes.</p>
+                                <div class="project-actions">
+                                    <a href="https://github.com/SL1dee36/RayMarching" target="_blank" class="action-btn">GitHub</a>
                                 </div>
                             </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>WrdSmth</h3>
-                                        <p>WrdSmth is a versatile Python library designed to streamline your text preprocessing workflow. Whether you're working on Natural Language Processing (NLP) tasks, data analysis, or machine learning projects, WrdSmth provides a comprehensive suite of tools to clean, transform, and prepare your text data for optimal results.</p>
-                                        <a href="https://github.com/SL1dee36/wrdsmth-api" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=wrdsmth-api&githubLink=https://github.com/SL1dee36/wrdsmth-api" class="project-link">Documentation</a>
-                                        <a href="https://pypi.org/project/WrdSmth" target="_blank" class="project-link">Download library from PyPI</a>
-                                    </div>
-                                </div>
-                            </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>StartAllBack-License-Bypass</h3>
-                                        <p>This Python script attempts to bypass the license requirement for the StartAllBack application by modifying registry entries.</p>
-                                        <a href="https://github.com/SL1dee36/StartAllBack-License-Bypass" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=StartAllBack-License-Bypass&githubLink=https://github.com/SL1dee36/StartAllBack-License-Bypass" class="project-link">Documentation</a>
-                                    </div>
-                                </div>
-                            </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>visual-finance-manager</h3>
-                                        <p>A financial manager written in Python.</p>
-                                        <a href="https://github.com/SL1dee36/visual-finance-manager" target="_blank" class="project-link">Open on GitHub</a>
-                                    </div>
-                                </div>
-                            </div>
-            
-                            <div class="project">
-                                <div class="project-content">
-                                    <div class="project-text">
-                                        <h3>GuessingAI</h3>
-                                        <p>This Python code implements a simple AI to guess a randomly selected number between 0 and 100. The AI employs a binary search strategy to efficiently narrow down the possible numbers.</p>
-                                        <a href="https://github.com/SL1dee36/GuessingAI" target="_blank" class="project-link">Open on GitHub</a>
-                                        <a href="docs.html?projectName=GuessingAI&githubLink=https://github.com/SL1dee36/GuessingAI" class="project-link">Documentation</a>
-            
-                                    </div>
-                                </div>
-                            </div>
-                        </projects>
-        
-                        <blog id="blog">
-                            <!-- Blog posts will be loaded here -->
-                        </blog>
-        
-                        <about id="about">
-                            <div class="AboutMe-content">
-                                <div class="image-container">
-                                    <img src="src/images/avatar.jpg" alt="Avatar">
-                                </div>
-                                <div class="content-wrapper">
-            
-                                    <div class="content">
-            
-                                        <div class="about">
-                                            <h3 style="border-bottom: solid 1px #797979;">I'm Artyom, a 20-year-old software engineer with 8+ years of coding experience. </h3>
-                                            <h3>My portfolio, showcasing a range of personal projects, is available both here and on my GitHub. </h3>
-                                            <h3>I primarily focus on Python development, specializing in deep learning (DL) and computer vision (CV), but I also have a strong mobile development background leveraging Kotlin and Java. </h3>
-                                            <h3>My competitive programming journey includes accolades from academic competitions and olympiads, complemented by experience in big data analysis hackathons. </h3>
-                                            <h3>Check out some of my core competencies below.</h3>
-            
-                                        </div>
-                                    
-                                        <div class="skills">
-                                            <a style="border-radius: 0%;" href="https://www.csharp-lang.org/" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/C%23-02303A?style=for-the-badge&logo=csharp&logoColor=white" alt="C#"></a>
-                                            <a style="border-radius: 0%;" href="https://www.python.org/" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/Python-3776AB?style=for-the-badge&logo=python&logoColor=white" alt="Python"></a>
-                                            <a style="border-radius: 0%;" href="https://www.java.com/" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/Java-B07219?style=for-the-badge&logo=java&logoColor=white" alt="Java"></a>
-                                            <a style="border-radius: 0%;" href="https://developer.mozilla.org/en-US/docs/Web/JavaScript" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/JavaScript-F7DF1E?style=for-the-badge&logo=javascript&logoColor=black" alt="JavaScript"></a>
-                                            <a style="border-radius: 0%;" href="https://isocpp.org/" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/C%2B%2B-00599C?style=for-the-badge&logo=cplusplus&logoColor=white" alt="C++"></a>
-                                            <a style="border-radius: 0%;" href="https://kotlinlang.org/" target="_blank" rel="noopener">
-                                                <img src="https://img.shields.io/badge/Kotlin-0095B6?style=for-the-badge&logo=kotlin&logoColor=white" alt="Kotlin"></a>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </about>
+                        </div>
                     </div>
                 </div>
 
-                 <footer>
-                    <div class="footer">
-                        <div class="footer-section">
-                            <p style="border-bottom: solid 1px white;">© 2025 Nazaryan Artem</p>
-                            <ul>
-                                <li><a href="https://www.youtube.com/@codejets" target="_blank">CodeJets</a></li>
-                                <li>v1.2.0</li>
-                            </ul>
+                <div id="view-blog" class="content-view">
+                    <div class="section-heading">
+                        <h2>Blog & Notes</h2>
+                    </div>
+                    <div id="blog-posts-container" class="blog-grid">
+                        <p class="loading-state">Loading posts...</p>
+                    </div>
+                </div>
+
+                <div id="view-about" class="content-view">
+                    <div class="about-card-inner">
+                        <div class="about-header">
+                            <img src="src/images/avatar.jpg" alt="Artyom" class="about-avatar" onerror="this.src='src/images/icon.jpg'">
+                            <div class="about-title-wrap">
+                                <h2>Artyom Nazaryan</h2>
+                                <p class="about-subtitle">Software Engineer • Systems & Deep Learning</p>
+                            </div>
                         </div>
-                        <div class="footer-section">
-                            <p style="border-bottom: solid 1px white;">Contact me</p>
-                            <ul>
-                                <li><a href="mailto:spanishiwasc2@gmail.com">spanishiwasc2@gmail.com</a></li>
-                                <li><a href="https://t.me/Slide36" target="_blank">Telegram</a></li>
-                                <li><a href="https://github.com/sl1dee36" target="_blank">GitHub</a></li>
-                            </ul>
+
+                        <div class="about-text-content">
+                            <p>Hi, I'm Artyom. I develop system software, game engines, and computer vision pipelines with a focus on high efficiency and clean architecture.</p>
+                            <p>I specialize in low-level systems programming (C, C++, Rust), backend solutions (Python, Go), and modern interactive graphics with WebGL / Three.js.</p>
+                        </div>
+
+                        <div class="about-section-block">
+                            <h3>Tech Stack & Skills</h3>
+                            <div class="skills-chips">
+                                <span class="skill-chip">C / C++</span>
+                                <span class="skill-chip">Rust</span>
+                                <span class="skill-chip">Python</span>
+                                <span class="skill-chip">Go</span>
+                                <span class="skill-chip">JavaScript / TypeScript</span>
+                                <span class="skill-chip">Linux & Kernel</span>
+                                <span class="skill-chip">Three.js / WebGL</span>
+                                <span class="skill-chip">Computer Vision</span>
+                            </div>
+                        </div>
+
+                        <div class="about-section-block">
+                            <h3>Contacts & Links</h3>
+                            <div class="contact-links-grid">
+                                <a href="https://github.com/sl1dee36" target="_blank" class="contact-card">
+                                    <span class="contact-name">GitHub</span>
+                                    <span class="contact-val">@sl1dee36</span>
+                                </a>
+                                <a href="https://t.me/Slide36" target="_blank" class="contact-card">
+                                    <span class="contact-name">Telegram</span>
+                                    <span class="contact-val">@Slide36</span>
+                                </a>
+                                <a href="mailto:spanishiwasc2@gmail.com" class="contact-card">
+                                    <span class="contact-name">Email</span>
+                                    <span class="contact-val">spanishiwasc2@gmail.com</span>
+                                </a>
+                                <a href="https://www.youtube.com/@codejets" target="_blank" class="contact-card">
+                                    <span class="contact-name">YouTube</span>
+                                    <span class="contact-val">CodeJets</span>
+                                </a>
+                            </div>
                         </div>
                     </div>
-                </footer>
+                </div>
+
             </div>
-        </div>
-    </div>
-    
+        </section>
+    </main>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+    <script src="src/cursor.js"></script>
+    <script src="src/particle.js"></script>
     <script src="src/script.js"></script>
+    <script src="src/adminpanel.js"></script>
 </body>
 </html>
