@@ -21,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
             fetch(readmeURL)
                 .then(response => {
                     if (!response.ok) {
-                        // Резервная попытка через ветку master, если main не существует
                         return fetch(`https://raw.githubusercontent.com/${username}/${repo}/master/README.md`)
                             .then(fallbackRes => {
                                 if (!fallbackRes.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -31,10 +30,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.text();
                 })
                 .then(markdown => {
-                    if (window.marked) {
-                        markdownContainer.innerHTML = marked.parse(markdown);
-                    } else {
-                        markdownContainer.textContent = markdown;
+                    if (markdownContainer) {
+                        markdownContainer.innerHTML = window.marked ? marked.parse(markdown) : markdown;
                     }
                 })
                 .catch(error => {
