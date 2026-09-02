@@ -17,7 +17,7 @@ print(squared_numbers)
 
 This code works. It's clear. But it's not... elegant. It takes up 3 lines for a fairly simple operation. In Python, there is a better, more expressive, and often faster way. It's called a **List Comprehension**.
 
-![Comparison of a for-loop and a List Comprehension](src/images/blog/list-comprehension.png)
+![Comparison of a for-loop and a List Comprehension](img/list-comprehension.png)
 
 ### What is a List Comprehension?
 

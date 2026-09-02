@@ -1,0 +1,260 @@
+/* ==========================================================================
+   Documentation & Markdown Styles (Theme-matched to Portfolio 2026)
+   ========================================================================== */
+
+:root {
+    --color-bg: #1c1d1d;
+    --color-card-bg: #ffffff;
+    --color-lime: #DFFFB3;
+    --color-lime-text: #404D2D;
+    --color-lime-30: rgba(223, 255, 179, 0.3);
+    --color-text-dark: #191c1c;
+    --color-text-muted: #5c6061;
+    --color-item-bg: #f4f6f0;
+    --color-item-border: #e2e6db;
+    --radius-pill: 64px;
+    --radius-card: 24px;
+    --radius-item: 16px;
+    --font-main: "Google Sans Flex", "Google Sans", system-ui, -apple-system, sans-serif;
+}
+
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* Блокировка горизонтальной полосы прокрутки */
+html, body {
+    width: 100%;
+    height: 100%;
+    max-width: 100vw;
+    overflow-x: hidden !important;
+    background-color: var(--color-card-bg);
+    font-family: var(--font-main);
+    color: var(--color-text-dark);
+    line-height: 1.6;
+    -webkit-font-smoothing: antialiased;
+}
+
+/* Внутренний контейнер документации */
+.container {
+    width: 100%;
+    max-width: 960px;
+    margin: 0 auto;
+    padding: 24px 28px 48px 28px;
+    overflow-x: hidden;
+}
+
+/* Шапка документации */
+header {
+    margin-bottom: 24px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid var(--color-item-border);
+}
+
+header h1 {
+    font-size: 26px;
+    font-weight: 600;
+    color: var(--color-text-dark);
+    letter-spacing: -0.02em;
+    margin-bottom: 12px;
+    word-break: break-word;
+}
+
+.button-container button,
+#back-button {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background-color: var(--color-lime);
+    color: var(--color-lime-text);
+    border: none;
+    outline: none;
+    border-radius: var(--radius-pill);
+    padding: 8px 20px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: background-color 0.15s ease, transform 0.15s ease;
+}
+
+.button-container button:hover,
+#back-button:hover {
+    background-color: #d4f7a3;
+    transform: translateY(-1px);
+}
+
+/* Стили рендера Markdown */
+#markdown-content {
+    width: 100%;
+    max-width: 100%;
+    overflow-x: hidden !important;
+    word-wrap: break-word;
+    word-break: break-word;
+    font-size: 15px;
+    color: #2b2f30;
+}
+
+#markdown-content h1,
+#markdown-content h2,
+#markdown-content h3,
+#markdown-content h4 {
+    color: var(--color-text-dark);
+    font-weight: 600;
+    margin-top: 1.4em;
+    margin-bottom: 0.6em;
+    line-height: 1.3;
+}
+
+#markdown-content h1 {
+    font-size: 24px;
+    border-bottom: 1px solid var(--color-item-border);
+    padding-bottom: 8px;
+}
+
+#markdown-content h2 { font-size: 20px; }
+#markdown-content h3 { font-size: 17px; }
+#markdown-content h4 { font-size: 15px; }
+
+#markdown-content p {
+    margin-bottom: 1.1em;
+    line-height: 1.65;
+}
+
+#markdown-content a {
+    color: var(--color-lime-text);
+    font-weight: 600;
+    text-decoration: underline;
+    text-underline-offset: 3px;
+    transition: color 0.15s ease;
+}
+
+#markdown-content a:hover {
+    color: #252e18;
+}
+
+/* Адаптивные медиа без выхода за пределы экрана */
+#markdown-content img,
+#markdown-content video {
+    display: block;
+    max-width: 100% !important;
+    height: auto !important;
+    border-radius: var(--radius-item);
+    border: 1px solid var(--color-item-border);
+    margin: 18px auto;
+    object-fit: cover;
+}
+
+/* Блоки кода и inline-код */
+#markdown-content pre {
+    background-color: #191c1c;
+    color: #e2e6db;
+    border-radius: var(--radius-item);
+    padding: 16px 18px;
+    margin: 16px 0;
+    max-width: 100%;
+    overflow-x: auto;
+    font-family: "JetBrains Mono", Consolas, Menlo, monospace;
+    font-size: 13px;
+    line-height: 1.5;
+}
+
+#markdown-content pre::-webkit-scrollbar {
+    height: 4px;
+}
+
+#markdown-content pre::-webkit-scrollbar-thumb {
+    background-color: var(--color-lime-text);
+    border-radius: 4px;
+}
+
+#markdown-content code {
+    background-color: var(--color-item-bg);
+    color: var(--color-lime-text);
+    border: 1px solid var(--color-item-border);
+    padding: 2px 6px;
+    border-radius: 6px;
+    font-family: "JetBrains Mono", Consolas, Menlo, monospace;
+    font-size: 13px;
+    word-break: break-all;
+}
+
+#markdown-content pre code {
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    color: inherit;
+    font-size: inherit;
+    word-break: normal;
+}
+
+/* Цитаты */
+#markdown-content blockquote {
+    margin: 16px 0;
+    padding: 10px 18px;
+    border-left: 4px solid var(--color-lime);
+    background-color: var(--color-item-bg);
+    border-radius: 0 var(--radius-item) var(--radius-item) 0;
+    color: var(--color-text-muted);
+    font-style: italic;
+}
+
+/* Таблицы с защитой от горизонтального вылета */
+#markdown-content table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 18px 0;
+    display: block;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+#markdown-content th,
+#markdown-content td {
+    padding: 10px 14px;
+    border: 1px solid var(--color-item-border);
+    font-size: 14px;
+    text-align: left;
+}
+
+#markdown-content th {
+    background-color: var(--color-item-bg);
+    font-weight: 600;
+    color: var(--color-text-dark);
+}
+
+/* Списки */
+#markdown-content ul,
+#markdown-content ol {
+    margin: 0 0 1.2em 20px;
+}
+
+#markdown-content li {
+    margin-bottom: 6px;
+}
+
+/* Кастомный тонкий скроллбар страницы */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 0px;
+}
+
+::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+    background-color: #d6ded0;
+    border-radius: 6px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+    background-color: #b7c4af;
+}
+
+/* Скрытие ненужных элементов старого шаблона в режиме документации */
+footer,
+#projects {
+    display: none !important;
+}

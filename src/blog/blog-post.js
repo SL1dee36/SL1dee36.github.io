@@ -3,7 +3,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const postTitleHeader = document.getElementById('post-title');
     const postMetaHeader = document.getElementById('post-meta');
     const markdownContainer = document.getElementById('markdown-content');
-
     const urlParams = new URLSearchParams(window.location.search);
     const postFilename = urlParams.get('post');
 
@@ -12,7 +11,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const metadata = {};
         const bodyLines = [];
         let parsingMeta = true;
-
         for (const line of lines) {
             if (parsingMeta) {
                 const metaMatch = line.match(/^([^:]+):\s*(.*)$/);
@@ -25,24 +23,22 @@ document.addEventListener('DOMContentLoaded', () => {
                     else if (key === 'categories') metadata.categories = value.split(',').map(c => c.trim());
                 } else if (line.trim() === '' && Object.keys(metadata).length > 0) {
                     parsingMeta = false;
-                } else {
-                     if (line.trim() !== '') {
+                } else { 
+                    if (line.trim() !== '') {
                         parsingMeta = false;
                         bodyLines.push(line);
-                     }
+                    }
                 }
             } else {
                 bodyLines.push(line);
             }
         }
-        
         metadata.body = bodyLines.join('\n');
         return metadata;
     }
 
     if (postFilename) {
-        const postURL = `src/blog/${postFilename}`;
-
+        const postURL = `articles/${postFilename}`;
         fetch(postURL)
             .then(response => {
                 if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
@@ -64,6 +60,6 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     backButton.addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../../index.html';
     });
 });

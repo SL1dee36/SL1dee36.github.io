@@ -23,7 +23,7 @@
       "tags": ["JavaScript", "Three.js", "ECS"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/LumiBox" },
-        { "label": "Documentation", "url": "docs.html?projectName=LumiBox&githubLink=https://github.com/SL1dee36/LumiBox" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=LumiBox&githubLink=https://github.com/SL1dee36/LumiBox" },
         { "label": "Try LumiBox", "url": "src/demo/LumiBox/index.html" }
       ]
     },
@@ -37,7 +37,7 @@
       "tags": ["Python", "Computer Vision", "Real-Time"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/Fire-Grasp" },
-        { "label": "Documentation", "url": "docs.html?projectName=Fire-Grasp&githubLink=https://github.com/SL1dee36/Fire-Grasp" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=Fire-Grasp&githubLink=https://github.com/SL1dee36/Fire-Grasp" }
       ]
     },
     {
@@ -51,7 +51,7 @@
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/raytracing-simulation" },
         { "label": "Try RayEngine", "url": "src/demo/RayEngine/web.html" },
-        { "label": "Documentation", "url": "docs.html?projectName=raytracing-simulation&githubLink=https://github.com/SL1dee36/raytracing-simulation" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=raytracing-simulation&githubLink=https://github.com/SL1dee36/raytracing-simulation" }
       ]
     },
     {
@@ -64,7 +64,7 @@
       "tags": ["JavaScript", "Three.js", "ECS"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/LuminaEngine" },
-        { "label": "Documentation", "url": "docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" },
         { "label": "Try LuminaCraft", "url": "src/demo/LuminaEngine/minecraft/index.html" }
       ]
     },
@@ -90,7 +90,7 @@
       "tags": ["Python", "Database", "OOP", "PyPI"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/pyufo-db" },
-        { "label": "Documentation", "url": "docs.html?projectName=pyufo-db&githubLink=https://github.com/SL1dee36/pyufo-db" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=pyufo-db&githubLink=https://github.com/SL1dee36/pyufo-db" },
         { "label": "PyPI Package", "url": "https://pypi.org/project/py-ufo-db" }
       ]
     },
@@ -104,7 +104,7 @@
       "tags": ["Python", "Desktop App", "DeepL", "Translation"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/QuickTranslate" },
-        { "label": "Documentation", "url": "docs.html?projectName=QuickTranslate&githubLink=https://github.com/SL1dee36/QuickTranslate" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=QuickTranslate&githubLink=https://github.com/SL1dee36/QuickTranslate" },
         { "label": "Download Releases", "url": "https://github.com/SL1dee36/QuickTranslate/releases/" }
       ]
     },
@@ -118,7 +118,7 @@
       "tags": ["JavaScript", "Procedural", "Web Tool"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/White-Noise-Image-Generator" },
-        { "label": "Documentation", "url": "docs.html?projectName=White-Noise-Image-Generator&githubLink=https://github.com/SL1dee36/White-Noise-Image-Generator" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=White-Noise-Image-Generator&githubLink=https://github.com/SL1dee36/White-Noise-Image-Generator" },
         { "label": "Open WNIG", "url": "src/demo/webWallpaperGen/index.html" }
       ]
     },
@@ -132,7 +132,7 @@
       "tags": ["Python", "GUI", "Desktop", "Database"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/UFO-Data-Base-Studio" },
-        { "label": "Documentation", "url": "docs.html?projectName=UFO-Data-Base-Studio&githubLink=https://github.com/SL1dee36/UFO-Data-Base-Studio" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=UFO-Data-Base-Studio&githubLink=https://github.com/SL1dee36/UFO-Data-Base-Studio" },
         { "label": "Download Setup", "url": "https://github.com/SL1dee36/UFO-Data-Base-Studio/raw/refs/heads/main/install%20tool/setup.exe" }
       ]
     },
@@ -170,7 +170,7 @@
       "tags": ["Cross-Platform", "Messenger", "Social Network"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/Connect" },
-        { "label": "Documentation", "url": "docs.html?projectName=Connect&githubLink=https://github.com/SL1dee36/Connect" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=Connect&githubLink=https://github.com/SL1dee36/Connect" }
       ]
     },
     {
@@ -183,7 +183,7 @@
       "tags": ["Python", "GUI", "Desktop"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/WinP" },
-        { "label": "Documentation", "url": "docs.html?projectName=WinP&githubLink=https://github.com/SL1dee36/WinP" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=WinP&githubLink=https://github.com/SL1dee36/WinP" },
         { "label": "Download Releases", "url": "https://github.com/SL1dee36/WinP/releases" }
       ]
     },
@@ -210,7 +210,7 @@
       "tags": ["Python", "SPH", "Fluid Dynamics", "Physics"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/fluid-simulation" },
-        { "label": "Documentation", "url": "docs.html?projectName=fluid-simulation&githubLink=https://github.com/SL1dee36/fluid-simulation" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=fluid-simulation&githubLink=https://github.com/SL1dee36/fluid-simulation" }
       ]
     },
     {
@@ -223,7 +223,7 @@
       "tags": ["Python", "AI", "NLP"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/HangmanAI" },
-        { "label": "Documentation", "url": "docs.html?projectName=HangmanAI&githubLink=https://github.com/SL1dee36/HangmanAI" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=HangmanAI&githubLink=https://github.com/SL1dee36/HangmanAI" }
       ]
     },
     {
@@ -236,7 +236,7 @@
       "tags": ["Shaders", "Ray Marching", "Graphics", "Math"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/RayMarching" },
-        { "label": "Documentation", "url": "docs.html?projectName=RayMarching&githubLink=https://github.com/SL1dee36/RayMarching" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=RayMarching&githubLink=https://github.com/SL1dee36/RayMarching" }
       ]
     },
     {
@@ -249,7 +249,7 @@
       "tags": ["Python", "ASCII", "Image Processing", "Video"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/Asciify" },
-        { "label": "Documentation", "url": "docs.html?projectName=Asciify&githubLink=https://github.com/SL1dee36/Asciify" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=Asciify&githubLink=https://github.com/SL1dee36/Asciify" }
       ]
     },
     {
@@ -262,7 +262,7 @@
       "tags": ["Python", "NLP", "Preprocessing", "PyPI"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/wrdsmth-api" },
-        { "label": "Documentation", "url": "docs.html?projectName=wrdsmth-api&githubLink=https://github.com/SL1dee36/wrdsmth-api" },
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=wrdsmth-api&githubLink=https://github.com/SL1dee36/wrdsmth-api" },
         { "label": "PyPI Package", "url": "https://pypi.org/project/WrdSmth" }
       ]
     },
@@ -276,7 +276,7 @@
       "tags": ["Python", "Windows", "Registry"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/StartAllBack-License-Bypass" },
-        { "label": "Documentation", "url": "docs.html?projectName=StartAllBack-License-Bypass&githubLink=https://github.com/SL1dee36/StartAllBack-License-Bypass" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=StartAllBack-License-Bypass&githubLink=https://github.com/SL1dee36/StartAllBack-License-Bypass" }
       ]
     },
     {
@@ -301,7 +301,7 @@
       "tags": ["Python", "Binary Search", "Algorithm"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/GuessingAI" },
-        { "label": "Documentation", "url": "docs.html?projectName=GuessingAI&githubLink=https://github.com/SL1dee36/GuessingAI" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=GuessingAI&githubLink=https://github.com/SL1dee36/GuessingAI" }
       ]
     }
   ],

@@ -9,7 +9,7 @@ The previous version was decent, but at its core, it remained a static showcase.
 
 That's how the idea for a major update was born. Let's take a look at what's new!
 
-![New portfolio interface](src/images/blog/portfolio-1.2.0-update.jpg)
+![New portfolio interface](img/portfolio-1.2.0-update.jpg)
 
 ### The Main New Feature — The Blog
 

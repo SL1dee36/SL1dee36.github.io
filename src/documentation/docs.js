@@ -57,7 +57,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 
     backButton.addEventListener('click', () => {
-        window.location.href = 'index.html';
+        window.location.href = '../../index.html';
     });
 
     backButton.style.display = 'none'; // Hide back button initially

@@ -140,13 +140,12 @@ document.addEventListener('DOMContentLoaded', () => {
     async function loadBlogPosts() {
         if (blogLoaded || !blogContainer) return;
         try {
-            const response = await fetch('src/blog-manifest.json');
+            const response = await fetch('src/blog/blog-manifest.json');
             if (!response.ok) throw new Error('Manifest not found');
             const manifest = await response.json();
             blogContainer.innerHTML = '';
-
             for (const postFile of manifest.posts) {
-                const postResponse = await fetch(`src/blog/${postFile}`);
+                const postResponse = await fetch(`src/blog/articles/${postFile}`);
                 const markdown = await postResponse.text();
                 const postData = parseMarkdownPost(markdown);
                 const postElement = createBlogCard(postData, postFile);
@@ -193,9 +192,8 @@ document.addEventListener('DOMContentLoaded', () => {
         card.className = 'blog-card';
         const snippet = postData.body.split('\n').find(l => l.length > 15 && !l.startsWith('#')) || '';
         const tagsHtml = (postData.tags || []).map(t => `<span class="blog-tag" data-search="${t}">${t}</span>`).join(' ');
-
         card.innerHTML = `
-            <h3><a href="blog-post.html?post=${filename}">${postData.title || filename}</a></h3>
+            <h3><a href="src/blog/blog-post.html?post=${filename}">${postData.title || filename}</a></h3>
             <div class="blog-meta-row">
                 <span>${postData.date || 'Recent'}</span>
                 <div>${tagsHtml}</div>
