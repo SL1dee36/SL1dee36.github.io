@@ -1,5 +1,5 @@
 /**
- * ModView — Slime Modal Preview & Documentation Viewer
+ * ModView — Slime Modal Preview & Documentation Viewer (с поддержкой плавного Fullscreen)
  */
 (function () {
     const style = document.createElement('style');
@@ -41,7 +41,10 @@
             overflow: hidden;
             transform-origin: center center;
             transition: transform 0.45s cubic-bezier(0.34, 1.56, 0.64, 1),
-                        opacity 0.25s ease;
+                        opacity 0.25s ease,
+                        width 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+                        height 0.4s cubic-bezier(0.25, 1, 0.5, 1),
+                        border-radius 0.35s ease;
         }
 
         .modview-container.open {
@@ -49,6 +52,15 @@
             pointer-events: auto;
             transform: translate(-50%, -50%) scale(1);
             animation: slimeModalJiggle 0.6s cubic-bezier(0.25, 1, 0.5, 1);
+        }
+
+        /* Полноэкранный режим с сохранением кнопок сверху */
+        .modview-container.is-fullscreen {
+            width: 100vw !important;
+            height: 100vh !important;
+            border-radius: 0px !important;
+            border-width: 0px !important;
+            box-shadow: none !important;
         }
 
         @keyframes slimeModalJiggle {
@@ -78,6 +90,7 @@
             background: #f4f6f0;
             border-bottom: 1px solid #e2e6db;
             user-select: none;
+            flex-shrink: 0;
         }
 
         .modview-title-group {
@@ -139,7 +152,7 @@
             width: 100%;
             height: 100%;
             background: #ffffff;
-            overflow: hidden; /* Ограничивает скролл пределами iframe */
+            overflow: hidden;
         }
 
         .modview-iframe {
@@ -171,7 +184,6 @@
             pointer-events: none;
         }
 
-        /* Системный курсор при активной модалке */
         body.modview-active,
         body.modview-active *,
         body.modview-active *::before,
@@ -202,14 +214,12 @@
                 <h4 class="modview-title" id="modview-title-text">Loading...</h4>
             </div>
             <div class="modview-controls">
-                <a href="#" target="_blank" class="modview-btn" id="modview-external-btn" title="Open in new tab">
-                    <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
-                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
-                        <polyline points="15 3 21 3 21 9"></polyline>
-                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                <button class="modview-btn" id="modview-expand-btn" title="Toggle Fullscreen" type="button">
+                    <svg id="modview-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
                     </svg>
-                </a>
-                <button class="modview-btn" id="modview-close-btn" title="Close (Esc)">
+                </button>
+                <button class="modview-btn" id="modview-close-btn" title="Close (Esc)" type="button">
                     <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
                         <line x1="18" y1="6" x2="6" y2="18"></line>
                         <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -229,14 +239,40 @@
     const iframe = container.querySelector('#modview-iframe');
     const titleText = container.querySelector('#modview-title-text');
     const badge = container.querySelector('#modview-type-badge');
-    const externalBtn = container.querySelector('#modview-external-btn');
+    const expandBtn = container.querySelector('#modview-expand-btn');
+    const expandIcon = container.querySelector('#modview-expand-icon');
     const closeBtn = container.querySelector('#modview-close-btn');
     const loader = container.querySelector('#modview-loader');
 
+    let isFullscreen = false;
+
+    const ICONS = {
+        expand: `<path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>`,
+        collapse: `<path d="M4 14h6v6M20 10h-6V4M14 10l7-7M3 21l7-7"/>`
+    };
+
+    function toggleFullscreen() {
+        isFullscreen = !isFullscreen;
+        container.classList.toggle('is-fullscreen', isFullscreen);
+        expandBtn.title = isFullscreen ? 'Collapse' : 'Toggle Fullscreen';
+        expandIcon.innerHTML = isFullscreen ? ICONS.collapse : ICONS.expand;
+
+        // Оповещаем жидкий курсор о мгновенной смене геометрии
+        if (window.FluidCursor && typeof window.FluidCursor.snapTo === 'function') {
+            window.FluidCursor.snapTo(container);
+        }
+    }
+
+    expandBtn.addEventListener('click', toggleFullscreen);
+
     function openModal(url, title = 'Preview', isDocs = false) {
+        isFullscreen = false;
+        container.classList.remove('is-fullscreen');
+        expandIcon.innerHTML = ICONS.expand;
+        expandBtn.title = 'Toggle Fullscreen';
+
         badge.textContent = isDocs ? 'Docs' : 'Demo';
         titleText.textContent = title;
-        externalBtn.href = url;
 
         loader.classList.remove('hidden');
         iframe.src = url;
@@ -246,7 +282,6 @@
         container.classList.add('open');
         document.body.classList.add('modview-active');
 
-        // Принудительный снап курсора на открывшийся контейнер
         if (window.FluidCursor && typeof window.FluidCursor.snapTo === 'function') {
             window.FluidCursor.snapTo(container);
         }
@@ -254,10 +289,11 @@
 
     function closeModal() {
         container.classList.remove('open');
+        container.classList.remove('is-fullscreen');
         backdrop.classList.remove('active');
         document.body.classList.remove('modview-active');
+        isFullscreen = false;
 
-        // Освобождаем курсор
         if (window.FluidCursor && typeof window.FluidCursor.release === 'function') {
             window.FluidCursor.release();
         }
@@ -275,7 +311,11 @@
 
     window.addEventListener('keydown', (e) => {
         if (e.key === 'Escape' && container.classList.contains('open')) {
-            closeModal();
+            if (isFullscreen) {
+                toggleFullscreen();
+            } else {
+                closeModal();
+            }
         }
     });
 
@@ -311,6 +351,7 @@
 
     window.ModView = {
         open: openModal,
-        close: closeModal
+        close: closeModal,
+        toggleFullscreen: toggleFullscreen
     };
 })();
