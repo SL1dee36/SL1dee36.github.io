@@ -619,10 +619,11 @@ button svg {
     }
 
     .header-bar {
+        display: flex;
         height: auto;
         padding: 10px 14px;
         flex-wrap: wrap;
-        border-radius: 32px;
+        justify-content: space-between;
     }
 
     .header-logo {
@@ -670,6 +671,8 @@ button svg {
     }
 
     .side-nav {
+        display: flex;
+        justify-content: center;
         flex-direction: row;
         width: 100%;
         overflow-x: auto;
