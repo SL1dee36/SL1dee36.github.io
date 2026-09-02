@@ -37,6 +37,10 @@ html, body {
     overflow: hidden;
 }
 
+button svg {
+    cursor: pointer !important;
+}
+
 .header-container,
 .site-layout {
     position: relative;

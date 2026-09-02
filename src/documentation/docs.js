@@ -30,8 +30,10 @@ document.addEventListener('DOMContentLoaded', () => {
                     return response.text();
                 })
                 .then(markdown => {
-                    if (markdownContainer) {
-                        markdownContainer.innerHTML = window.marked ? marked.parse(markdown) : markdown;
+                    if (window.marked) {
+                        markdownContainer.innerHTML = marked.parse(markdown);
+                    } else {
+                        markdownContainer.textContent = markdown;
                     }
                 })
                 .catch(error => {
@@ -52,7 +54,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (window.parent && window.parent !== window && window.parent.ModView) {
                 window.parent.ModView.close();
             } else {
-                window.location.href = '../../index.html';
+                window.location.href = 'https://raw.githubusercontent.com/${username}/${repo}';
             }
         });
     }
