@@ -64,8 +64,7 @@
       "tags": ["JavaScript", "Three.js", "ECS"],
       "links": [
         { "label": "Open on GitHub", "url": "https://github.com/SL1dee36/LuminaEngine" },
-        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" },
-        { "label": "Try LuminaCraft", "url": "src/demo/LuminaEngine/minecraft/index.html" }
+        { "label": "Documentation", "url": "src/documentation/docs.html?projectName=LuminaEngine&githubLink=https://github.com/SL1dee36/LuminaEngine" }
       ]
     },
     {
