@@ -139,6 +139,7 @@
             width: 100%;
             height: 100%;
             background: #ffffff;
+            overflow: hidden; /* Ограничивает скролл пределами iframe */
         }
 
         .modview-iframe {
@@ -147,6 +148,8 @@
             border: none;
             display: block;
             background: #ffffff;
+            overflow-y: auto;
+            overflow-x: hidden;
         }
 
         .modview-loader {

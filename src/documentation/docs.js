@@ -1,67 +1,62 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const backButton = document.querySelector('header button');
+    const backButton = document.getElementById('back-button') || document.querySelector('header button');
     const projectNameHeader = document.querySelector('header h1');
     const markdownContainer = document.getElementById('markdown-content');
 
-    // Get project info from URL parameters (set in index.html)
     const urlParams = new URLSearchParams(window.location.search);
     const projectName = urlParams.get('projectName');
     const githubLink = urlParams.get('githubLink');
 
-    if (projectName && githubLink) {
-        projectNameHeader.textContent = `${projectName}`;
+    if (projectName && projectNameHeader) {
+        projectNameHeader.textContent = projectName;
+    }
 
-        // Extract username and repo name from GitHub link
+    if (projectName && githubLink) {
         const match = githubLink.match(/github\.com\/([^\/]+)\/([^\/]+)/);
         if (match) {
             const username = match[1];
-            const repo = match[2];
+            const repo = match[2].replace(/\.git$/, '');
             const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/main/README.md`;
 
             fetch(readmeURL)
                 .then(response => {
                     if (!response.ok) {
-                        throw new Error(`HTTP error! status: ${response.status}`);
+                        // Резервная попытка через ветку master, если main не существует
+                        return fetch(`https://raw.githubusercontent.com/${username}/${repo}/master/README.md`)
+                            .then(fallbackRes => {
+                                if (!fallbackRes.ok) throw new Error(`HTTP error! status: ${response.status}`);
+                                return fallbackRes.text();
+                            });
                     }
                     return response.text();
                 })
                 .then(markdown => {
-                    markdownContainer.innerHTML = marked.parse(markdown); // Use marked.js
-
-                    // Show documentation section, hide projects section (if needed)
-                    document.getElementById('projects').classList.add('hidden');
-                    document.getElementById('documentation').classList.remove('hidden');
-                    document.getElementById('documentation').classList.add('visible');
-
-
-                    backButton.style.display = 'block';
-
+                    if (window.marked) {
+                        markdownContainer.innerHTML = marked.parse(markdown);
+                    } else {
+                        markdownContainer.textContent = markdown;
+                    }
                 })
                 .catch(error => {
-                    markdownContainer.innerHTML = `<p>Error fetching README: ${error.message}</p>`;
+                    if (markdownContainer) {
+                        markdownContainer.innerHTML = `<p style="color: #ff8080;">Error fetching README: ${error.message}</p>`;
+                    }
                     console.error("Error fetching README:", error);
-                    backButton.style.display = 'block'; // Show back button even on error
                 });
-        } else {
+        } else if (markdownContainer) {
             markdownContainer.innerHTML = "<p>Invalid GitHub link.</p>";
-            backButton.style.display = 'block';  // Show back button even if GitHub link is invalid.
-
         }
-
-
-    } else {
+    } else if (markdownContainer) {
         markdownContainer.innerHTML = "<p>Project information not found.</p>";
-        backButton.style.display = 'block';
-
     }
 
-
-    backButton.addEventListener('click', () => {
-        window.location.href = '../../index.html';
-    });
-
-    backButton.style.display = 'none'; // Hide back button initially
-
-
-
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            if (window.parent && window.parent !== window && window.parent.ModView) {
+                window.parent.ModView.close();
+            } else {
+                window.location.href = '../../index.html';
+            }
+        });
+    }
 });
