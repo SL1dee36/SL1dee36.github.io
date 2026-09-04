@@ -311,6 +311,10 @@ export class UIManager {
         bindToggle('opt-show-stars', 'showStars', 'Stars');
         bindToggle('opt-show-sky', 'showSunMoon', 'Sun/Moon');
         bindToggle('opt-ao', 'ambientOcclusion', 'Smooth Lighting');
+        bindToggle('opt-weather', 'weather', 'Weather');
+        bindToggle('opt-dyn-light', 'dynamicLight', 'Dynamic Light');
+        bindToggle('opt-bobbing', 'viewBobbing', 'View Bobbing');
+        bindButton('opt-particles', 'particles', ['all', 'decreased', 'minimal'], ['Particles: All', 'Particles: Decreased', 'Particles: Minimal']);
 
         document.getElementById('options-back-btn').onclick = () => {
             if (this.inventoryComponent) {
@@ -348,6 +352,11 @@ export class UIManager {
         btnTxt('opt-show-stars', `Stars: ${s.get('showStars') ? 'ON' : 'OFF'}`);
         btnTxt('opt-show-sky', `Sun/Moon: ${s.get('showSunMoon') ? 'ON' : 'OFF'}`);
         btnTxt('opt-ao', `Smooth Lighting: ${s.get('ambientOcclusion') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-weather', `Weather: ${s.get('weather') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-dyn-light', `Dynamic Light: ${s.get('dynamicLight') ? 'ON' : 'OFF'}`);
+        btnTxt('opt-bobbing', `View Bobbing: ${s.get('viewBobbing') ? 'ON' : 'OFF'}`);
+        const pMode = s.get('particles') || 'all';
+        btnTxt('opt-particles', `Particles: ${pMode.charAt(0).toUpperCase() + pMode.slice(1)}`);
     }
 
     updateStatsUI() {
@@ -363,7 +372,7 @@ export class UIManager {
 
         let texKey = '';
         if (typeof p.texture === 'object' && p.texture !== null) {
-            texKey = p.texture.front || p.texture.side || p.texture.top;
+            texKey = p.texture.front || p.texture.side || p.texture.top || p.texture.bottom;
         } else {
             texKey = p.texture;
         }

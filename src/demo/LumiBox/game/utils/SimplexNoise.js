@@ -26,6 +26,10 @@ export class SimplexNoise {
         this.grad3 = [1,1,0,-1,1,0,1,-1,0,-1,-1,0,1,0,1,-1,0,1,1,0,-1,-1,0,-1,0,1,1,0,-1,1,0,1,-1,0,-1,-1];
     }
 
+    noise2D(xin, yin) {
+        return this.noise3D(xin, yin, 0.5);
+    }
+
     noise3D(xin, yin, zin) {
         let n0, n1, n2, n3; 
         const F3 = 1.0 / 3.0;

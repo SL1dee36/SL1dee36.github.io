@@ -17,7 +17,11 @@ export class SettingsManager {
             showClouds: true,
             showStars: true,
             showSunMoon: true,
-            ambientOcclusion: true
+            ambientOcclusion: true,
+            weather: true,
+            dynamicLight: true,
+            viewBobbing: true,
+            particles: 'all'
         };
         this.load();
     }

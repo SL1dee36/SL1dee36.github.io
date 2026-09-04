@@ -4,6 +4,7 @@
 
 import { BLOCK } from './blocks.js';
 import { RECIPES } from './Recipes.js';
+import { registerAllProceduralTextures } from './TextureGenerator.js';
 
 export class ModuleManager {
     constructor(textureAtlas, textureGenerator) {
@@ -39,6 +40,7 @@ export class ModuleManager {
         // 2. Применение координат тайлов
         if (moduleData.textures) {
             this.atlas.applyAtlasImage(atlasImg, moduleData.textures);
+            registerAllProceduralTextures(this.atlas, this.texGen);
         }
 
         // 3. Регистрация блоков

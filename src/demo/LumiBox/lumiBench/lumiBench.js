@@ -24,7 +24,22 @@ const CANONICAL_SLOTS = {
 
     "tool_wood_axe": [0, 2], "tool_wood_shovel": [1, 2], "tool_stone_pick": [2, 2],
     "tool_stone_axe": [3, 2], "tool_stone_shovel": [4, 2], "tool_iron_pick": [5, 2],
-    "tool_iron_axe": [6, 2], "tool_iron_shovel": [7, 2]
+    "tool_iron_axe": [6, 2], "tool_iron_shovel": [7, 2],
+    "torch": [8, 2], "dandelion": [9, 2], "poppy": [10, 2], "blue_orchid": [11, 2],
+    "allium": [12, 2], "red_tulip": [13, 2], "white_tulip": [14, 2], "oxeye_daisy": [15, 2],
+
+    "birch_log_side": [0, 3], "birch_log_top": [1, 3], "birch_leaves": [2, 3], "birch_planks": [3, 3],
+    "acacia_log_side": [4, 3], "acacia_log_top": [5, 3], "acacia_leaves": [6, 3], "acacia_planks": [7, 3],
+    "dark_oak_log_side": [8, 3], "dark_oak_log_top": [9, 3], "dark_oak_leaves": [10, 3], "dark_oak_planks": [11, 3],
+    "snow_block": [12, 3], "bucket": [13, 3], "water_bucket": [14, 3], "bone": [15, 3],
+
+    "raw_beef": [0, 4], "raw_porkchop": [1, 4], "raw_chicken": [2, 4], "feather": [3, 4],
+    "rotten_flesh": [4, 4], "oak_door_item": [5, 4], "oak_door_top": [6, 4], "oak_door_bottom": [7, 4],
+    "birch_door_item": [8, 4], "birch_door_top": [9, 4], "birch_door_bottom": [10, 4],
+    "dark_oak_door_item": [11, 4], "dark_oak_door_top": [12, 4], "dark_oak_door_bottom": [13, 4],
+    "iron_door_item": [14, 4], "iron_door_top": [15, 4],
+
+    "iron_door_bottom": [0, 5], "oak_trapdoor": [1, 5], "birch_trapdoor": [2, 5]
 };
 
 const CANONICAL_BLOCKS = [
@@ -47,13 +62,49 @@ const CANONICAL_BLOCKS = [
     { id: 17, name: "furnace", isSolid: true, isTransparent: false, texture: { top: "source:furnace_top", bottom: "source:cobblestone", side: "source:furnace_side", front: "source:furnace_front" } },
     { id: 18, name: "tall_grass", isPlant: true, isSolid: false, isTransparent: true, texture: "source:tall_grass", drop: 0 },
     { id: 19, name: "double_tall_grass_bottom", isPlant: true, isSolid: false, isTransparent: true, texture: "source:double_grass_bottom", drop: 0 },
-    { id: 20, name: "double_tall_grass_top", isPlant: true, isSolid: false, isTransparent: true, texture: "source:double_grass_top", drop: 0 }
+    { id: 20, name: "double_tall_grass_top", isPlant: true, isSolid: false, isTransparent: true, texture: "source:double_grass_top", drop: 0 },
+    { id: 21, name: "dandelion", isPlant: true, isSolid: false, isTransparent: true, texture: "source:dandelion", drop: 21 },
+    { id: 22, name: "poppy", isPlant: true, isSolid: false, isTransparent: true, texture: "source:poppy", drop: 22 },
+    { id: 23, name: "blue_orchid", isPlant: true, isSolid: false, isTransparent: true, texture: "source:blue_orchid", drop: 23 },
+    { id: 24, name: "allium", isPlant: true, isSolid: false, isTransparent: true, texture: "source:allium", drop: 24 },
+    { id: 25, name: "red_tulip", isPlant: true, isSolid: false, isTransparent: true, texture: "source:red_tulip", drop: 25 },
+    { id: 26, name: "white_tulip", isPlant: true, isSolid: false, isTransparent: true, texture: "source:white_tulip", drop: 26 },
+    { id: 27, name: "oxeye_daisy", isPlant: true, isSolid: false, isTransparent: true, texture: "source:oxeye_daisy", drop: 27 },
+    { id: 28, name: "birch_log", isSolid: true, isTransparent: false, texture: { top: "source:birch_log_top", bottom: "source:birch_log_top", side: "source:birch_log_side" } },
+    { id: 29, name: "birch_leaves", isSolid: true, isTransparent: true, texture: "source:birch_leaves", drop: 0 },
+    { id: 30, name: "birch_planks", isSolid: true, isTransparent: false, texture: "source:birch_planks" },
+    { id: 31, name: "acacia_log", isSolid: true, isTransparent: false, texture: { top: "source:acacia_log_top", bottom: "source:acacia_log_top", side: "source:acacia_log_side" } },
+    { id: 32, name: "acacia_leaves", isSolid: true, isTransparent: true, texture: "source:acacia_leaves", drop: 0 },
+    { id: 33, name: "acacia_planks", isSolid: true, isTransparent: false, texture: "source:acacia_planks" },
+    { id: 34, name: "dark_oak_log", isSolid: true, isTransparent: false, texture: { top: "source:dark_oak_log_top", bottom: "source:dark_oak_log_top", side: "source:dark_oak_log_side" } },
+    { id: 35, name: "dark_oak_leaves", isSolid: true, isTransparent: true, texture: "source:dark_oak_leaves", drop: 0 },
+    { id: 36, name: "dark_oak_planks", isSolid: true, isTransparent: false, texture: "source:dark_oak_planks" },
+    { id: 37, name: "oak_door", isDoor: true, isSolid: true, isTransparent: true, texture: { bottom: "source:oak_door_bottom", top: "source:oak_door_top", side: "source:oak_door_bottom" }, drop: 103 },
+    { id: 38, name: "birch_door", isDoor: true, isSolid: true, isTransparent: true, texture: { bottom: "source:birch_door_bottom", top: "source:birch_door_top", side: "source:birch_door_bottom" }, drop: 104 },
+    { id: 39, name: "dark_oak_door", isDoor: true, isSolid: true, isTransparent: true, texture: { bottom: "source:dark_oak_door_bottom", top: "source:dark_oak_door_top", side: "source:dark_oak_door_bottom" }, drop: 105 },
+    { id: 40, name: "iron_door", isDoor: true, isSolid: true, isTransparent: true, texture: { bottom: "source:iron_door_bottom", top: "source:iron_door_top", side: "source:iron_door_bottom" }, drop: 106 },
+    { id: 41, name: "oak_trapdoor", isTrapdoor: true, isSolid: true, isTransparent: true, texture: "source:oak_trapdoor", drop: 41 },
+    { id: 42, name: "birch_trapdoor", isTrapdoor: true, isSolid: true, isTransparent: true, texture: "source:birch_trapdoor", drop: 42 },
+    { id: 43, name: "torch", isPlant: true, isSolid: false, isTransparent: true, lightEmission: 14, texture: "source:torch", drop: 43 },
+    { id: 44, name: "snow_block", isSolid: true, isTransparent: false, texture: "source:snow_block", drop: 44 }
 ];
 
 const CANONICAL_ITEMS = [
     { id: 100, name: "coal", isItem: true, texture: "source:item_coal" },
     { id: 101, name: "iron_ingot", isItem: true, texture: "source:item_iron_ingot" },
     { id: 102, name: "stick", isItem: true, texture: "source:item_stick" },
+    { id: 103, name: "oak_door", isItem: true, texture: "source:oak_door_item" },
+    { id: 104, name: "birch_door", isItem: true, texture: "source:birch_door_item" },
+    { id: 105, name: "dark_oak_door", isItem: true, texture: "source:dark_oak_door_item" },
+    { id: 106, name: "iron_door", isItem: true, texture: "source:iron_door_item" },
+    { id: 107, name: "bucket", isItem: true, texture: "source:bucket" },
+    { id: 108, name: "water_bucket", isItem: true, texture: "source:water_bucket" },
+    { id: 109, name: "raw_beef", isItem: true, texture: "source:raw_beef" },
+    { id: 110, name: "raw_porkchop", isItem: true, texture: "source:raw_porkchop" },
+    { id: 111, name: "raw_chicken", isItem: true, texture: "source:raw_chicken" },
+    { id: 112, name: "feather", isItem: true, texture: "source:feather" },
+    { id: 113, name: "rotten_flesh", isItem: true, texture: "source:rotten_flesh" },
+    { id: 114, name: "bone", isItem: true, texture: "source:bone" },
     { id: 200, name: "wooden_pickaxe", isItem: true, texture: "source:tool_wood_pick" },
     { id: 201, name: "wooden_axe", isItem: true, texture: "source:tool_wood_axe" },
     { id: 202, name: "wooden_shovel", isItem: true, texture: "source:tool_wood_shovel" },
@@ -373,6 +424,330 @@ class ProceduralPainter {
             case 'tool_iron_pick': this.generateTool(ctx, 'iron', 'pick'); break;
             case 'tool_iron_axe': this.generateTool(ctx, 'iron', 'axe'); break;
             case 'tool_iron_shovel': this.generateTool(ctx, 'iron', 'shovel'); break;
+
+            case 'dandelion':
+                this.paint(ctx, [
+                    "................", ".....YYYY.......", "....YHHHHHY.....", "...YHYYYYYHY....",
+                    "...YYYOOOYYY....", "...YYOOOOOYY....", "....YYOOOYY.....", ".....YYYYY......",
+                    ".......GG.......", ".......GG.......", "......GGG.......", ".....GGgGG......",
+                    "....GG.gG.......", ".......GG.......", ".......GG.......", ".......GG......."
+                ], { 'H': '#ffff99', 'Y': '#fff01f', 'O': '#ff8800', 'G': '#42a81b', 'g': '#2e8010' });
+                break;
+            case 'poppy':
+                this.paint(ctx, [
+                    "................", ".....rrrr.......", "....rRRRRr......", "...rRRBBBRr.....",
+                    "...rRBYYYBrr....", "....RBDDDRR.....", ".....RRDD.......", ".......GG.......",
+                    ".......GG.......", "......GGG.......", ".....GG.GG......", "....GG..GG......",
+                    "........GG......", ".......GGG......", "........GG......", "........GG......"
+                ], { 'r': '#ff5970', 'R': '#ff1a30', 'D': '#a60018', 'B': '#2e0208', 'Y': '#ffea38', 'G': '#3da822' });
+                break;
+            case 'blue_orchid':
+                this.paint(ctx, [
+                    "................", ".....WW.........", "....WCCB...B....", "....WCCB..BCB...",
+                    ".....BB..WCCB...", "......G...BB....", ".....GGG...G....", "....G.GG..GGG...",
+                    "...B...GG.G.....", "..BCB...GG......", "..WCCB..GG......", "...BB..GGG......",
+                    "........GG......", "........GG......", "........GG......", "........GG......"
+                ], { 'W': '#b5f2ff', 'C': '#00e1ff', 'B': '#0072e6', 'G': '#3da822' });
+                break;
+            case 'allium':
+                this.paint(ctx, [
+                    "......LL........", "....LLPPLL......", "...LPMMMMPL.....", "..LPMDDDMMPL....",
+                    "..LPMMDDMMPL....", "...LPMMMMPL.....", "....LLPPLL......", "......PP........",
+                    ".......GG.......", ".......GG.......", "......GGG.......", ".....GG.G.......",
+                    "....GG..G.......", ".......GG.......", ".......GG.......", ".......GG......."
+                ], { 'L': '#ffaef8', 'P': '#e83adb', 'M': '#a810be', 'D': '#660578', 'G': '#3da822' });
+                break;
+            case 'red_tulip':
+                this.paint(ctx, [
+                    "................", ".....rr.rr......", "....rRRrRRR.....", "...rRRDRRRRr....",
+                    "...RRDDDRRRR....", "...RRRDDDRRR....", "....RRDDDRR.....", ".....RRRRR......",
+                    ".......gG.......", ".......GG.......", "......GGG.......", ".....GGGGG......",
+                    "....GG.GGG......", ".......GG.......", ".......GG.......", ".......GG......."
+                ], { 'r': '#ff6374', 'R': '#ff1a30', 'D': '#990015', 'G': '#3da822', 'g': '#66cc2e' });
+                break;
+            case 'white_tulip':
+                this.paint(ctx, [
+                    "................", ".....WW.WW......", "....WWWWWWW.....", "...WWWcWWWWW....",
+                    "...WWcccWWWW....", "...WWWcccWWW....", "....WWcccWW.....", ".....WWcWW......",
+                    ".......gG.......", ".......GG.......", "......GGG.......", ".....GGGGG......",
+                    "....GG.GGG......", ".......GG.......", ".......GG.......", ".......GG......."
+                ], { 'W': '#ffffff', 'c': '#bdd6eb', 'G': '#3da822', 'g': '#66cc2e' });
+                break;
+            case 'oxeye_daisy':
+                this.paint(ctx, [
+                    "................", ".....WWWW.......", "...WWWWWWWW.....", "..WWWWYYYYWW....",
+                    "..WWWYYOOYYW....", "...WWYYYYWW.....", "....WWWWWW......", ".....WWWW.......",
+                    ".......GG.......", ".......GG.......", "......GGG.......", ".....GGGGG......",
+                    "....GG.GGG......", ".......GG.......", ".......GG.......", ".......GG......."
+                ], { 'W': '#ffffff', 'Y': '#ffd000', 'O': '#ff8800', 'G': '#3da822' });
+                break;
+            case 'torch':
+                this.paint(ctx, [
+                    ".......YY.......", "......YHYY......", ".....YHFFHY.....", ".....YFFFFY.....",
+                    "......RFFR......", ".......CC.......", ".......WW.......", ".......Ww.......",
+                    ".......WW.......", ".......wW.......", ".......WW.......", ".......Ww.......",
+                    ".......WW.......", ".......wW.......", ".......WW.......", "................"
+                ], { 'H': '#ffffff', 'Y': '#fff438', 'F': '#ff6800', 'R': '#d61a00', 'C': '#2e2218', 'W': '#8b5a2b', 'w': '#6b4019' });
+                break;
+            case 'birch_log_side':
+                this.paint(ctx, [
+                    "WWWWwbWWWWWWWWwW", "WWWWbBbWWWWWWWWW", "WWWWwbWWWWWWWWWW", "WWWWWWWWwbWWWWWW",
+                    "WWWWWWWWbBbWWWWW", "WWWWWWWWwbWWWWWW", "WbWWWWWWWWWWWWWW", "bBbWWWWWWWWWWWwb",
+                    "wbWWWWWWWWWWWbBb", "WWWWWWWWWWWWWwbW", "WWWWWWWWWWWWWWWW", "WWWWWWwbWWWWWWWW",
+                    "WWWWWWbBbWWWWWWW", "WWWWWWwbWWWWWWWW", "WWwbWWWWWWWWWWWW", "WbBbWWWWWWWWWWWW"
+                ], { 'W': '#fafbf7', 'w': '#dedfd6', 'b': '#484a54', 'B': '#1a1b1f' });
+                break;
+            case 'birch_log_top':
+                this.paint(ctx, [
+                    "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWccTTTTTTTTccWW", "WWcTTttttttTTcWW",
+                    "WWTTttcccccttTWW", "WWTTtccTTccttTWW", "WWTTtcTTTTcttTWW", "WWTTtcTTTTcttTWW",
+                    "WWTTtccTTccttTWW", "WWTTttcccccttTWW", "WWcTTttttttTTcWW", "WWccTTTTTTTTccWW",
+                    "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"
+                ], { 'W': '#fafbf7', 'c': '#ebdcba', 'T': '#d6c08c', 't': '#b59e66' });
+                break;
+            case 'birch_leaves':
+                this.paint(ctx, [
+                    "LLDDLLLLLDDLLLDL", "LDHHDDLLLDLLDDLD", "LLDDLLDDDLLLLDLD", "DDLLLDLLDDLLDDLL",
+                    "LLDDLLLLLDDLLLLL", "LDLLDDLLLLLLDDLL", "LLLLLDDDLLLLDLLD", "DDLLLLLLDDLLLLDD",
+                    "LLDDLLLLLDDLLLDL", "LDLLDDLLLDHHDDLD", "LLDDLLDDDLLLLDLD", "DDLLLDLLDDLLDDLL",
+                    "LLDDLLLLLDDLLLLL", "LDLLDDLLLLLLDDLL", "LLLLLDDDLLLLDLLD", "DDLLLLLLDDLLLLDD"
+                ], { 'H': '#8bf030', 'L': '#66cc1e', 'D': '#3a870a' });
+                break;
+            case 'birch_planks':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "LLLLLLLLLLLLLLLL", "LLmLLLLLLLLLLmLL", "LLLLLLmLLLLLLLLL",
+                    "SSSSSSSSSSSSSSSS", "LLLLLLLLLLLLLLLL", "LLLLLmLLLLLLmLLL", "LmLLLLLLLLLLLLLL",
+                    "SSSSSSSSSSSSSSSS", "LLLLLLLLLLLLLLLL", "LLmLLLLLLmLLLLLL", "LLLLLLLLLLLLLLmL",
+                    "SSSSSSSSSSSSSSSS", "LLLLLLLLLLLLLLLL", "LLLLmLLLLLLLLLLL", "LLLLLLLLmLLLLmLL"
+                ], { 'S': '#a69268', 'L': '#ede4c7', 'm': '#dfd4b3' });
+                break;
+            case 'acacia_log_side':
+                this.paint(ctx, [
+                    "ggdgggggdgggggdg", "ggdgggggdgggggdg", "ggdgdgggdgggggdg", "gdggdgggggdgggdg",
+                    "gdggdgggggdgggdg", "gdggggdgggdgggdg", "gdggggdgggdggggg", "ggggggdgggdggggg",
+                    "ggggggdggggdgggg", "dgggggdggggdgggg", "dgggggdggggdggdg", "dggggggggggdggdg",
+                    "dggdgggggggdggdg", "gggdgggggggdgggg", "gggdggdggggdgggg", "gggdggdggggggggg"
+                ], { 'g': '#68645f', 'd': '#4f4c49' });
+                break;
+            case 'acacia_log_top':
+                this.paint(ctx, [
+                    "gggggggggggggggg", "gggggggggggggggg", "ggOOooOOOOooOOgg", "ggOooDDDDDDooOgg",
+                    "ggOoDDooooDDdOgg", "ggOoDoOOOOoDdOgg", "ggOoDoODDOoDdOgg", "ggOoDoODDOoDdOgg",
+                    "ggOoDoOOOOoDdOgg", "ggOoDDooooDDdOgg", "ggOooDDDDDDooOgg", "ggOOooOOOOooOOgg",
+                    "gggggggggggggggg", "gggggggggggggggg", "gggggggggggggggg", "gggggggggggggggg"
+                ], { 'g': '#5f5b56', 'O': '#cb7342', 'o': '#ba6333', 'D': '#9a4c22', 'd': '#843e18' });
+                break;
+            case 'acacia_leaves':
+                this.paint(ctx, [
+                    "GGDDGGGGGGDDGGDG", "GDGGDDGGGDGGDDGD", "GGDDGGDDDGGGGDDD", "DDGGGDGGDDGGDDGG",
+                    "GGDDGGGGGGDDGGGG", "GDGGDDGGGGGGDDGG", "GGGGGDDDGGGGDDGG", "DDGGGGGGDDGGGGDD",
+                    "GGDDGGGGGGDDGGDG", "GDGGDDGGGDGGDDGD", "GGDDGGDDDGGGGDDD", "DDGGGDGGDDGGDDGG",
+                    "GGDDGGGGGGDDGGGG", "GDGGDDGGGGGGDDGG", "GGGGGDDDGGGGDDGG", "DDGGGGGGDDGGGGDD"
+                ], { 'G': '#647e38', 'D': '#4a5f27' });
+                break;
+            case 'acacia_planks':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "OOOOOOOOOOOOOOOO", "OOmOOOOOOOOOOmOO", "OOOOOOmOOOOOOOOO",
+                    "SSSSSSSSSSSSSSSS", "OOOOOOOOOOOOOOOO", "OOOOOmOOOOOOmOOO", "OmOOOOOOOOOOOOOO",
+                    "SSSSSSSSSSSSSSSS", "OOOOOOOOOOOOOOOO", "OOmOOOOOOmOOOOOO", "OOOOOOOOOOOOOOmO",
+                    "SSSSSSSSSSSSSSSS", "OOOOOOOOOOOOOOOO", "OOOOmOOOOOOOOOOO", "OOOOOOOOOmOOOOOO"
+                ], { 'S': '#894118', 'O': '#ba6333', 'm': '#a95529' });
+                break;
+            case 'dark_oak_log_side':
+                this.paint(ctx, [
+                    "bbdbbbbbdbbbbbdb", "bbdbbbbbdbbbbbdb", "bbdbdbbbdbbbbbdb", "bdbbdbbbbbdbbbdb",
+                    "bdbbdbbbbbdbbbdb", "bdbbbbdbbbdbbbdb", "bdbbbbdbbbdbbbbb", "bbbbbbdbbbdbbbbb",
+                    "bbbbbbdbbbbdbbbb", "dbbbbbdbbbbdbbbb", "dbbbbbdbbbbdbbdb", "dbbbbbbbbbbdbbdb",
+                    "dbbdbbbbbbbdbbdb", "bbbdbbbbbbbdbbbb", "bbbdbbdbbbbdbbbb", "bbbdbbdbbbbbbbbb"
+                ], { 'b': '#3d2b1c', 'd': '#281b10' });
+                break;
+            case 'dark_oak_log_top':
+                this.paint(ctx, [
+                    "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbDDddDDDDddDDbb", "bbDddBBBBBBddDbb",
+                    "bbDdBBddddBBxDbb", "bbDdBDDDDDDdxDbb", "bbDdBDBBDBDdxDbb", "bbDdBDBBDBDdxDbb",
+                    "bbDdBDDDDDDdxDbb", "bbDdBBddddBBxDbb", "bbDddBBBBBBddDbb", "bbDDddDDDDddDDbb",
+                    "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb", "bbbbbbbbbbbbbbbb"
+                ], { 'b': '#2c1e13', 'D': '#523a23', 'd': '#432e1a', 'B': '#352414', 'x': '#25180c' });
+                break;
+            case 'dark_oak_leaves':
+                this.paint(ctx, [
+                    "GGDDGGGGGGDDGGDG", "GDGGDDGGGDGGDDGD", "GGDDGGDDDGGGGDDD", "DDGGGDGGDDGGDDGG",
+                    "GGDDGGGGGGDDGGGG", "GDGGDDGGGGGGDDGG", "GGGGGDDDGGGGDDGG", "DDGGGGGGDDGGGGDD",
+                    "GGDDGGGGGGDDGGDG", "GDGGDDGGGDGGDDGD", "GGDDGGDDDGGGGDDD", "DDGGGDGGDDGGDDGG",
+                    "GGDDGGGGGGDDGGGG", "GDGGDDGGGGGGDDGG", "GGGGGDDDGGGGDDGG", "DDGGGGGGDDGGGGDD"
+                ], { 'G': '#244517', 'D': '#162e0c' });
+                break;
+            case 'dark_oak_planks':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "DDDDDDDDDDDDDDDD", "DDmDDDDDDDDDDmDD", "DDDDDDmDDDDDDDDD",
+                    "SSSSSSSSSSSSSSSS", "DDDDDDDDDDDDDDDD", "DDDDDmDDDDDDmDDD", "DmDDDDDDDDDDDDDD",
+                    "SSSSSSSSSSSSSSSS", "DDDDDDDDDDDDDDDD", "DDmDDDDDDmDDDDDD", "DDDDDDDDDDDDDDmD",
+                    "SSSSSSSSSSSSSSSS", "DDDDDDDDDDDDDDDD", "DDDDmDDDDDDDDDDD", "DDDDDDDDmDDDDDDD"
+                ], { 'S': '#26190e', 'D': '#432f1d', 'm': '#352415' });
+                break;
+            case 'snow_block':
+                this.paint(ctx, [
+                    "WWWWWWWWWWWWWWWW", "WWWWbWWWWWWWWbWW", "WWWbbWWWWWWWWbWW", "WWWWWWWWsWWWWWWW",
+                    "WWWWWWWWWWWWWWWW", "WWbWWWWWWWWbWWWW", "WbbWWWWWWWWbbWWW", "WWWWWWsWWWWWWWWW",
+                    "WWWWWWWWWWWWWWWW", "WWWWWWWWWWbWWWWW", "WWsWWWWWWWbbWWWW", "WWWWWWWWWWWWWWWW",
+                    "WWWWbWWWWWWWWsWW", "WWWbbWWWWWWWWWWW", "WWWWWWWWWWWWWWWW", "WWWWWWWWWWWWWWWW"
+                ], { 'W': '#ffffff', 'b': '#e4f0fa', 's': '#c6dff5' });
+                break;
+            case 'bucket':
+                this.paint(ctx, [
+                    "................", "...SS......SS...", "...SH......HS...", "...SHI....IHS...",
+                    "...SHIIIIIIHS...", "...SHssssssHS...", "....HssssssH....", "....HssssssH....",
+                    "....HssssssH....", ".....HssssH.....", ".....HssssH.....", "......HHHH......",
+                    ".......HH.......", "................", "................", "................"
+                ], { 'S': '#202226', 'H': '#ffffff', 'I': '#d4dbe4', 's': '#808996' });
+                break;
+            case 'water_bucket':
+                this.paint(ctx, [
+                    "................", "...SS......SS...", "...SH......HS...", "...SHWWWWWwHS...",
+                    "...SHWBBBBwHS...", "...SHWBBBBwHS...", "....HWBBBBwH....", "....HWBBBBwH....",
+                    "....HWBBBBwH....", ".....HWBBwH.....", ".....HWBBwH.....", "......HHHH......",
+                    ".......HH.......", "................", "................", "................"
+                ], { 'S': '#202226', 'H': '#ffffff', 'W': '#8ad8ff', 'B': '#1882ff', 'w': '#0055cc' });
+                break;
+            case 'bone':
+                this.paint(ctx, [
+                    ".............BB.", "............BBBB", "............BBB.", "...........BBB..",
+                    "..........BBB...", ".........BBB....", "........BBB.....", ".......BBB......",
+                    "......BBB.......", ".....BBB........", "....BBB.........", "...BBB..........",
+                    "..BBB...........", ".BBB............", "BBBB............", ".BB............."
+                ], { 'B': '#eef2f5' });
+                break;
+            case 'raw_beef':
+                this.paint(ctx, [
+                    "................", "....FFFFFFFF....", "...FRRRRRRRRF...", "..FRRRRRRRRRRF..",
+                    ".FRRRRFFFFRRRRF.", ".FRRRFFFFFFRRRF.", ".FRRFFFFFFFFRRF.", ".FRRFFFFFFFFRRF.",
+                    ".FRRRFFFFFFRRRF.", ".FRRRRFFFFRRRRF.", "..FRRRRRRRRRRF..", "...FRRRRRRRRF...",
+                    "....FRRRRRRF....", ".....FRRRRF.....", "......FFFF......", "................"
+                ], { 'F': '#fff1df', 'R': '#d62424' });
+                break;
+            case 'raw_porkchop':
+                this.paint(ctx, [
+                    "................", "....FFFFFFFF....", "...FPPPPPPPPF...", "..FPPPPPPPPPPF..",
+                    ".FPPPPBBPPPPPPF.", ".FPPPBBBBPPPPPF.", ".FPPPPBBPPPPPPF.", ".FPPPPPPPPPPPPF.",
+                    ".FPPPPPPPPPPPPF.", "..FPPPPPPPPPPF..", "...FPPPPPPPPF...", "....FFFFFFFF....",
+                    "................", "................", "................", "................"
+                ], { 'F': '#fff5eb', 'P': '#f58b99', 'B': '#ffffff' });
+                break;
+            case 'raw_chicken':
+                this.paint(ctx, [
+                    "................", ".......CCCC.....", "......CCCCCC....", ".....CCCCCCCC...",
+                    "....CCCCCCCCCC..", "...CCCCCCCCCCC..", "...CCCCCCCCCCC..", "....CCCCCCCCCC..",
+                    ".....CCCCCCCCC..", "......CCCCCC....", ".......BB.......", ".......BB.......",
+                    "......BBBB......", "................", "................", "................"
+                ], { 'C': '#f3ba89', 'B': '#fffaea' });
+                break;
+            case 'feather':
+                this.paint(ctx, [
+                    "..............WW", ".............WWW", "............WWWW", "...........WWWW.",
+                    "..........WWWW..", ".........WWWW...", "........WWWW....", ".......WWWW.....",
+                    "......WWWW......", ".....WWWW.......", "....WWWW........", "...WWWW.........",
+                    "..QQWW..........", ".QQQ............", "QQ..............", "................"
+                ], { 'W': '#ffffff', 'Q': '#a4b1c2' });
+                break;
+            case 'rotten_flesh':
+                this.paint(ctx, [
+                    "................", "....GGGGGGGG....", "...GKKKKKKKKG...", "..GKKKGGGGKKKG..",
+                    ".GKKGGGGGGGGKKG.", ".GKGKKKKKKKKGKG.", ".GKGKGGGGGGKGKG.", ".GKGKGKKKKGKGKG.",
+                    ".GKGKGKKKKGKGKG.", ".GKGKGGGGGGKGKG.", ".GKGKKKKKKKKGKG.", ".GKKGGGGGGGGKKG.",
+                    "..GKKKGGGGKKKG..", "...GKKKKKKKKG...", "....GGGGGGGG....", "................"
+                ], { 'G': '#7a8e3b', 'K': '#485622' });
+                break;
+            case 'oak_door_item':
+                this.paint(ctx, [
+                    "....SSSSSSSS....", "....SOOOOOOS....", "....SOGGGGIS....", "....SOGGGGIS....",
+                    "....SOOOOOOS....", "....SOGGGGIS....", "....SOGGGGIS....", "....SOOOHOOS....",
+                    "....SSSSSSSS....", "....SOOOOOOS....", "....SOIIIIOS....", "....SOIIIIOS....",
+                    "....SOOOOOOS....", "....SOIIIIOS....", "....SOOOOOOS....", "....SSSSSSSS...."
+                ], { 'S': '#4e331b', 'O': '#91693e', 'G': '#334455', 'I': '#704f2d', 'H': '#222222' });
+                break;
+            case 'oak_door_top':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SOOOOOOOOOOOOOOS", "SOOGGGGISOGGGGIS", "SOOGGGGISOGGGGIS",
+                    "SOOGGGGISOGGGGIS", "SOOGGGGISOGGGGIS", "SOOOOOOOOOOOOOOS", "SOOGGGGISOGGGGIS",
+                    "SOOGGGGISOGGGGIS", "SOOGGGGISOGGGGIS", "SOOGGGGISOGGGGIS", "SOOOOOOOOOOOOOOS",
+                    "SOOOOOOOOOOOOHOS", "SOOOOOOOOOOOOOOS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#4e331b', 'O': '#91693e', 'G': '#334455', 'I': '#704f2d', 'H': '#111111' });
+                break;
+            case 'oak_door_bottom':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SOOOOOOOOOOOOOOS", "SOOIIIIIIIIIIOOS", "SOOIIIIIIIIIIOOS",
+                    "SOOIIIIIIIIIIOOS", "SOOOOOOOOOOOOOOS", "SOOOOOOOOOOOOOOS", "SOOIIIIIIIIIIOOS",
+                    "SOOIIIIIIIIIIOOS", "SOOIIIIIIIIIIOOS", "SOOIIIIIIIIIIOOS", "SOOOOOOOOOOOOOOS",
+                    "SOOIIIIIIIIIIOOS", "SOOIIIIIIIIIIOOS", "SOOOOOOOOOOOOOOS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#4e331b', 'O': '#91693e', 'I': '#704f2d' });
+                break;
+            case 'birch_door_item':
+            case 'birch_door_top':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SBBBBBBBBBBBBBBS", "SBBGGBBBGGBBGGBB", "SBBGGBBBGGBBGGBB",
+                    "SBBGGBBBGGBBGGBB", "SBBGGBBBGGBBGGBB", "SBBBBBBBBBBBBBBS", "SBBGGBBBGGBBGGBB",
+                    "SBBGGBBBGGBBGGBB", "SBBGGBBBGGBBGGBB", "SBBBBBBBBBBBBHBS", "SBBBBBBBBBBBBBBS",
+                    "SBBGGGGGGGGGGBBS", "SBBBBBBBBBBBBBBS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#9c8c67', 'B': '#dcd1b6', 'G': '#334455', 'H': '#222222' });
+                break;
+            case 'birch_door_bottom':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SBBBBBBBBBBBBBBS", "SBBggggggggggBBS", "SBBggggggggggBBS",
+                    "SBBBBBBBBBBBBBBS", "SBBggggggggggBBS", "SBBggggggggggBBS", "SBBBBBBBBBBBBBBS",
+                    "SBBggggggggggBBS", "SBBggggggggggBBS", "SBBBBBBBBBBBBBBS", "SBBggggggggggBBS",
+                    "SBBggggggggggBBS", "SBBBBBBBBBBBBBBS", "SBBBBBBBBBBBBBBS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#9c8c67', 'B': '#dcd1b6', 'g': '#c0b497' });
+                break;
+            case 'dark_oak_door_item':
+            case 'dark_oak_door_top':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SDDDDDDDDDDDDDDS", "SDDGGGGDDGGGGDDD", "SDDGGGGDDGGGGDDD",
+                    "SDDGGGGDDGGGGDDD", "SDDDDDDDDDDDDDDS", "SDDGGGGDDGGGGDDD", "SDDGGGGDDGGGGDDD",
+                    "SDDGGGGDDGGGGDDD", "SDDDDDDDDDDDDHDS", "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS",
+                    "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#26190e', 'D': '#432f1d', 'G': '#334455', 'H': '#000000' });
+                break;
+            case 'dark_oak_door_bottom':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SDDDDDDDDDDDDDDS", "SDDmmmmmmmmmmDDS", "SDDmmmmmmmmmmDDS",
+                    "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS", "SDDmmmmmmmmmmDDS", "SDDmmmmmmmmmmDDS",
+                    "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS", "SDDmmmmmmmmmmDDS", "SDDmmmmmmmmmmDDS",
+                    "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS", "SDDDDDDDDDDDDDDS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#26190e', 'D': '#432f1d', 'm': '#312214' });
+                break;
+            case 'iron_door_item':
+            case 'iron_door_top':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SMMMMMMMMMMMMMMS", "SMMMMMMGGMMMMMMS", "SMMMMMMGGMMMMMMS",
+                    "SMMMMMMGGMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMMMMMGGMMMMMMS",
+                    "SMMMMMMGGMMMMMMS", "SMMMMMMGGMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS",
+                    "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#555555', 'M': '#cccccc', 'G': '#334455' });
+                break;
+            case 'iron_door_bottom':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SMMMMMMMMMMMMMMS", "SMMmmmmmmmmmmMMS", "SMMmmmmmmmmmmMMS",
+                    "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMmmmmmmmmmmMMS", "SMMmmmmmmmmmmMMS",
+                    "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMmmmmmmmmmmMMS", "SMMmmmmmmmmmmMMS",
+                    "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SMMMMMMMMMMMMMMS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#555555', 'M': '#cccccc', 'm': '#a8a8a8' });
+                break;
+            case 'oak_trapdoor':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SOOOOOOSSOOOOOOS", "SOIIIIOSSOIIIIOS", "SOIIIIOSSOIIIIOS",
+                    "SOIIIIOSSOIIIIOS", "SOOOOOOSSOOOOOOS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS",
+                    "SOOOOOOSSOOOOOOS", "SOIIIIOSSOIIIIOS", "SOIIIIOSSOIIIIOS", "SOIIIIOSSOIIIIOS",
+                    "SOOOOOOSSOOOOOOS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#4e331b', 'O': '#91693e', 'I': '#704f2d' });
+                break;
+            case 'birch_trapdoor':
+                this.paint(ctx, [
+                    "SSSSSSSSSSSSSSSS", "SBBBBBBBBBBBBBBS", "SBBggBBggBBggBBS", "SBBggBBggBBggBBS",
+                    "SBBggBBggBBggBBS", "SBBBBBBBBBBBBBBS", "SBBBBBBBBBBBBBBS", "SBBggBBggBBggBBS",
+                    "SBBggBBggBBggBBS", "SBBggBBggBBggBBS", "SBBBBBBBBBBBBBBS", "SBBggBBggBBggBBS",
+                    "SBBggBBggBBggBBS", "SBBBBBBBBBBBBBBS", "SSSSSSSSSSSSSSSS", "SSSSSSSSSSSSSSSS"
+                ], { 'S': '#9c8c67', 'B': '#dcd1b6', 'g': '#334455' });
+                break;
             default:
                 ctx.fillStyle = '#ff00ff';
                 ctx.fillRect(0, 0, 16, 16);
@@ -412,10 +787,21 @@ class LumiBenchStudio {
                     { result: { id: 205, count: 1 }, pattern: [[0, 3, 0], [0, 102, 0], [0, 102, 0]] },
                     { result: { id: 206, count: 1 }, pattern: [[101, 101, 101], [0, 102, 0], [0, 102, 0]] },
                     { result: { id: 207, count: 1 }, pattern: [[101, 101, 0], [101, 102, 0], [0, 102, 0]] },
-                    { result: { id: 208, count: 1 }, pattern: [[0, 101, 0], [0, 102, 0], [0, 102, 0]] }
+                    { result: { id: 208, count: 1 }, pattern: [[0, 101, 0], [0, 102, 0], [0, 102, 0]] },
+                    { result: { id: 30, count: 4 }, pattern: [[28]] },
+                    { result: { id: 33, count: 4 }, pattern: [[31]] },
+                    { result: { id: 36, count: 4 }, pattern: [[34]] },
+                    { result: { id: 43, count: 4 }, pattern: [[100], [102]] },
+                    { result: { id: 107, count: 1 }, pattern: [[101, 0, 101], [0, 101, 0]] },
+                    { result: { id: 103, count: 3 }, pattern: [[11, 11], [11, 11], [11, 11]] },
+                    { result: { id: 104, count: 3 }, pattern: [[30, 30], [30, 30], [30, 30]] },
+                    { result: { id: 105, count: 3 }, pattern: [[36, 36], [36, 36], [36, 36]] },
+                    { result: { id: 106, count: 3 }, pattern: [[101, 101], [101, 101], [101, 101]] },
+                    { result: { id: 41, count: 2 }, pattern: [[11, 11, 11], [11, 11, 11]] },
+                    { result: { id: 42, count: 2 }, pattern: [[30, 30, 30], [30, 30, 30]] }
                 ],
                 smelting: { "12": 10, "3": 2, "6": 100, "9": 101 },
-                fuels: { "6": 300, "11": 300, "102": 100, "100": 1600, "200": 200, "201": 200, "202": 200, "16": 300 }
+                fuels: { "6": 300, "11": 300, "16": 300, "28": 300, "30": 300, "31": 300, "33": 300, "34": 300, "36": 300, "41": 300, "42": 300, "100": 1600, "102": 100, "103": 300, "104": 300, "105": 300, "200": 200, "201": 200, "202": 200 }
             }
         };
 
@@ -722,8 +1108,8 @@ class LumiBenchStudio {
             allocatedGridPositions.add(`${slot[0]},${slot[1]}`);
         }
 
-        let nextTx = 0;
-        let nextTy = 3;
+        let nextTx = 3;
+        let nextTy = 5;
         const getNextFreeSlot = () => {
             while (allocatedGridPositions.has(`${nextTx},${nextTy}`)) {
                 nextTx++;

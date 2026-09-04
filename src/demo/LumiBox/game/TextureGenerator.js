@@ -7,6 +7,7 @@ import * as THREE from 'three';
 const GLOBAL_TILE_MAP = {};
 let GLOBAL_ATLAS_CANVAS = null;
 
+
 export class TextureAtlas {
     constructor(tileSize = 16, atlasSize = 256) {
         this.tileSize = tileSize;
@@ -19,6 +20,8 @@ export class TextureAtlas {
         this.ctx.imageSmoothingEnabled = false;
         this.uvMap = {};
         this.texture = null;
+        this.nextFreeTileIndex = 96; // rows 0..5 (96 tiles) reserved for source-atlas
+        this.registeredCanvases = new Map();
         GLOBAL_ATLAS_CANVAS = this.canvas;
     }
 
@@ -32,23 +35,35 @@ export class TextureAtlas {
 
         const uStep = this.tileSize / this.atlasSize;
         const vStep = this.tileSize / this.atlasSize;
+        const eps = 0.0001; // Защита от швов и зазоров между блоками при сэмплировании
 
         for (const name in coordMap) {
             const [tx, ty] = coordMap[name];
             const clean = this.normalizeKey(name);
 
-            const u0 = tx * uStep;
-            const u1 = u0 + uStep;
-            const v1 = 1 - (ty * vStep);
-            const v0 = v1 - vStep;
+            const u0 = tx * uStep + eps;
+            const u1 = (tx + 1) * uStep - eps;
+            const v1 = 1 - (ty * vStep) - eps;
+            const v0 = 1 - ((ty + 1) * vStep) + eps;
 
-            const uvInfo = { u0, v0, u1, v1, tx, ty };
+            const uvInfo = { u0, v0, u1, v1, tileX: tx, tileY: ty };
             this.uvMap[clean] = uvInfo;
             this.uvMap[name] = uvInfo;
             this.uvMap[`source:${clean}`] = uvInfo;
             this.uvMap[`gen:${clean}`] = uvInfo;
             GLOBAL_TILE_MAP[clean] = [tx, ty];
             GLOBAL_TILE_MAP[name] = [tx, ty];
+        }
+
+        // Всегда восстанавливаем все зарегистрированные процедурные текстуры
+        for (const [clean, sourceCanvas] of this.registeredCanvases.entries()) {
+            const info = this.uvMap[clean];
+            if (info) {
+                const px = info.tileX * this.tileSize;
+                const py = info.tileY * this.tileSize;
+                this.ctx.clearRect(px, py, this.tileSize, this.tileSize);
+                this.ctx.drawImage(sourceCanvas, px, py, this.tileSize, this.tileSize);
+            }
         }
 
         if (this.texture) {
@@ -59,32 +74,41 @@ export class TextureAtlas {
 
     registerTexture(name, sourceCanvas) {
         const clean = this.normalizeKey(name);
-        if (this.uvMap[clean]) return this.uvMap[clean];
+        this.registeredCanvases.set(clean, sourceCanvas);
 
-        const index = Object.keys(this.uvMap).length;
-        const tileX = index % this.tilesPerRow;
-        const tileY = Math.floor(index / this.tilesPerRow);
+        let info = this.uvMap[clean];
+        let tileX, tileY;
+
+        if (info && info.tileX !== undefined) {
+            tileX = info.tileX;
+            tileY = info.tileY;
+        } else {
+            const tileIndex = this.nextFreeTileIndex++;
+            tileX = tileIndex % this.tilesPerRow;
+            tileY = Math.floor(tileIndex / this.tilesPerRow);
+
+            const uStep = this.tileSize / this.atlasSize;
+            const vStep = this.tileSize / this.atlasSize;
+            const eps = 0.0001;
+
+            const u0 = tileX * uStep + eps;
+            const u1 = (tileX + 1) * uStep - eps;
+            const v1 = 1 - (tileY * vStep) - eps;
+            const v0 = 1 - ((tileY + 1) * vStep) + eps;
+
+            info = { u0, v0, u1, v1, tileX, tileY };
+            this.uvMap[clean] = info;
+            this.uvMap[name] = info;
+            this.uvMap[`source:${clean}`] = info;
+            this.uvMap[`gen:${clean}`] = info;
+            GLOBAL_TILE_MAP[clean] = [tileX, tileY];
+            GLOBAL_TILE_MAP[name] = [tileX, tileY];
+        }
 
         const px = tileX * this.tileSize;
         const py = tileY * this.tileSize;
-
+        this.ctx.clearRect(px, py, this.tileSize, this.tileSize);
         this.ctx.drawImage(sourceCanvas, px, py, this.tileSize, this.tileSize);
-
-        const uStep = this.tileSize / this.atlasSize;
-        const vStep = this.tileSize / this.atlasSize;
-
-        const u0 = tileX * uStep;
-        const u1 = u0 + uStep;
-        const v1 = 1 - (tileY * vStep);
-        const v0 = v1 - vStep;
-
-        const info = { u0, v0, u1, v1, tileX, tileY };
-        this.uvMap[clean] = info;
-        this.uvMap[name] = info;
-        this.uvMap[`source:${clean}`] = info;
-        this.uvMap[`gen:${clean}`] = info;
-        GLOBAL_TILE_MAP[clean] = [tileX, tileY];
-        GLOBAL_TILE_MAP[name] = [tileX, tileY];
 
         if (this.texture) this.texture.needsUpdate = true;
         return info;
@@ -124,22 +148,24 @@ export class TextureGenerator {
 
         if (this.canvasCache[clean]) return this.canvasCache[clean];
 
-        const canvas = document.createElement('canvas');
-        canvas.width = this.size;
-        canvas.height = this.size;
-        const ctx = canvas.getContext('2d');
-        ctx.imageSmoothingEnabled = false;
-
         const coords = GLOBAL_TILE_MAP[clean];
         if (GLOBAL_ATLAS_CANVAS && coords) {
+            const canvas = document.createElement('canvas');
+            canvas.width = this.size;
+            canvas.height = this.size;
+            const ctx = canvas.getContext('2d');
+            ctx.imageSmoothingEnabled = false;
+
             const [tx, ty] = coords;
             ctx.drawImage(GLOBAL_ATLAS_CANVAS, tx * this.size, ty * this.size, this.size, this.size, 0, 0, this.size, this.size);
-        } else {
-            return this.createMissingTexture();
+            this.canvasCache[clean] = canvas;
+            return canvas;
         }
 
-        this.canvasCache[clean] = canvas;
-        return canvas;
+        const proc = this.canvasCache[clean];
+        if (proc) return proc;
+
+        return this.createMissingTexture();
     }
 
     generate(type) {
@@ -163,4 +189,8 @@ export class TextureGenerator {
         ctx.fillRect(8, 8, 8, 8);
         return canvas;
     }
+}
+
+export function registerAllProceduralTextures(atlas, texGen) {
+    // Все текстуры перенесены в канонический атлас source-atlas.png и манифест source.lumibench
 }

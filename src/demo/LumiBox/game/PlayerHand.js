@@ -134,7 +134,7 @@ export class PlayerHand extends Component {
         if (this.currentBlockId !== 0 && this.textureGenerator) {
             const props = BLOCK.get(this.currentBlockId);
 
-            if (props.isItem) {
+            if (props.isItem || props.isPlant) {
                 const mat = this.getItemMaterial(props.texture);
                 const canvas = this.textureGenerator.getCanvas(props.texture);
                 const item3DGeo = getOrCreateItem3DGeometry(canvas, 0.5, 0.5 / 16);

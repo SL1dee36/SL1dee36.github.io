@@ -36,6 +36,8 @@ export class Inventory extends Component {
         this.addItem(BLOCK.COAL, 32);
         this.addItem(BLOCK.IRON_ORE, 16);
         this.addItem(BLOCK.SAND, 16);
+        this.addItem(BLOCK.BUCKET, 1);
+        this.addItem(BLOCK.TORCH, 8);
         
         this.uiManager.setInventory(this);
     }

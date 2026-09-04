@@ -20,6 +20,8 @@ import { TouchControls } from '../../game/TouchControls.js';
 import { PlayerHand } from '../../game/PlayerHand.js';
 import { ResourcePackLoader } from '../../game/ResourcePackLoader.js';
 import { ModuleManager } from '../../game/ModuleManager.js';
+import { WeatherSystem } from '../../game/WeatherSystem.js';
+import { MobManager } from '../../game/MobManager.js';
 
 function main() {
     const engine = new Engine('game-canvas');
@@ -235,6 +237,15 @@ function main() {
         const sky = new GameObject('Sky');
         sky.addComponent(DayNightCycle, settingsManager);
         engine.addGameObject(sky);
+
+        const weatherObj = new GameObject('Weather');
+        weatherObj.addComponent(WeatherSystem, world, settingsManager);
+        engine.addGameObject(weatherObj);
+
+        const mobObj = new GameObject('MobManager');
+        const mobManager = mobObj.addComponent(MobManager, world, soundManager, settingsManager);
+        engine.addGameObject(mobObj);
+        engine.mobManager = mobManager;
 
         const updater = new GameObject('WorldUpdater');
         updater.update = (dt) => {

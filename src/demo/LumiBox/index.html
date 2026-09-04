@@ -3,6 +3,7 @@
 <head>
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="mobile-web-app-capable" content="yes">
     <meta charset="UTF-8">
     <title>LumiBox</title>
     <link rel="icon" href="game/ui/lucraft-logo.png">
@@ -102,7 +103,7 @@
             <div class="options-grid">
                 <div class="option-item slider-container">
                     <span class="slider-label">Render Distance: <span id="val-render-dist">4</span></span>
-                    <input type="range" id="opt-render-dist" min="1" max="8" step="1">
+                    <input type="range" id="opt-render-dist" min="2" max="64" step="1">
                 </div>
                 <div class="option-item">
                     <button id="opt-render-mode" style="width: 100%;">Mode: Smart</button>
@@ -135,6 +136,10 @@
                 <div class="option-item"><button id="opt-show-stars" style="width: 100%;">Stars: ON</button></div>
                 <div class="option-item"><button id="opt-show-sky" style="width: 100%;">Sun/Moon: ON</button></div>
                 <div class="option-item"><button id="opt-ao" style="width: 100%;">Smooth Lighting: ON</button></div>
+                <div class="option-item"><button id="opt-weather" style="width: 100%;">Weather: ON</button></div>
+                <div class="option-item"><button id="opt-dyn-light" style="width: 100%;">Dynamic Light: ON</button></div>
+                <div class="option-item"><button id="opt-bobbing" style="width: 100%;">View Bobbing: ON</button></div>
+                <div class="option-item"><button id="opt-particles" style="width: 100%;">Particles: All</button></div>
             </div>
             <button class="menu-btn" id="options-back-btn" style="width: 200px;">Done</button>
         </div>

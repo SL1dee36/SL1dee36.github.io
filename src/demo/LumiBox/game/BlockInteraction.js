@@ -75,6 +75,18 @@ export class BlockInteraction extends Component {
              return;
         }
 
+        if (this.engine.inputManager.wasMouseButtonJustPressed(0)) {
+            const cam = this.engine.renderer.camera;
+            const camPos = new THREE.Vector3();
+            cam.getWorldPosition(camPos);
+            const lookDir = new THREE.Vector3();
+            cam.getWorldDirection(lookDir);
+
+            if (this.engine.mobManager && this.engine.mobManager.checkAttackHit(camPos, lookDir)) {
+                return;
+            }
+        }
+
         this.performRaycast();
 
         if (this.targetBlock) {
@@ -167,10 +179,13 @@ export class BlockInteraction extends Component {
         this.targetBlock = null;
         this.placePosition = null;
 
+        const heldItem = this.inventory ? this.inventory.getSelectedItem() : null;
+        const canTargetWater = heldItem && heldItem.id === BLOCK.BUCKET;
+
         for (let i = 0; i < this.reach * 2; i++) {
             const blockId = this.world.getVoxel(x, y, z);
             
-            if (blockId !== BLOCK.AIR && blockId !== BLOCK.WATER) {
+            if (blockId !== BLOCK.AIR && (blockId !== BLOCK.WATER || canTargetWater)) {
                 if (Math.sqrt((x+0.5-start.x)**2 + (y+0.5-start.y)**2 + (z+0.5-start.z)**2) > this.reach) break;
                 this.targetBlock = { x, y, z };
                 this.placePosition = { x, y, z };
@@ -195,6 +210,22 @@ export class BlockInteraction extends Component {
         const props = BLOCK.get(blockId);
 
         if (props.isBreakable !== false) {
+            // Разрушение дверей (ломаются обе половинки)
+            if (props.isDoor) {
+                const meta = this.world.getMeta(x, y, z);
+                const otherY = (meta & 1) ? y - 1 : y + 1;
+                this.world.setVoxel(x, y, z, BLOCK.AIR);
+                if (this.world.getVoxel(x, otherY, z) === blockId) {
+                    this.world.setVoxel(x, otherY, z, BLOCK.AIR);
+                }
+                const dropId = props.drop !== undefined ? props.drop : blockId;
+                if (dropId !== 0) {
+                    this.world.spawnItemDrop(x + 0.5, y + 0.5, z + 0.5, dropId, 1);
+                }
+                if (this.soundManager) this.soundManager.playBreak(blockId);
+                return;
+            }
+
             this.world.setVoxel(x, y, z, BLOCK.AIR);
             const dropId = (props.drop !== undefined) ? props.drop : blockId;
             
@@ -218,17 +249,68 @@ export class BlockInteraction extends Component {
     }
 
     interactBlock() {
-        if(!this.targetBlock) return false;
-        const {x,y,z} = this.targetBlock;
-        const id = this.world.getVoxel(x,y,z);
+        if (!this.targetBlock) return false;
+        const { x, y, z } = this.targetBlock;
+        const id = this.world.getVoxel(x, y, z);
         const key = `${x},${y},${z}`;
+        const selectedItem = this.inventory.getSelectedItem();
+
+        // 1. Пустое ведро -> забор воды
+        if (selectedItem && selectedItem.id === BLOCK.BUCKET) {
+            if (id === BLOCK.WATER) {
+                this.world.setVoxel(x, y, z, BLOCK.AIR);
+                this.inventory.removeItemFromSelectedSlot(1);
+                this.inventory.addItem(BLOCK.WATER_BUCKET, 1);
+                if (this.soundManager) this.soundManager.playPlace(BLOCK.WATER);
+                return true;
+            }
+        }
+
+        // 2. Ведро с водой -> вылить воду
+        if (selectedItem && selectedItem.id === BLOCK.WATER_BUCKET) {
+            if (this.placePosition) {
+                const { x: px, y: py, z: pz } = this.placePosition;
+                this.world.setVoxel(px, py, pz, BLOCK.WATER, 8);
+                this.inventory.removeItemFromSelectedSlot(1);
+                this.inventory.addItem(BLOCK.BUCKET, 1);
+                if (this.soundManager) this.soundManager.playPlace(BLOCK.WATER);
+                return true;
+            }
+        }
+
+        // 3. Двери -> открыть / закрыть
+        const targetProps = BLOCK.get(id);
+        if (targetProps.isDoor) {
+            const meta = this.world.getMeta(x, y, z);
+            const isTop = (meta & 1) !== 0;
+            const otherY = isTop ? y - 1 : y + 1;
+            const isOpen = (meta & 2) !== 0;
+            const newMeta = (meta & ~2) | (isOpen ? 0 : 2);
+            this.world.setVoxel(x, y, z, id, newMeta);
+
+            if (this.world.getVoxel(x, otherY, z) === id) {
+                const otherMeta = this.world.getMeta(x, otherY, z);
+                const newOtherMeta = (otherMeta & ~2) | (isOpen ? 0 : 2);
+                this.world.setVoxel(x, otherY, z, id, newOtherMeta);
+            }
+            if (this.soundManager) this.soundManager.playBreak(id);
+            return true;
+        }
+
+        // 4. Люки -> открыть / закрыть
+        if (targetProps.isTrapdoor) {
+            const meta = this.world.getMeta(x, y, z);
+            this.world.setVoxel(x, y, z, id, meta ^ 1);
+            if (this.soundManager) this.soundManager.playBreak(id);
+            return true;
+        }
         
         if (id === BLOCK.CRAFTING_TABLE) {
             this.inventory.openContainer('workbench');
             this.inventory.uiManager.toggleInventory(true);
             return true;
         } else if (id === BLOCK.FURNACE) {
-            this.inventory.openContainer('furnace', key); // Pass location
+            this.inventory.openContainer('furnace', key);
             this.inventory.uiManager.toggleInventory(true);
             return true;
         }
@@ -241,6 +323,24 @@ export class BlockInteraction extends Component {
         const selectedItem = this.inventory.getSelectedItem();
         
         if (selectedItem) {
+            // Установка дверей из предмета двери
+            const doorItemMap = {
+                [BLOCK.OAK_DOOR_ITEM]: BLOCK.OAK_DOOR,
+                [BLOCK.BIRCH_DOOR_ITEM]: BLOCK.BIRCH_DOOR,
+                [BLOCK.DARK_OAK_DOOR_ITEM]: BLOCK.DARK_OAK_DOOR,
+                [BLOCK.IRON_DOOR_ITEM]: BLOCK.IRON_DOOR
+            };
+
+            const doorBlockId = doorItemMap[selectedItem.id];
+            if (doorBlockId) {
+                if (y + 1 >= 256 || this.world.getVoxel(x, y + 1, z) !== BLOCK.AIR) return;
+                this.world.setVoxel(x, y, z, doorBlockId, 0);
+                this.world.setVoxel(x, y + 1, z, doorBlockId, 1);
+                this.inventory.removeItemFromSelectedSlot(1);
+                if (this.soundManager) this.soundManager.playPlace(doorBlockId);
+                return;
+            }
+
             const props = BLOCK.get(selectedItem.id);
             if (props.isItem) return; 
 

@@ -5,8 +5,9 @@
 import * as THREE from 'three';
 import { BLOCK } from './blocks.js';
 import { SimplexNoise } from './utils/SimplexNoise.js';
-import { TextureGenerator, TextureAtlas } from './TextureGenerator.js';
+import { TextureGenerator, TextureAtlas, registerAllProceduralTextures } from './TextureGenerator.js';
 import { ItemDrop } from './ItemDrop.js';
+import { StructureGenerator } from './StructureGenerator.js';
 
 const CHUNK_SIZE = 16;
 const WORLD_HEIGHT = 256;
@@ -15,6 +16,75 @@ const SECTIONS_PER_CHUNK = WORLD_HEIGHT / SECTION_HEIGHT;
 const PX = CHUNK_SIZE + 2;
 const PY = SECTION_HEIGHT + 3;
 const PZ = CHUNK_SIZE + 2;
+
+export const BIOME = {
+    OCEAN: 0,
+    BEACH: 1,
+    FLOWER_MEADOW: 2,
+    OAK_FOREST: 3,
+    BIRCH_FOREST: 4,
+    DARK_OAK_FOREST: 5,
+    MOUNTAINS: 6,
+    DESERT: 7,
+    SWAMP: 8
+};
+
+export const BIOME_DATA = {
+    [BIOME.OCEAN]: {
+        name: 'Ocean',
+        grassColor: [0.43, 0.73, 0.28],
+        waterColor: [0.10, 0.26, 0.56],
+        baseHeight: 45
+    },
+    [BIOME.BEACH]: {
+        name: 'Beach',
+        grassColor: [0.55, 0.75, 0.35],
+        waterColor: [0.18, 0.55, 0.88],
+        baseHeight: 61
+    },
+    [BIOME.FLOWER_MEADOW]: {
+        name: 'Flower Meadow',
+        grassColor: [0.33, 0.82, 0.25],
+        waterColor: [0.22, 0.52, 0.92],
+        baseHeight: 68
+    },
+    [BIOME.OAK_FOREST]: {
+        name: 'Oak Forest',
+        grassColor: [0.30, 0.65, 0.20],
+        waterColor: [0.25, 0.46, 0.89],
+        baseHeight: 68
+    },
+    [BIOME.BIRCH_FOREST]: {
+        name: 'Birch Forest',
+        grassColor: [0.41, 0.73, 0.26],
+        waterColor: [0.24, 0.67, 0.97],
+        baseHeight: 69
+    },
+    [BIOME.DARK_OAK_FOREST]: {
+        name: 'Dark Oak Forest',
+        grassColor: [0.19, 0.38, 0.12],
+        waterColor: [0.19, 0.31, 0.56],
+        baseHeight: 70
+    },
+    [BIOME.MOUNTAINS]: {
+        name: 'Mountains',
+        grassColor: [0.38, 0.54, 0.33],
+        waterColor: [0.16, 0.46, 0.83],
+        baseHeight: 92
+    },
+    [BIOME.DESERT]: {
+        name: 'Desert',
+        grassColor: [0.75, 0.72, 0.33],
+        waterColor: [0.16, 0.52, 0.80],
+        baseHeight: 65
+    },
+    [BIOME.SWAMP]: {
+        name: 'Swamp',
+        grassColor: [0.30, 0.35, 0.16],
+        waterColor: [0.25, 0.31, 0.22],
+        baseHeight: 61
+    }
+};
 
 class Chunk {
     constructor(x, z) {
@@ -46,12 +116,10 @@ class GeometryBuilder {
         this.positions = new Float32Array(initialCapacity * 3);
         this.normals = new Float32Array(initialCapacity * 3);
         this.uvs = new Float32Array(initialCapacity * 2);
-        this.atlasBounds = new Float32Array(initialCapacity * 4);
         this.colors = new Float32Array(initialCapacity * 3);
         this.indices = new Uint32Array(initialCapacity * 1.5);
         this.vCount = 0;
         this.iCount = 0;
-        this.groups = [];
     }
 
     ensureCapacity(verticesToAdd, indicesToAdd) {
@@ -61,19 +129,16 @@ class GeometryBuilder {
             const n = new Float32Array(newSize);
             const c = new Float32Array(newSize);
             const u = new Float32Array((newSize / 3) * 2);
-            const ab = new Float32Array((newSize / 3) * 4);
 
             p.set(this.positions);
             n.set(this.normals);
             c.set(this.colors);
             u.set(this.uvs);
-            ab.set(this.atlasBounds);
 
             this.positions = p;
             this.normals = n;
             this.colors = c;
             this.uvs = u;
-            this.atlasBounds = ab;
         }
 
         if (this.iCount + indicesToAdd >= this.indices.length) {
@@ -105,7 +170,6 @@ class WorldRegion {
             this.sectionSpheres.push(new THREE.Sphere(new THREE.Vector3(this.chunkX + CHUNK_SIZE / 2, centerY, this.chunkZ + CHUNK_SIZE / 2), radius + 2.0));
         }
         this.paddedCache = new Uint16Array(PX * PY * PZ);
-        this.mask = new Int32Array(CHUNK_SIZE * SECTION_HEIGHT);
     }
 
     dispose() {
@@ -163,7 +227,13 @@ class WorldRegion {
         const raw = this.paddedCache[(y + 1) * PX * PZ + (z + 1) * PX + (x + 1)];
         const v = raw & 0xFF;
         if (v === BLOCK.AIR) return 0;
+        const meta = (raw >> 8) & 0xFF;
         const props = BLOCK.get(v);
+
+        // Открытые двери и люки проходимы (не твердые)
+        if (props.isDoor && (meta & 2) !== 0) return 0;
+        if (props.isTrapdoor && (meta & 1) !== 0) return 0;
+
         return props.isSolid && !props.isTransparent ? 1 : 0;
     }
 
@@ -190,6 +260,136 @@ class WorldRegion {
         return 1.0 - (sumHeight / count);
     }
 
+    // Расчёт динамического освещения в стиле Minecraft (Skylight + Blocklight + Caves)
+    computeLighting(startY) {
+        const lightMap = new Uint8Array(PX * PY * PZ);
+        const skyQueue = [];
+        const blockQueue = [];
+
+        // 1. Трассировка солнечного света сверху вниз
+        for (let z = 0; z < PZ; z++) {
+            const wz = this.chunkZ + z - 1;
+            for (let x = 0; x < PX; x++) {
+                const wx = this.chunkX + x - 1;
+                const th = this.world.getTerrainHeightAt(wx, wz);
+
+                let sky = 15;
+                for (let y = PY - 1; y >= 0; y--) {
+                    const wy = startY + y - 1;
+                    const idx = y * PX * PZ + z * PX + x;
+                    const raw = this.paddedCache[idx];
+                    const voxel = raw & 0xFF;
+
+                    if (voxel === BLOCK.AIR) {
+                        if (wy <= th) {
+                            const depth = th - wy;
+                            if (depth > 2) sky = 0; // В пещерах без прямого неба - 0
+                            else sky = Math.max(0, 15 - depth * 4);
+                        }
+                        lightMap[idx] = (sky << 4);
+                        if (sky > 1) skyQueue.push(x, y, z);
+                    } else {
+                        const props = BLOCK.get(voxel);
+                        if (!props.isSolid || props.isTransparent) {
+                            if (voxel === BLOCK.WATER) sky = Math.max(0, sky - 2);
+                            else if (props.isLeaves) sky = Math.max(0, sky - 1);
+                            lightMap[idx] = (sky << 4);
+                            if (sky > 1) skyQueue.push(x, y, z);
+                        } else {
+                            sky = 0; // Сплошной блок полностью блокирует солнечный свет
+                            lightMap[idx] = 0;
+                        }
+
+                        // Проверка источников света блоков (Факелы, печи)
+                        const emit = props.lightEmission || (voxel === BLOCK.TORCH ? 14 : 0);
+                        if (emit > 0) {
+                            lightMap[idx] = (lightMap[idx] & 0xF0) | emit;
+                            blockQueue.push(x, y, z);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 2. Распространение солнечного света в навесы и входы в пещеры (BFS)
+        let sHead = 0;
+        const dirs = [[1, 0, 0], [-1, 0, 0], [0, 1, 0], [0, -1, 0], [0, 0, 1], [0, 0, -1]];
+        while (sHead < skyQueue.length) {
+            const qx = skyQueue[sHead++];
+            const qy = skyQueue[sHead++];
+            const qz = skyQueue[sHead++];
+            const qIdx = qy * PX * PZ + qz * PX + qx;
+            const curSky = (lightMap[qIdx] >> 4) & 0xF;
+            if (curSky <= 1) continue;
+
+            for (let d = 0; d < 6; d++) {
+                const nx = qx + dirs[d][0], ny = qy + dirs[d][1], nz = qz + dirs[d][2];
+                if (nx >= 0 && nx < PX && ny >= 0 && ny < PY && nz >= 0 && nz < PZ) {
+                    const nIdx = ny * PX * PZ + nz * PX + nx;
+                    const nRaw = this.paddedCache[nIdx];
+                    const nVoxel = nRaw & 0xFF;
+                    const nProps = BLOCK.get(nVoxel);
+                    if (nVoxel === BLOCK.AIR || nProps.isTransparent) {
+                        const nSky = (lightMap[nIdx] >> 4) & 0xF;
+                        const loss = (nVoxel === BLOCK.WATER) ? 2 : 1;
+                        const nextSky = Math.max(0, curSky - loss);
+                        if (nextSky > nSky) {
+                            lightMap[nIdx] = (nextSky << 4) | (lightMap[nIdx] & 0xF);
+                            skyQueue.push(nx, ny, nz);
+                        }
+                    }
+                }
+            }
+        }
+
+        // 3. Динамический свет от игрока (если держит факел / светящийся предмет)
+        if (this.world.playerPos) {
+            const p = this.world.playerPos;
+            const plx = Math.floor(p.x - this.chunkX) + 1;
+            const ply = Math.floor(p.y - startY) + 1;
+            const plz = Math.floor(p.z - this.chunkZ) + 1;
+            if (plx >= 0 && plx < PX && ply >= 0 && ply < PY && plz >= 0 && plz < PZ) {
+                const pIdx = ply * PX * PZ + plz * PX + plx;
+                const dynamicVal = 14;
+                if ((lightMap[pIdx] & 0xF) < dynamicVal) {
+                    lightMap[pIdx] = (lightMap[pIdx] & 0xF0) | dynamicVal;
+                    blockQueue.push(plx, ply, plz);
+                }
+            }
+        }
+
+        // 4. Распространение света блоков (BFS)
+        let bHead = 0;
+        while (bHead < blockQueue.length) {
+            const qx = blockQueue[bHead++];
+            const qy = blockQueue[bHead++];
+            const qz = blockQueue[bHead++];
+            const qIdx = qy * PX * PZ + qz * PX + qx;
+            const curBlock = lightMap[qIdx] & 0xF;
+            if (curBlock <= 1) continue;
+
+            for (let d = 0; d < 6; d++) {
+                const nx = qx + dirs[d][0], ny = qy + dirs[d][1], nz = qz + dirs[d][2];
+                if (nx >= 0 && nx < PX && ny >= 0 && ny < PY && nz >= 0 && nz < PZ) {
+                    const nIdx = ny * PX * PZ + nz * PX + nx;
+                    const nRaw = this.paddedCache[nIdx];
+                    const nVoxel = nRaw & 0xFF;
+                    const nProps = BLOCK.get(nVoxel);
+                    if (nVoxel === BLOCK.AIR || nProps.isTransparent) {
+                        const nBlock = lightMap[nIdx] & 0xF;
+                        const nextBlock = curBlock - 1;
+                        if (nextBlock > nBlock) {
+                            lightMap[nIdx] = (lightMap[nIdx] & 0xF0) | nextBlock;
+                            blockQueue.push(nx, ny, nz);
+                        }
+                    }
+                }
+            }
+        }
+
+        return lightMap;
+    }
+
     generateSection(sectionIndex, chunk) {
         if (this.sections[sectionIndex]) {
             this.world.scene.remove(this.sections[sectionIndex]);
@@ -199,10 +399,15 @@ class WorldRegion {
 
         const startY = sectionIndex * SECTION_HEIGHT;
         this.fillPaddedCache(startY);
+        const lightMap = this.computeLighting(startY);
         const builder = new GeometryBuilder();
         const useAO = this.world.settings.get('ambientOcclusion');
+        const sunBrightness = this.world.sunBrightness !== undefined ? this.world.sunBrightness : 1.0;
 
-        const getTexName = (props, dir) => {
+        const getTexName = (props, dir, meta) => {
+            if (props.isDoor) {
+                return (meta & 1) ? props.texture.top : props.texture.bottom;
+            }
             if (typeof props.texture !== 'object') return props.texture;
             if (dir === 'top') return props.texture.top;
             if (dir === 'bottom') return props.texture.bottom;
@@ -211,40 +416,37 @@ class WorldRegion {
         };
 
         const faces = [
-            { dirName: 'side', n: [1, 0, 0], axis: 0, sign: 1, uAxis: 2, vAxis: 1, buildCorners: (w, h) => [[1, 0, 0], [1, h, 0], [1, 0, w], [1, h, w]], buildUVs: (w, h) => [0, 0, 0, h, w, 0, w, h] },
-            { dirName: 'side', n: [-1, 0, 0], axis: 0, sign: -1, uAxis: 2, vAxis: 1, buildCorners: (w, h) => [[0, 0, w], [0, h, w], [0, 0, 0], [0, h, 0]], buildUVs: (w, h) => [0, 0, 0, h, w, 0, w, h] },
-            { dirName: 'top', n: [0, 1, 0], axis: 1, sign: 1, uAxis: 0, vAxis: 2, buildCorners: (w, h) => [[0, 1, h], [w, 1, h], [0, 1, 0], [w, 1, 0]], buildUVs: (w, h) => [0, 0, w, 0, 0, h, w, h] },
-            { dirName: 'bottom', n: [0, -1, 0], axis: 1, sign: -1, uAxis: 0, vAxis: 2, buildCorners: (w, h) => [[0, 0, 0], [w, 0, 0], [0, 0, h], [w, 0, h]], buildUVs: (w, h) => [0, 0, w, 0, 0, h, w, h] },
-            { dirName: 'front', n: [0, 0, 1], axis: 2, sign: 1, uAxis: 0, vAxis: 1, buildCorners: (w, h) => [[w, 0, 1], [w, h, 1], [0, 0, 1], [0, h, 1]], buildUVs: (w, h) => [0, 0, 0, h, w, 0, w, h] },
-            { dirName: 'side', n: [0, 0, -1], axis: 2, sign: -1, uAxis: 0, vAxis: 1, buildCorners: (w, h) => [[0, 0, 0], [0, h, 0], [w, 0, 0], [w, h, 0]], buildUVs: (w, h) => [0, 0, 0, h, w, 0, w, h] }
+            { dirName: 'side', n: [1, 0, 0], axis: 0, sign: 1, corners: [[1, 0, 0], [1, 1, 0], [1, 0, 1], [1, 1, 1]] },
+            { dirName: 'side', n: [-1, 0, 0], axis: 0, sign: -1, corners: [[0, 0, 1], [0, 1, 1], [0, 0, 0], [0, 1, 0]] },
+            { dirName: 'top', n: [0, 1, 0], axis: 1, sign: 1, corners: [[0, 1, 1], [1, 1, 1], [0, 1, 0], [1, 1, 0]] },
+            { dirName: 'bottom', n: [0, -1, 0], axis: 1, sign: -1, corners: [[0, 0, 0], [1, 0, 0], [0, 0, 1], [1, 0, 1]] },
+            { dirName: 'front', n: [0, 0, 1], axis: 2, sign: 1, corners: [[1, 0, 1], [1, 1, 1], [0, 0, 1], [0, 1, 1]] },
+            { dirName: 'side', n: [0, 0, -1], axis: 2, sign: -1, corners: [[0, 0, 0], [0, 1, 0], [1, 0, 0], [1, 1, 0]] }
         ];
 
         const waterFacesToBuild = [];
+        const cutoutFacesToBuild = [];
 
-        // 1. Greedy Meshing
-        for (const face of faces) {
-            const uSize = face.uAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
-            const vSize = face.vAxis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
-            const dSize = face.axis === 1 ? SECTION_HEIGHT : CHUNK_SIZE;
+        // 1. Генерация граней блоков (1x1 quads)
+        for (let y = 0; y < SECTION_HEIGHT; y++) {
+            const wy = startY + y;
+            for (let z = 0; z < CHUNK_SIZE; z++) {
+                const wz = this.chunkZ + z;
+                for (let x = 0; x < CHUNK_SIZE; x++) {
+                    const wx = this.chunkX + x;
+                    const raw = this.getCacheVoxelRaw(x, y, z);
+                    const voxel = raw & 0xFF;
+                    if (voxel === BLOCK.AIR) continue;
+                    const bProps = BLOCK.get(voxel);
+                    if (bProps.isPlant) continue;
 
-            for (let d = 0; d < dSize; d++) {
-                this.mask.fill(0);
+                    const meta = (raw >> 8) & 0xFF;
+                    const isCutoutBlock = bProps.isTransparent && voxel !== BLOCK.WATER;
 
-                for (let v = 0; v < vSize; v++) {
-                    for (let u = 0; u < uSize; u++) {
-                        let x = face.axis === 0 ? d : (face.uAxis === 0 ? u : v);
-                        let y = face.axis === 1 ? d : (face.uAxis === 1 ? u : v);
-                        let z = face.axis === 2 ? d : (face.uAxis === 2 ? u : v);
-
-                        const raw = this.getCacheVoxelRaw(x, y, z);
-                        const voxel = raw & 0xFF;
-                        if (voxel === BLOCK.AIR) continue;
-                        const bProps = BLOCK.get(voxel);
-                        if (bProps.isPlant) continue;
-
-                        let nx = x + (face.axis === 0 ? face.sign : 0);
-                        let ny = y + (face.axis === 1 ? face.sign : 0);
-                        let nz = z + (face.axis === 2 ? face.sign : 0);
+                    for (const face of faces) {
+                        const nx = x + (face.axis === 0 ? face.sign : 0);
+                        const ny = y + (face.axis === 1 ? face.sign : 0);
+                        const nz = z + (face.axis === 2 ? face.sign : 0);
 
                         const neighborRaw = this.getCacheVoxelRaw(nx, ny, nz);
                         const neighborId = neighborRaw & 0xFF;
@@ -263,71 +465,81 @@ class WorldRegion {
                             }
                         }
 
-                        if (draw) {
-                            let ao0 = 10, ao1 = 10, ao2 = 10, ao3 = 10;
-                            if (useAO && voxel !== BLOCK.WATER) {
-                                let baseLight = (voxel === BLOCK.STONE || voxel === BLOCK.BEDROCK || voxel === BLOCK.COAL_ORE || voxel === BLOCK.IRON_ORE) ? 6 : 10;
-                                ao0 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 0));
-                                ao1 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 1));
-                                ao2 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 2));
-                                ao3 = Math.floor(baseLight * this.calcAO(x, y, z, face.dirName, 3));
-                            }
-                            const aoHash = (ao0) | (ao1 << 4) | (ao2 << 8) | (ao3 << 12);
-                            this.mask[v * uSize + u] = voxel | (aoHash << 16);
-                        }
-                    }
-                }
+                        if (!draw) continue;
 
-                for (let v = 0; v < vSize; v++) {
-                    for (let u = 0; u < uSize; u++) {
-                        const maskVal = this.mask[v * uSize + u];
-                        if (maskVal !== 0) {
-                            const voxelId = maskVal & 0xFF;
-                            const isWater = (voxelId === BLOCK.WATER);
+                        // Сэмплирование света соседнего прозрачного блока
+                        const lx = nx + 1, ly = ny + 1, lz = nz + 1;
+                        const lIdx = ly * PX * PZ + lz * PX + lx;
+                        const lightVal = lightMap[lIdx];
+                        const sky = (lightVal >> 4) & 0xF;
+                        const block = lightVal & 0xF;
 
-                            let w = 1, h = 1;
-                            if (!isWater) {
-                                while (u + w < uSize && this.mask[v * uSize + (u + w)] === maskVal) w++;
-                                let done = false;
-                                while (v + h < vSize && !done) {
-                                    for (let i = 0; i < w; i++) {
-                                        if (this.mask[(v + h) * uSize + (u + i)] !== maskVal) { done = true; break; }
-                                    }
-                                    if (!done) h++;
-                                }
-                            }
+                        const effectiveSky = sky * sunBrightness;
+                        const maxLight = Math.max(block, effectiveSky);
+                        // Minecraft кривая яркости
+                        const baseBrightness = 0.05 + 0.95 * Math.pow(maxLight / 15.0, 1.5);
 
-                            for (let j = 0; j < h; j++) {
-                                for (let i = 0; i < w; i++) this.mask[(v + j) * uSize + (u + i)] = 0;
-                            }
+                        let sideDim = 1.0;
+                        if (face.axis === 0) sideDim = 0.8;
+                        else if (face.axis === 2) sideDim = 0.7;
+                        else if (face.sign < 0) sideDim = 0.5;
 
-                            let x = face.axis === 0 ? d : (face.uAxis === 0 ? u : v);
-                            let y = face.axis === 1 ? d : (face.uAxis === 1 ? u : v);
-                            let z = face.axis === 2 ? d : (face.uAxis === 2 ? u : v);
+                        const aoFactors = [
+                            useAO ? this.calcAO(x, y, z, face.dirName, 0) : 1.0,
+                            useAO ? this.calcAO(x, y, z, face.dirName, 1) : 1.0,
+                            useAO ? this.calcAO(x, y, z, face.dirName, 2) : 1.0,
+                            useAO ? this.calcAO(x, y, z, face.dirName, 3) : 1.0
+                        ];
 
-                            const wx = this.chunkX + x;
-                            const wy = startY + y;
-                            const wz = this.chunkZ + z;
+                        const isWater = (voxel === BLOCK.WATER);
 
-                            const aoHash = (maskVal >> 16) & 0xFFFF;
-                            const ao = [(aoHash & 0xF) / 10, ((aoHash >> 4) & 0xF) / 10, ((aoHash >> 8) & 0xF) / 10, ((aoHash >> 12) & 0xF) / 10];
-                            const corners = face.buildCorners(w, h);
+                        if (isWater) {
                             const yOffsets = [0, 0, 0, 0];
-
-                            if (isWater) {
-                                for (let i = 0; i < 4; i++) {
-                                    if (corners[i][1] > 0) {
-                                        yOffsets[i] = this.getWaterOffset(x, y, z, corners[i][0], corners[i][2]);
-                                    }
+                            for (let i = 0; i < 4; i++) {
+                                if (face.corners[i][1] > 0) {
+                                    yOffsets[i] = this.getWaterOffset(x, y, z, face.corners[i][0], face.corners[i][2]);
                                 }
-                                waterFacesToBuild.push({
-                                    wx, wy, wz, n: face.n, corners, uvs: face.buildUVs(w, h), ao, yOffsets
+                            }
+                            const waterCol = this.world.getBiomeWaterColor(wx, wz);
+                            const colors = [];
+                            for (let i = 0; i < 4; i++) {
+                                const l = baseBrightness * sideDim * aoFactors[i];
+                                colors.push(waterCol[0] * l, waterCol[1] * l, waterCol[2] * l);
+                            }
+                            waterFacesToBuild.push({
+                                wx, wy, wz, n: face.n, corners: face.corners,
+                                uvs: [0, 0, 0, 1, 1, 0, 1, 1],
+                                colors, yOffsets
+                            });
+                        } else {
+                            const texName = getTexName(bProps, face.dirName, meta);
+                            const uvBounds = this.world.atlas.getUV(texName);
+                            const { u0, v0, u1, v1 } = uvBounds;
+
+                            let uvs;
+                            if (face.dirName === 'top') uvs = [u0, v1, u1, v1, u0, v0, u1, v0];
+                            else if (face.dirName === 'bottom') uvs = [u0, v0, u1, v0, u0, v1, u1, v1];
+                            else uvs = [u1, v0, u1, v1, u0, v0, u0, v1];
+
+                            const isGrassTop = (voxel === BLOCK.GRASS && face.dirName === 'top');
+                            const grassCol = isGrassTop ? this.world.getBiomeGrassColor(wx, wz) : null;
+
+                            const colors = [];
+                            for (let i = 0; i < 4; i++) {
+                                const l = baseBrightness * sideDim * aoFactors[i];
+                                if (isGrassTop) {
+                                    colors.push(grassCol[0] * l, grassCol[1] * l, grassCol[2] * l);
+                                } else {
+                                    colors.push(l, l, l);
+                                }
+                            }
+
+                            if (isCutoutBlock) {
+                                cutoutFacesToBuild.push({
+                                    wx, wy, wz, n: face.n, corners: face.corners, uvs, colors
                                 });
                             } else {
-                                const bProps = BLOCK.get(voxelId);
-                                const texName = getTexName(bProps, face.dirName);
-                                const uvBounds = this.world.atlas.getUV(texName);
-                                this.addFacePacked(builder, wx, wy, wz, face.n, corners, face.buildUVs(w, h), false, uvBounds, ao, yOffsets);
+                                this.addFacePacked(builder, wx, wy, wz, face.n, face.corners, uvs, colors, null);
                             }
                         }
                     }
@@ -335,35 +547,56 @@ class WorldRegion {
             }
         }
 
-        // 2. Растения (X-Cross)
+        const solidIndexCount = builder.iCount;
+
+        // 2. Вода вторым проходом (группа 1: waterMaterial)
+        for (let i = 0; i < waterFacesToBuild.length; i++) {
+            const wf = waterFacesToBuild[i];
+            this.addFacePacked(builder, wf.wx, wf.wy, wf.wz, wf.n, wf.corners, wf.uvs, wf.colors, wf.yOffsets);
+        }
+        const waterIndexCount = builder.iCount - solidIndexCount;
+
+        // 3. Cutout грани (листва, стекло, двери, группа 2: cutoutMaterial)
+        for (let i = 0; i < cutoutFacesToBuild.length; i++) {
+            const cf = cutoutFacesToBuild[i];
+            this.addFacePacked(builder, cf.wx, cf.wy, cf.wz, cf.n, cf.corners, cf.uvs, cf.colors, null);
+        }
+
+        // 4. Растительность (Цветы, высокая трава, факелы - X-Cross, группа 2: cutoutMaterial)
         for (let y = 0; y < SECTION_HEIGHT; y++) {
+            const wy = startY + y;
             for (let z = 0; z < CHUNK_SIZE; z++) {
+                const wz = this.chunkZ + z;
                 for (let x = 0; x < CHUNK_SIZE; x++) {
+                    const wx = this.chunkX + x;
                     const raw = this.getCacheVoxelRaw(x, y, z);
                     const voxel = raw & 0xFF;
                     if (voxel === BLOCK.AIR) continue;
                     const bProps = BLOCK.get(voxel);
                     if (bProps.isPlant) {
-                        const texName = getTexName(bProps, 'side');
+                        const texName = getTexName(bProps, 'side', 0);
                         const uvBounds = this.world.atlas.getUV(texName);
-                        const wx = this.chunkX + x;
-                        const wy = startY + y;
-                        const wz = this.chunkZ + z;
-                        this.addPlantMesh(builder, wx, wy, wz, uvBounds);
+
+                        const pIdx = (y + 1) * PX * PZ + (z + 1) * PX + (x + 1);
+                        const pVal = lightMap[pIdx];
+                        const pSky = (pVal >> 4) & 0xF;
+                        const pBlock = pVal & 0xF;
+                        const pMaxLight = Math.max(pBlock, pSky * sunBrightness);
+                        const pBright = Math.max(0.08, 0.05 + 0.95 * Math.pow(pMaxLight / 15.0, 1.5));
+
+                        let pColor = [pBright, pBright, pBright];
+                        if (voxel === BLOCK.TALL_GRASS || voxel === BLOCK.DOUBLE_TALL_GRASS_BOTTOM || voxel === BLOCK.DOUBLE_TALL_GRASS_TOP) {
+                            const gc = this.world.getBiomeGrassColor(wx, wz);
+                            pColor = [gc[0] * pBright, gc[1] * pBright, gc[2] * pBright];
+                        }
+
+                        this.addPlantMesh(builder, wx, wy, wz, uvBounds, pColor);
                     }
                 }
             }
         }
 
-        const opaqueIndexCount = builder.iCount;
-
-        // 3. Добавление воды вторым проходом
-        for (let i = 0; i < waterFacesToBuild.length; i++) {
-            const wf = waterFacesToBuild[i];
-            this.addFacePacked(builder, wf.wx, wf.wy, wf.wz, wf.n, wf.corners, wf.uvs, true, null, wf.ao, wf.yOffsets);
-        }
-
-        const waterIndexCount = builder.iCount - opaqueIndexCount;
+        const cutoutIndexCount = builder.iCount - solidIndexCount - waterIndexCount;
 
         if (builder.vCount === 0) return;
 
@@ -371,15 +604,17 @@ class WorldRegion {
         geometry.setAttribute('position', new THREE.BufferAttribute(builder.positions.subarray(0, builder.vCount * 3), 3));
         geometry.setAttribute('normal', new THREE.BufferAttribute(builder.normals.subarray(0, builder.vCount * 3), 3));
         geometry.setAttribute('uv', new THREE.BufferAttribute(builder.uvs.subarray(0, builder.vCount * 2), 2));
-        geometry.setAttribute('atlasBounds', new THREE.BufferAttribute(builder.atlasBounds.subarray(0, builder.vCount * 4), 4));
         geometry.setAttribute('color', new THREE.BufferAttribute(builder.colors.subarray(0, builder.vCount * 3), 3));
         geometry.setIndex(new THREE.BufferAttribute(builder.indices.subarray(0, builder.iCount), 1));
 
-        if (opaqueIndexCount > 0) {
-            geometry.addGroup(0, opaqueIndexCount, 0);
+        if (solidIndexCount > 0) {
+            geometry.addGroup(0, solidIndexCount, 0);
         }
         if (waterIndexCount > 0) {
-            geometry.addGroup(opaqueIndexCount, waterIndexCount, 1);
+            geometry.addGroup(solidIndexCount, waterIndexCount, 1);
+        }
+        if (cutoutIndexCount > 0) {
+            geometry.addGroup(solidIndexCount + waterIndexCount, cutoutIndexCount, 2);
         }
 
         geometry.boundingSphere = this.sectionSpheres[sectionIndex].clone();
@@ -395,20 +630,10 @@ class WorldRegion {
         this.sections[sectionIndex] = mesh;
     }
 
-    addFacePacked(builder, wx, wy, wz, n, corners, uvs, isWater, uvBounds, ao, yOffsets) {
+    addFacePacked(builder, wx, wy, wz, n, corners, uvs, colors, yOffsets) {
         builder.ensureCapacity(4, 6);
         const vBase = builder.vCount;
-        let pIdx = vBase * 3, uIdx = vBase * 2, bIdx = vBase * 4;
-
-        let sideDim = 1.0;
-        if (n[0] !== 0) sideDim = 0.8;
-        else if (n[2] !== 0) sideDim = 0.7;
-        else if (n[1] < 0) sideDim = 0.5;
-
-        const u0 = uvBounds ? uvBounds.u0 : 0;
-        const v0 = uvBounds ? uvBounds.v0 : 0;
-        const u1 = uvBounds ? uvBounds.u1 : 1;
-        const v1 = uvBounds ? uvBounds.v1 : 1;
+        let pIdx = vBase * 3, uIdx = vBase * 2, cIdx = vBase * 3;
 
         for (let i = 0; i < 4; i++) {
             builder.positions[pIdx] = corners[i][0] + wx;
@@ -419,22 +644,16 @@ class WorldRegion {
             builder.normals[pIdx + 1] = n[1];
             builder.normals[pIdx + 2] = n[2];
 
-            const l = ao[i] * sideDim;
-            builder.colors[pIdx] = l;
-            builder.colors[pIdx + 1] = l;
-            builder.colors[pIdx + 2] = l;
-
             builder.uvs[uIdx] = uvs[i * 2];
             builder.uvs[uIdx + 1] = uvs[i * 2 + 1];
 
-            builder.atlasBounds[bIdx] = u0;
-            builder.atlasBounds[bIdx + 1] = v0;
-            builder.atlasBounds[bIdx + 2] = u1;
-            builder.atlasBounds[bIdx + 3] = v1;
+            builder.colors[cIdx] = colors[i * 3];
+            builder.colors[cIdx + 1] = colors[i * 3 + 1];
+            builder.colors[cIdx + 2] = colors[i * 3 + 2];
 
             pIdx += 3;
             uIdx += 2;
-            bIdx += 4;
+            cIdx += 3;
         }
 
         let iIdx = builder.iCount;
@@ -450,10 +669,10 @@ class WorldRegion {
         builder.iCount += 6;
     }
 
-    addPlantMesh(builder, wx, wy, wz, uvBounds) {
+    addPlantMesh(builder, wx, wy, wz, uvBounds, lightColor) {
         builder.ensureCapacity(8, 12);
         const vBase = builder.vCount;
-        let pIdx = vBase * 3, uIdx = vBase * 2, bIdx = vBase * 4;
+        let pIdx = vBase * 3, uIdx = vBase * 2, cIdx = vBase * 3;
 
         const d1 = [
             [wx, wy, wz], [wx + 1, wy, wz + 1],
@@ -465,12 +684,17 @@ class WorldRegion {
         ];
 
         const plantVerts = [...d1, ...d2];
-        const plantUVs = [0, 0, 1, 0, 0, 1, 1, 1, 0, 0, 1, 0, 0, 1, 1, 1];
-
         const u0 = uvBounds ? uvBounds.u0 : 0;
         const v0 = uvBounds ? uvBounds.v0 : 0;
         const u1 = uvBounds ? uvBounds.u1 : 1;
         const v1 = uvBounds ? uvBounds.v1 : 1;
+
+        const plantUVs = [
+            u0, v0, u1, v0, u0, v1, u1, v1,
+            u0, v0, u1, v0, u0, v1, u1, v1
+        ];
+
+        const cr = lightColor[0], cg = lightColor[1], cb = lightColor[2];
 
         for (let i = 0; i < 8; i++) {
             builder.positions[pIdx] = plantVerts[i][0];
@@ -481,21 +705,16 @@ class WorldRegion {
             builder.normals[pIdx + 1] = 1;
             builder.normals[pIdx + 2] = 0;
 
-            builder.colors[pIdx] = 0.95;
-            builder.colors[pIdx + 1] = 0.95;
-            builder.colors[pIdx + 2] = 0.95;
-
             builder.uvs[uIdx] = plantUVs[i * 2];
             builder.uvs[uIdx + 1] = plantUVs[i * 2 + 1];
 
-            builder.atlasBounds[bIdx] = u0;
-            builder.atlasBounds[bIdx + 1] = v0;
-            builder.atlasBounds[bIdx + 2] = u1;
-            builder.atlasBounds[bIdx + 3] = v1;
+            builder.colors[cIdx] = cr;
+            builder.colors[cIdx + 1] = cg;
+            builder.colors[cIdx + 2] = cb;
 
             pIdx += 3;
             uIdx += 2;
-            bIdx += 4;
+            cIdx += 3;
         }
 
         let iIdx = builder.iCount;
@@ -543,7 +762,7 @@ class WorldRegion {
         }
 
         if (s1 && s2) return 0.5;
-        return 1.0 - (s1 + s2 + c) * 0.2;
+        return 1.0 - (s1 + s2 + c) * 0.16;
     }
 }
 
@@ -555,13 +774,21 @@ export class World {
         this.seed = typeof seed === 'number' ? seed : (Math.random() * 10000);
         this.chunks = {};
         this.regions = {};
+
+        // Шум биомов и ландшафта
         this.terrainNoise = new SimplexNoise(this.seed);
         this.caveNoise = new SimplexNoise(this.seed + 1337);
+        this.continentalNoise = new SimplexNoise(this.seed + 201);
+        this.tempNoise = new SimplexNoise(this.seed + 503);
+        this.moistNoise = new SimplexNoise(this.seed + 709);
+
         this.textureGenerator = new TextureGenerator();
         this.atlas = null;
         this.atlasTexture = null;
         this.materials = [];
         this.waterTexture = null;
+        this.sunBrightness = 1.0;
+        this.playerPos = null;
 
         this.initMaterials();
 
@@ -582,48 +809,18 @@ export class World {
         if (!this.atlas) {
             this.atlas = new TextureAtlas(16, 256);
         }
+        registerAllProceduralTextures(this.atlas, this.textureGenerator);
         this.atlasTexture = this.atlas.buildTexture();
 
-        // 1. Непрозрачные блоки, листва, стекла и растительность
+        // 1. Монолитный непрозрачный материал для сплошных блоков (БЕЗ alphaTest и с FrontSide)
         const opaqueMaterial = new THREE.MeshLambertMaterial({
             map: this.atlasTexture,
             transparent: false,
-            alphaTest: 0.15,
+            alphaTest: 0,
             vertexColors: true,
-            side: THREE.DoubleSide,
+            side: THREE.FrontSide,
             depthWrite: true
         });
-
-        opaqueMaterial.onBeforeCompile = (shader) => {
-            shader.vertexShader = `
-                attribute vec4 atlasBounds;
-                varying vec4 vAtlasBounds;
-                varying vec2 vCustomUv;
-                ${shader.vertexShader}
-            `.replace(
-                `#include <uv_vertex>`,
-                `
-                #include <uv_vertex>
-                vCustomUv = uv;
-                vAtlasBounds = atlasBounds;
-                `
-            );
-
-            shader.fragmentShader = `
-                varying vec4 vAtlasBounds;
-                varying vec2 vCustomUv;
-                ${shader.fragmentShader}
-            `.replace(
-                `#include <map_fragment>`,
-                `
-                #ifdef USE_MAP
-                    vec2 atlasUv = fract(vCustomUv) * (vAtlasBounds.zw - vAtlasBounds.xy) + vAtlasBounds.xy;
-                    vec4 sampledColor = texture2D( map, atlasUv );
-                    diffuseColor *= sampledColor;
-                #endif
-                `
-            );
-        };
 
         // 2. Полупрозрачная вода
         this.waterTexture = this.textureGenerator.generate('water');
@@ -633,13 +830,23 @@ export class World {
         const waterMaterial = new THREE.MeshLambertMaterial({
             map: this.waterTexture,
             transparent: true,
-            opacity: 0.75,
+            opacity: 0.72,
             side: THREE.DoubleSide,
             vertexColors: true,
             depthWrite: false
         });
 
-        this.materials = [opaqueMaterial, waterMaterial];
+        // 3. Cutout материал для листвы, стекла, дверей и растений (alphaTest: 0.15, DoubleSide)
+        const cutoutMaterial = new THREE.MeshLambertMaterial({
+            map: this.atlasTexture,
+            transparent: false,
+            alphaTest: 0.15,
+            vertexColors: true,
+            side: THREE.DoubleSide,
+            depthWrite: true
+        });
+
+        this.materials = [opaqueMaterial, waterMaterial, cutoutMaterial];
     }
 
     reloadMaterials() {
@@ -652,6 +859,133 @@ export class World {
                 }
             }
         }
+    }
+
+    getBiomeCoords(wx, wz) {
+        // Искажение координат шумом сглаживает прямолинейные границы биомов
+        const n1 = this.terrainNoise.noise2D(wx * 0.015, wz * 0.015);
+        const n2 = this.terrainNoise.noise2D(wx * 0.045 + 50, wz * 0.045 + 50);
+        const warpX = n1 * 28 + n2 * 8;
+        const warpZ = this.terrainNoise.noise2D(wx * 0.015 + 100, wz * 0.015 + 100) * 28 + this.terrainNoise.noise2D(wx * 0.045 + 150, wz * 0.045 + 150) * 8;
+        return [wx + warpX, wz + warpZ];
+    }
+
+    getBiomeAt(wx, wz) {
+        const [bx, bz] = this.getBiomeCoords(wx, wz);
+        const c = this.continentalNoise.noise2D(bx * 0.002, bz * 0.002);
+        if (c < -0.28) return BIOME.OCEAN;
+        if (c < -0.14) return BIOME.BEACH;
+        if (c > 0.40) return BIOME.MOUNTAINS;
+
+        const t = this.tempNoise.noise2D(bx * 0.0025, bz * 0.0025);
+        const m = this.moistNoise.noise2D(bx * 0.0025, bz * 0.0025);
+
+        if (t > 0.42 && m < -0.18) return BIOME.DESERT;
+        if (m > 0.38 && t < 0.22) return BIOME.SWAMP;
+        if (m > 0.32) return BIOME.FLOWER_MEADOW;
+        if (t > 0.18 && m > 0.04) return BIOME.DARK_OAK_FOREST;
+        if (t < -0.14) return BIOME.BIRCH_FOREST;
+        return BIOME.OAK_FOREST;
+    }
+
+    getBiomeGrassColor(wx, wz) {
+        const offsets = [
+            [0, 0, 4],
+            [4, 0, 2], [-4, 0, 2],
+            [0, 4, 2], [0, -4, 2],
+            [6, 6, 1], [-6, 6, 1], [6, -6, 1], [-6, -6, 1]
+        ];
+        let r = 0, g = 0, b = 0, tw = 0;
+        for (let i = 0; i < offsets.length; i++) {
+            const [dx, dz, w] = offsets[i];
+            const biome = this.getBiomeAt(wx + dx, wz + dz);
+            const col = BIOME_DATA[biome].grassColor;
+            r += col[0] * w;
+            g += col[1] * w;
+            b += col[2] * w;
+            tw += w;
+        }
+        return [r / tw, g / tw, b / tw];
+    }
+
+    getBiomeWaterColor(wx, wz) {
+        const offsets = [
+            [0, 0, 4],
+            [4, 0, 2], [-4, 0, 2],
+            [0, 4, 2], [0, -4, 2],
+            [6, 6, 1], [-6, 6, 1], [6, -6, 1], [-6, -6, 1]
+        ];
+        let r = 0, g = 0, b = 0, tw = 0;
+        for (let i = 0; i < offsets.length; i++) {
+            const [dx, dz, w] = offsets[i];
+            const biome = this.getBiomeAt(wx + dx, wz + dz);
+            const col = BIOME_DATA[biome].waterColor;
+            r += col[0] * w;
+            g += col[1] * w;
+            b += col[2] * w;
+            tw += w;
+        }
+        return [r / tw, g / tw, b / tw];
+    }
+
+    getTerrainHeightAt(wx, wz) {
+        const [bx, bz] = this.getBiomeCoords(wx, wz);
+        const c = this.continentalNoise.noise2D(bx * 0.002, bz * 0.002);
+        const t = this.tempNoise.noise2D(bx * 0.0025, bz * 0.0025);
+        const m = this.moistNoise.noise2D(bx * 0.0025, bz * 0.0025);
+
+        const hills = this.terrainNoise.noise2D(wx * 0.012, wz * 0.012);
+        const detail = this.terrainNoise.noise2D(wx * 0.035, wz * 0.035) * 3;
+
+        // Базовая высота суши (холмы)
+        let inlandH = 66 + hills * 9;
+
+        // 1. Плавное влияние болота (снижает высоту к воде, без ступеней)
+        const swampT = Math.max(0, Math.min(1, (m - 0.25) / 0.15)) * Math.max(0, Math.min(1, (0.35 - t) / 0.15));
+        if (swampT > 0) {
+            inlandH = inlandH * (1 - swampT) + (61.5 + hills * 2) * swampT;
+        }
+
+        // 2. Плавное влияние пустыни (дюны)
+        const desertT = Math.max(0, Math.min(1, (t - 0.30) / 0.15)) * Math.max(0, Math.min(1, (-0.08 - m) / 0.15));
+        if (desertT > 0) {
+            inlandH = inlandH * (1 - desertT) + (65 + hills * 5) * desertT;
+        }
+
+        // 3. Величественные скалистые горы с хребтами и пиками (Ridged multi-fractal)
+        const mountT = Math.max(0, Math.min(1, (c - 0.18) / 0.36));
+        if (mountT > 0) {
+            const mountSmooth = mountT * mountT * (3 - 2 * mountT);
+            const ridge1 = 1.0 - Math.abs(this.terrainNoise.noise2D(wx * 0.009, wz * 0.009));
+            const ridge2 = 1.0 - Math.abs(this.terrainNoise.noise2D(wx * 0.022, wz * 0.022));
+            const crags = ridge1 * ridge1 * 48 + ridge2 * 24;
+            const spireNoise = Math.max(0, this.terrainNoise.noise2D(wx * 0.04, wz * 0.04)) * 18;
+            inlandH += mountSmooth * (28 + crags + spireNoise);
+        }
+
+        // 4. Побережье и океан (плавное соединение суши, пляжа и дна океана)
+        const beachH = 61.5 + hills * 1.5;
+        const depth = Math.max(0, (-0.28 - c) / 0.35);
+        const oceanH = 58 - depth * 18;
+
+        let finalH;
+        if (c < -0.28) {
+            finalH = oceanH;
+        } else if (c < -0.14) {
+            // Плавный переход океан -> пляж
+            const tCoast = (c - (-0.28)) / 0.14;
+            const sCoast = tCoast * tCoast * (3 - 2 * tCoast);
+            finalH = oceanH * (1 - sCoast) + beachH * sCoast;
+        } else if (c < 0.02) {
+            // Плавный переход пляж -> суша
+            const tInland = (c - (-0.14)) / 0.16;
+            const sInland = tInland * tInland * (3 - 2 * tInland);
+            finalH = beachH * (1 - sInland) + inlandH * sInland;
+        } else {
+            finalH = inlandH;
+        }
+
+        return Math.floor(finalH + detail);
     }
 
     getChunkKey(x, z) { return `${x},${z}`; }
@@ -689,27 +1023,18 @@ export class World {
         return 0;
     }
 
-    getTerrainHeightAt(wx, wz) {
-        const base = (this.terrainNoise.noise3D(wx * 0.003, 0, wz * 0.003) + 1.0) * 0.5;
-        const hills = (this.terrainNoise.noise3D(wx * 0.012, 10, wz * 0.012) + 1.0) * 0.5;
-        const detail = (this.terrainNoise.noise3D(wx * 0.035, 20, wz * 0.035) + 1.0) * 0.5;
-
-        let height = 54 + (base * 24) + (hills * 14) + (detail * 4);
-        if (base > 0.65) {
-            const mountain = Math.pow((base - 0.65) / 0.35, 2) * 35;
-            height += mountain;
-        }
-        return Math.floor(height);
-    }
-
     isSolid(x, y, z) {
         const v = this.getVoxel(x, y, z);
-        return v !== BLOCK.AIR && BLOCK.get(v).isSolid;
+        if (v === BLOCK.AIR) return false;
+        const props = BLOCK.get(v);
+        const meta = this.getMeta(x, y, z);
+        if (props.isDoor && (meta & 2) !== 0) return false;
+        if (props.isTrapdoor && (meta & 1) !== 0) return false;
+        return props.isSolid;
     }
 
     isWater(x, y, z) {
-        const v = this.getVoxel(x, y, z);
-        return v === BLOCK.WATER;
+        return this.getVoxel(x, y, z) === BLOCK.WATER;
     }
 
     setVoxel(x, y, z, v, meta = 0) {
@@ -752,6 +1077,8 @@ export class World {
         } else if (BLOCK.get(v).falling) {
             this.spawnFallingBlock(x, y, z, v);
         }
+
+        this.triggerBlockPhysics(x, y, z);
 
         this.scheduleFluidUpdate(x, y, z);
         this.scheduleFluidUpdate(x + 1, y, z);
@@ -830,6 +1157,42 @@ export class World {
         }
     }
 
+    triggerBlockPhysics(x, y, z) {
+        const queue = [{ x, y, z }];
+        const visited = new Set();
+
+        while (queue.length > 0) {
+            const cur = queue.shift();
+            const key = `${cur.x},${cur.y},${cur.z}`;
+            if (visited.has(key)) continue;
+            visited.add(key);
+
+            const offsets = [
+                [0, 1, 0], [0, -1, 0],
+                [1, 0, 0], [-1, 0, 0],
+                [0, 0, 1], [0, 0, -1]
+            ];
+
+            for (const [dx, dy, dz] of offsets) {
+                const nx = cur.x + dx, ny = cur.y + dy, nz = cur.z + dz;
+                if (ny <= 0 || ny >= WORLD_HEIGHT) continue;
+                const nKey = `${nx},${ny},${nz}`;
+                if (visited.has(nKey)) continue;
+
+                const nVoxel = this.getVoxel(nx, ny, nz);
+                if (nVoxel !== BLOCK.AIR && BLOCK.get(nVoxel).falling) {
+                    const below = this.getVoxel(nx, ny - 1, nz);
+                    const belowProps = BLOCK.get(below);
+                    if (below === BLOCK.AIR || belowProps.isPlant || below === BLOCK.WATER) {
+                        this.spawnFallingBlock(nx, ny, nz, nVoxel);
+                        queue.push({ x: nx, y: ny, z: nz });
+                        queue.push({ x: nx, y: ny + 1, z: nz });
+                    }
+                }
+            }
+        }
+    }
+
     spawnFallingBlock(x, y, z, id) {
         if (this.fallingBlocks.some(b => Math.abs(b.mesh.position.x - (x + 0.5)) < 0.1 && Math.abs(b.mesh.position.z - (z + 0.5)) < 0.1 && Math.abs(b.mesh.position.y - (y + 0.5)) < 0.5)) return;
         this.setVoxel(x, y, z, BLOCK.AIR);
@@ -859,6 +1222,7 @@ export class World {
                 if (fb.mesh.geometry) fb.mesh.geometry.dispose();
                 if (fb.mesh.material) fb.mesh.material.dispose();
                 this.setVoxel(gridX, gridY + 1, gridZ, fb.id);
+                this.triggerBlockPhysics(gridX, gridY + 1, gridZ);
                 this.fallingBlocks.splice(i, 1);
             }
         }
@@ -898,6 +1262,123 @@ export class World {
         }
     }
 
+    // Генераторы деревьев различных видов
+    generateOakTree(c, x, h, z) {
+        for (let i = 0; i < 5; i++) {
+            if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
+        }
+        for (let dx = -2; dx <= 2; dx++) {
+            for (let dy = 2; dy <= 5; dy++) {
+                for (let dz = -2; dz <= 2; dz++) {
+                    if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) {
+                        const px = x + dx, pz = z + dz;
+                        if (px >= 0 && px < CHUNK_SIZE && pz >= 0 && pz < CHUNK_SIZE) {
+                            if (c.getVoxel(px, h + 1 + dy, pz) === BLOCK.AIR) {
+                                c.setVoxel(px, h + 1 + dy, pz, BLOCK.OAK_LEAVES);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    generateBirchTree(c, x, h, z) {
+        const height = 5 + Math.floor(Math.random() * 3);
+        for (let i = 0; i < height; i++) {
+            if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.BIRCH_LOG);
+        }
+        for (let dx = -2; dx <= 2; dx++) {
+            for (let dy = height - 3; dy <= height + 1; dy++) {
+                for (let dz = -2; dz <= 2; dz++) {
+                    if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < height)) {
+                        const px = x + dx, pz = z + dz;
+                        if (px >= 0 && px < CHUNK_SIZE && pz >= 0 && pz < CHUNK_SIZE) {
+                            if (c.getVoxel(px, h + 1 + dy, pz) === BLOCK.AIR) {
+                                c.setVoxel(px, h + 1 + dy, pz, BLOCK.BIRCH_LEAVES);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    generateDarkOakTree(c, x, h, z) {
+        const height = 6 + Math.floor(Math.random() * 3);
+        // Ствол 2x2
+        for (let i = 0; i < height; i++) {
+            if (h + 1 + i < WORLD_HEIGHT) {
+                c.setVoxel(x, h + 1 + i, z, BLOCK.DARK_OAK_LOG);
+                if (x + 1 < CHUNK_SIZE) c.setVoxel(x + 1, h + 1 + i, z, BLOCK.DARK_OAK_LOG);
+                if (z + 1 < CHUNK_SIZE) c.setVoxel(x, h + 1 + i, z + 1, BLOCK.DARK_OAK_LOG);
+                if (x + 1 < CHUNK_SIZE && z + 1 < CHUNK_SIZE) c.setVoxel(x + 1, h + 1 + i, z + 1, BLOCK.DARK_OAK_LOG);
+            }
+        }
+        // Мощная широкая плотная крона
+        for (let dx = -3; dx <= 4; dx++) {
+            for (let dy = height - 2; dy <= height + 2; dy++) {
+                for (let dz = -3; dz <= 4; dz++) {
+                    if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) <= 3 && Math.abs(dz) <= 3)) {
+                        const px = x + dx, pz = z + dz;
+                        if (px >= 0 && px < CHUNK_SIZE && pz >= 0 && pz < CHUNK_SIZE) {
+                            if (c.getVoxel(px, h + 1 + dy, pz) === BLOCK.AIR) {
+                                c.setVoxel(px, h + 1 + dy, pz, BLOCK.DARK_OAK_LEAVES);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    generateAcaciaTree(c, x, h, z) {
+        const height = 6 + Math.floor(Math.random() * 2);
+        let curX = x, curZ = z;
+        for (let i = 0; i < height; i++) {
+            if (h + 1 + i < WORLD_HEIGHT) {
+                c.setVoxel(curX, h + 1 + i, curZ, BLOCK.ACACIA_LOG);
+                if (i === 3) { curX = Math.min(CHUNK_SIZE - 2, curX + 1); }
+            }
+        }
+        // Зонтичная плоская крона
+        for (let dx = -3; dx <= 3; dx++) {
+            for (let dz = -3; dz <= 3; dz++) {
+                if (Math.abs(dx) + Math.abs(dz) <= 4) {
+                    const px = curX + dx, pz = curZ + dz;
+                    if (px >= 0 && px < CHUNK_SIZE && pz >= 0 && pz < CHUNK_SIZE) {
+                        if (h + 1 + height < WORLD_HEIGHT && c.getVoxel(px, h + 1 + height, pz) === BLOCK.AIR) {
+                            c.setVoxel(px, h + 1 + height, pz, BLOCK.ACACIA_LEAVES);
+                        }
+                        if (h + 2 + height < WORLD_HEIGHT && Math.abs(dx) <= 1 && Math.abs(dz) <= 1 && c.getVoxel(px, h + 2 + height, pz) === BLOCK.AIR) {
+                            c.setVoxel(px, h + 2 + height, pz, BLOCK.ACACIA_LEAVES);
+                        }
+                    }
+                }
+            }
+        }
+    }
+
+    generateSwampTree(c, x, h, z) {
+        for (let i = 0; i < 5; i++) {
+            if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
+        }
+        for (let dx = -3; dx <= 3; dx++) {
+            for (let dy = 2; dy <= 5; dy++) {
+                for (let dz = -3; dz <= 3; dz++) {
+                    if (Math.abs(dx) + Math.abs(dz) <= 4) {
+                        const px = x + dx, pz = z + dz;
+                        if (px >= 0 && px < CHUNK_SIZE && pz >= 0 && pz < CHUNK_SIZE) {
+                            if (h + 1 + dy < WORLD_HEIGHT && c.getVoxel(px, h + 1 + dy, pz) === BLOCK.AIR) {
+                                c.setVoxel(px, h + 1 + dy, pz, BLOCK.OAK_LEAVES);
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+
     generateChunkData(cx, cz) {
         const k = this.getChunkKey(cx, cz);
         if (this.chunks[k] && this.chunks[k].isGenerated) return this.chunks[k];
@@ -906,13 +1387,17 @@ export class World {
         this.chunks[k] = c;
 
         const SEA_LEVEL = 60;
+        const allFlowers = [
+            BLOCK.DANDELION, BLOCK.POPPY, BLOCK.BLUE_ORCHID,
+            BLOCK.ALLIUM, BLOCK.RED_TULIP, BLOCK.WHITE_TULIP, BLOCK.OXEYE_DAISY
+        ];
 
         for (let x = 0; x < CHUNK_SIZE; x++) {
             for (let z = 0; z < CHUNK_SIZE; z++) {
                 const wx = cx * CHUNK_SIZE + x;
                 const wz = cz * CHUNK_SIZE + z;
+                const biome = this.getBiomeAt(wx, wz);
                 const h = this.getTerrainHeightAt(wx, wz);
-                const isBeach = (h >= SEA_LEVEL - 2 && h <= SEA_LEVEL + 1);
 
                 for (let y = 0; y < WORLD_HEIGHT; y++) {
                     if (y === 0) {
@@ -922,42 +1407,117 @@ export class World {
                         if (y > 2 && y < h - 4 && cave > 0.62) {
                             c.setVoxel(x, y, z, BLOCK.AIR);
                         } else if (y === h && c.getVoxel(x, y - 1, z) !== BLOCK.AIR) {
-                            if (isBeach) c.setVoxel(x, y, z, BLOCK.SAND);
-                            else if (h < SEA_LEVEL) c.setVoxel(x, y, z, (Math.random() > 0.3 ? BLOCK.SAND : BLOCK.DIRT));
-                            else c.setVoxel(x, y, z, BLOCK.GRASS);
+                            const [bx, bz] = this.getBiomeCoords(wx, wz);
+                            const cVal = this.continentalNoise.noise2D(bx * 0.002, bz * 0.002);
+                            const tVal = this.tempNoise.noise2D(bx * 0.0025, bz * 0.0025);
+                            const mVal = this.moistNoise.noise2D(bx * 0.0025, bz * 0.0025);
+                            const dither = this.terrainNoise.noise2D(wx * 0.18, wz * 0.18) * 0.06;
+
+                            const isSand = (cVal + dither < -0.14) || (tVal + dither > 0.42 && mVal - dither < -0.18);
+
+                            if (cVal < -0.28) {
+                                c.setVoxel(x, y, z, Math.random() > 0.4 ? BLOCK.GRAVEL : BLOCK.SAND);
+                            } else if (isSand) {
+                                c.setVoxel(x, y, z, BLOCK.SAND);
+                            } else if (biome === BIOME.MOUNTAINS) {
+                                if (h >= 102) {
+                                    // Снежные шапки гор
+                                    c.setVoxel(x, y, z, BLOCK.SNOW_BLOCK);
+                                } else if (h >= 78) {
+                                    // Скалистые склоны гор
+                                    const stoneNoise = Math.random();
+                                    if (stoneNoise > 0.3) c.setVoxel(x, y, z, BLOCK.STONE);
+                                    else if (stoneNoise > 0.1) c.setVoxel(x, y, z, BLOCK.COBBLESTONE);
+                                    else c.setVoxel(x, y, z, BLOCK.GRAVEL);
+                                } else {
+                                    c.setVoxel(x, y, z, BLOCK.GRASS);
+                                }
+                            } else {
+                                c.setVoxel(x, y, z, BLOCK.GRASS);
+                            }
                         } else if (y < h - 4) {
                             c.setVoxel(x, y, z, BLOCK.STONE);
                         } else {
-                            c.setVoxel(x, y, z, (isBeach || h < SEA_LEVEL) ? BLOCK.SAND : BLOCK.DIRT);
+                            const [bx, bz] = this.getBiomeCoords(wx, wz);
+                            const cVal = this.continentalNoise.noise2D(bx * 0.002, bz * 0.002);
+                            const tVal = this.tempNoise.noise2D(bx * 0.0025, bz * 0.0025);
+                            const mVal = this.moistNoise.noise2D(bx * 0.0025, bz * 0.0025);
+                            const isSand = (cVal < -0.14) || (tVal > 0.42 && mVal < -0.18);
+                            if (isSand) {
+                                c.setVoxel(x, y, z, BLOCK.SANDSTONE);
+                            } else if (biome === BIOME.MOUNTAINS && h >= 102) {
+                                c.setVoxel(x, y, z, BLOCK.SNOW_BLOCK);
+                            } else if (biome === BIOME.MOUNTAINS && h >= 78) {
+                                c.setVoxel(x, y, z, BLOCK.STONE);
+                            } else {
+                                c.setVoxel(x, y, z, BLOCK.DIRT);
+                            }
                         }
                     } else if (y <= SEA_LEVEL) {
                         c.setVoxel(x, y, z, BLOCK.WATER, 8);
                     }
                 }
 
-                // Деревья
-                if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > SEA_LEVEL && Math.random() > 0.985 && x > 2 && x < 14 && z > 2 && z < 14) {
-                    for (let i = 0; i < 5; i++) if (h + 1 + i < WORLD_HEIGHT) c.setVoxel(x, h + 1 + i, z, BLOCK.OAK_LOG);
-                    for (let dx = -2; dx <= 2; dx++) {
-                        for (let dy = 2; dy <= 5; dy++) {
-                            for (let dz = -2; dz <= 2; dz++) {
-                                if (h + 1 + dy < WORLD_HEIGHT && (Math.abs(dx) !== 2 || Math.abs(dz) !== 2 || dy < 4)) {
-                                    if (c.getVoxel(x + dx, h + 1 + dy, z + dz) === BLOCK.AIR) {
-                                        c.setVoxel(x + dx, h + 1 + dy, z + dz, BLOCK.OAK_LEAVES);
-                                    }
-                                }
-                            }
-                        }
+                // Генерация деревьев по биомам
+                const surfaceBlock = c.getVoxel(x, h, z);
+                const isGrass = (surfaceBlock === BLOCK.GRASS);
+                const canTree = isGrass && h > SEA_LEVEL && x >= 3 && x <= 12 && z >= 3 && z <= 12;
+
+                if (canTree) {
+                    if (biome === BIOME.BIRCH_FOREST && Math.random() < 0.04) {
+                        this.generateBirchTree(c, x, h, z);
+                    } else if (biome === BIOME.DARK_OAK_FOREST && Math.random() < 0.04) {
+                        this.generateDarkOakTree(c, x, h, z);
+                    } else if (biome === BIOME.SWAMP && Math.random() < 0.03) {
+                        this.generateSwampTree(c, x, h, z);
+                    } else if (biome === BIOME.OAK_FOREST && Math.random() < 0.035) {
+                        this.generateOakTree(c, x, h, z);
+                    } else if (biome === BIOME.FLOWER_MEADOW && Math.random() < 0.01) {
+                        if (Math.random() < 0.5) this.generateBirchTree(c, x, h, z);
+                        else this.generateOakTree(c, x, h, z);
                     }
                 }
-                // Растительность
-                else if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > SEA_LEVEL && c.getVoxel(x, h + 1, z) === BLOCK.AIR) {
+
+                // Генерация цветов и растительности (умеренная, без спама)
+                if (c.getVoxel(x, h, z) === BLOCK.GRASS && h > SEA_LEVEL && c.getVoxel(x, h + 1, z) === BLOCK.AIR) {
                     const plantRand = Math.random();
-                    if (plantRand > 0.88) {
-                        c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
-                    } else if (plantRand > 0.84 && h + 2 < WORLD_HEIGHT) {
-                        c.setVoxel(x, h + 1, z, BLOCK.DOUBLE_TALL_GRASS_BOTTOM);
-                        c.setVoxel(x, h + 2, z, BLOCK.DOUBLE_TALL_GRASS_TOP);
+
+                    if (biome === BIOME.FLOWER_MEADOW) {
+                        if (plantRand < 0.08) {
+                            const flowerIdx = Math.floor(Math.random() * allFlowers.length);
+                            c.setVoxel(x, h + 1, z, allFlowers[flowerIdx]);
+                        } else if (plantRand < 0.15) {
+                            c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
+                        } else if (plantRand < 0.19 && h + 2 < WORLD_HEIGHT) {
+                            c.setVoxel(x, h + 1, z, BLOCK.DOUBLE_TALL_GRASS_BOTTOM);
+                            c.setVoxel(x, h + 2, z, BLOCK.DOUBLE_TALL_GRASS_TOP);
+                        }
+                    } else if (biome === BIOME.SWAMP) {
+                        if (plantRand < 0.03) {
+                            c.setVoxel(x, h + 1, z, BLOCK.BLUE_ORCHID);
+                        } else if (plantRand < 0.08) {
+                            c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
+                        }
+                    } else if (biome === BIOME.BIRCH_FOREST) {
+                        if (plantRand < 0.025) {
+                            const flowers = [BLOCK.WHITE_TULIP, BLOCK.OXEYE_DAISY, BLOCK.DANDELION];
+                            c.setVoxel(x, h + 1, z, flowers[Math.floor(Math.random() * flowers.length)]);
+                        } else if (plantRand < 0.07) {
+                            c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
+                        }
+                    } else if (biome === BIOME.OAK_FOREST) {
+                        if (plantRand < 0.025) {
+                            const flowers = [BLOCK.POPPY, BLOCK.DANDELION, BLOCK.RED_TULIP];
+                            c.setVoxel(x, h + 1, z, flowers[Math.floor(Math.random() * flowers.length)]);
+                        } else if (plantRand < 0.07) {
+                            c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
+                        }
+                    } else if (biome === BIOME.MOUNTAINS) {
+                        if (plantRand < 0.012 && h < 95) {
+                            c.setVoxel(x, h + 1, z, BLOCK.OXEYE_DAISY);
+                        } else if (plantRand < 0.035 && h < 95) {
+                            c.setVoxel(x, h + 1, z, BLOCK.TALL_GRASS);
+                        }
                     }
                 }
             }
@@ -974,6 +1534,9 @@ export class World {
                 }
             }
         }
+
+        // Генерация структур
+        StructureGenerator.tryGenerateStructure(this, c, cx, cz);
 
         c.isGenerated = true;
         return c;
@@ -1017,6 +1580,8 @@ export class World {
     }
 
     update(p, camera, deltaTime = 1 / 60) {
+        this.playerPos = p;
+
         if (this.waterTexture) {
             this.waterTexture.offset.y = (this.waterTexture.offset.y + deltaTime * 0.012) % 1.0;
             this.waterTexture.offset.x = (this.waterTexture.offset.x + deltaTime * 0.004) % 1.0;
@@ -1040,7 +1605,7 @@ export class World {
 
         const meshStartTime = performance.now();
         while (this.meshBuildQueue.length > 0) {
-            if (performance.now() - meshStartTime > 5) break;
+            if (performance.now() - meshStartTime > 6) break;
             const task = this.meshBuildQueue.shift();
             if (this.regions[task.region.rx + ',' + task.region.rz] === task.region) {
                 task.region.generateSection(task.sectionIndex, task.chunk);
@@ -1118,6 +1683,9 @@ export class World {
         this.seed = d.seed;
         this.terrainNoise = new SimplexNoise(this.seed);
         this.caveNoise = new SimplexNoise(this.seed + 1337);
+        this.continentalNoise = new SimplexNoise(this.seed + 201);
+        this.tempNoise = new SimplexNoise(this.seed + 503);
+        this.moistNoise = new SimplexNoise(this.seed + 709);
         this.chunks = {};
 
         for (let i = this.itemDrops.length - 1; i >= 0; i--) {

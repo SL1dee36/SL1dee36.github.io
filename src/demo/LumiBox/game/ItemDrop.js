@@ -68,7 +68,7 @@ export class ItemDrop {
             });
         }
 
-        if (props.isItem) {
+        if (props.isItem || props.isPlant) {
             const canvas = this.world.textureGenerator.getCanvas(texKey);
             // Размер 0.35, толщина 0.35 / 16
             geometry = getOrCreateItem3DGeometry(canvas, 0.35, 0.35 / 16);
