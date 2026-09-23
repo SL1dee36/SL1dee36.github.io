@@ -1,0 +1,3006 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <title>Telegram Fishing - Таёжное Озеро</title>
+
+  <link rel="icon" href="data:,">
+  <!-- Telegram WebApp SDK -->
+  <script src="telegram-web-app.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+  <style>
+    :root {
+      --bg-dark: #07131e;
+      --accent-gold: #f59e0b;
+      --accent-cyan: #06b6d4;
+      --accent-green: #10b981;
+      --accent-red: #ef4444;
+      --card-bg: rgba(13, 27, 42, 0.75);
+      --card-border: rgba(255, 255, 255, 0.12);
+      --safe-zone-color: rgba(16, 185, 129, 0.4);
+      --safe-border: #10b981;
+    }
+
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      user-select: none;
+      -webkit-user-select: none;
+      -webkit-touch-callout: none;
+    }
+
+    html, body {
+      width: 100%;
+      height: 100%;
+      overflow: hidden;
+      background: var(--bg-dark);
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+      color: #fff;
+      overscroll-behavior: none;
+      position: fixed;
+    }
+
+    #game-container {
+      position: relative;
+      width: 100vw;
+      height: 100vh;
+      height: 100dvh;
+      overflow: hidden;
+    }
+
+    canvas {
+      position: absolute;
+      top: 0;
+      left: 0;
+      width: 100%;
+      height: 100%;
+      display: block;
+      z-index: 1;
+      touch-action: none;
+    }
+
+    /* Верхний HUD */
+    .hud-top {
+      position: absolute;
+      top: env(safe-area-inset-top, 12px);
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      pointer-events: none;
+    }
+
+    .player-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      pointer-events: auto;
+    }
+
+    .level-badge {
+      background: linear-gradient(135deg, #f59e0b, #d97706);
+      width: 30px;
+      height: 30px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: 800;
+      font-size: 13px;
+      color: #000;
+      box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+    }
+
+    .player-meta {
+      display: flex;
+      flex-direction: column;
+    }
+
+    .player-name {
+      font-weight: 700;
+      font-size: 13px;
+      color: #f1f5f9;
+      max-width: 110px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .xp-bar-container {
+      width: 80px;
+      height: 5px;
+      background: rgba(255,255,255,0.15);
+      border-radius: 3px;
+      margin-top: 3px;
+      overflow: hidden;
+    }
+
+    .xp-bar-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #38bdf8, #818cf8);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+
+    .balance-card {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 20px;
+      padding: 6px 14px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-weight: 700;
+      font-size: 14px;
+      color: #fef08a;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.4);
+      pointer-events: auto;
+    }
+
+    .hud-actions {
+      display: flex;
+      gap: 8px;
+      pointer-events: auto;
+    }
+
+    .icon-btn {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      width: 38px;
+      height: 38px;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 16px;
+      color: #fff;
+      cursor: pointer;
+      transition: transform 0.15s, background 0.2s;
+    }
+
+    .icon-btn:active {
+      transform: scale(0.92);
+      background: rgba(255,255,255,0.2);
+    }
+
+    /* Подсказка заброса (Свайп) */
+    .swipe-hint {
+      position: absolute;
+      bottom: 120px;
+      left: 50%;
+      transform: translateX(-50%);
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+      pointer-events: none;
+      opacity: 0.9;
+      animation: floatPrompt 2s infinite ease-in-out;
+      text-align: center;
+    }
+
+    @keyframes floatPrompt {
+      0%, 100% { transform: translate(-50%, 0); }
+      50% { transform: translate(-50%, -10px); }
+    }
+
+    .swipe-arrow {
+      width: 44px;
+      height: 44px;
+      background: rgba(255,255,255,0.15);
+      backdrop-filter: blur(8px);
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 22px;
+      box-shadow: 0 0 20px rgba(56, 189, 248, 0.4);
+      border: 1px solid rgba(255,255,255,0.25);
+    }
+
+    .swipe-text {
+      font-size: 13px;
+      font-weight: 600;
+      color: #e2e8f0;
+      text-shadow: 0 2px 6px rgba(0,0,0,0.8);
+      background: rgba(0,0,0,0.4);
+      padding: 4px 12px;
+      border-radius: 12px;
+      letter-spacing: 0.3px;
+    }
+
+    /* Нижняя панель выбора наживки */
+    .bottom-bar {
+      position: absolute;
+      bottom: env(safe-area-inset-bottom, 16px);
+      left: 12px;
+      right: 12px;
+      z-index: 10;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 8px;
+    }
+
+    .baits-container {
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      -webkit-backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 24px;
+      padding: 6px 8px;
+      display: flex;
+      gap: 6px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.5);
+    }
+
+    .bait-btn {
+      background: transparent;
+      border: 1px solid transparent;
+      border-radius: 18px;
+      padding: 6px 14px;
+      color: #94a3b8;
+      font-family: inherit;
+      font-size: 12px;
+      font-weight: 600;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      cursor: pointer;
+      transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .bait-btn.active {
+      background: linear-gradient(135deg, rgba(6, 182, 212, 0.25), rgba(59, 130, 246, 0.25));
+      border-color: rgba(6, 182, 212, 0.5);
+      color: #38bdf8;
+      box-shadow: 0 0 16px rgba(6, 182, 212, 0.3);
+    }
+
+    /* Игровой оверлей вываживания */
+    .reeling-overlay {
+      position: absolute;
+      inset: 0;
+      z-index: 15;
+      display: none;
+      flex-direction: column;
+      justify-content: space-between;
+      padding: calc(env(safe-area-inset-top, 16px) + 60px) 24px calc(env(safe-area-inset-bottom, 16px) + 20px) 24px;
+      pointer-events: none;
+    }
+
+    .reeling-overlay.active {
+      display: flex;
+    }
+
+    /* Шкала прогресса вылова */
+    .catch-progress-wrapper {
+      width: 100%;
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+
+    .progress-labels {
+      display: flex;
+      justify-content: space-between;
+      font-size: 12px;
+      font-weight: 700;
+      color: #cbd5e1;
+    }
+
+    .progress-bar-track {
+      height: 12px;
+      background: rgba(255,255,255,0.1);
+      border-radius: 6px;
+      overflow: hidden;
+      position: relative;
+    }
+
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, #10b981, #06b6d4);
+      border-radius: 6px;
+      transition: width 0.1s linear;
+      box-shadow: 0 0 12px rgba(16, 185, 129, 0.5);
+    }
+
+    /* Индикатор натяжения лески */
+    .tension-meter-wrapper {
+      position: absolute;
+      right: 20px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 44px;
+      height: 240px;
+      background: var(--card-bg);
+      backdrop-filter: blur(14px);
+      border: 1px solid var(--card-border);
+      border-radius: 22px;
+      padding: 6px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      box-shadow: 0 8px 30px rgba(0,0,0,0.6);
+    }
+
+    .tension-track {
+      width: 100%;
+      height: 100%;
+      background: rgba(255,255,255,0.06);
+      border-radius: 16px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .tension-safe-zone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      bottom: 25%;
+      height: 50%;
+      background: var(--safe-zone-color);
+      border-top: 2px dashed var(--safe-border);
+      border-bottom: 2px dashed var(--safe-border);
+      z-index: 1;
+    }
+
+    .tension-danger-zone {
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: 0;
+      height: 15%;
+      background: rgba(239, 68, 68, 0.35);
+    }
+
+    .tension-bar {
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 50%;
+      background: linear-gradient(to top, #38bdf8, #f59e0b, #ef4444);
+      border-radius: 0 0 16px 16px;
+      transition: height 0.05s linear;
+      z-index: 2;
+    }
+
+    .tension-needle {
+      position: absolute;
+      left: -6px;
+      right: -6px;
+      bottom: 50%;
+      height: 4px;
+      background: #fff;
+      border-radius: 2px;
+      box-shadow: 0 0 8px #fff;
+      z-index: 3;
+      transition: bottom 0.05s linear;
+    }
+
+    .tension-label {
+      font-size: 10px;
+      font-weight: 700;
+      color: #94a3b8;
+      margin-top: 6px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+
+    /* Большая кнопка вываживания */
+    .reel-btn-container {
+      width: 100%;
+      display: flex;
+      justify-content: center;
+      pointer-events: auto;
+    }
+
+    .reel-button {
+      width: 130px;
+      height: 130px;
+      border-radius: 50%;
+      background: radial-gradient(circle at 35% 35%, #0284c7, #0369a1 60%, #075985);
+      border: 4px solid rgba(255, 255, 255, 0.4);
+      color: #fff;
+      font-family: 'Outfit', sans-serif;
+      font-size: 20px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      box-shadow: 0 10px 30px rgba(2, 132, 199, 0.5), inset 0 2px 8px rgba(255,255,255,0.4);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      gap: 4px;
+      cursor: pointer;
+      outline: none;
+      transition: transform 0.08s ease, box-shadow 0.08s ease, filter 0.08s;
+      -webkit-tap-highlight-color: transparent;
+    }
+
+    .reel-button:active, .reel-button.holding {
+      transform: scale(0.92);
+      filter: brightness(1.2);
+      box-shadow: 0 4px 15px rgba(2, 132, 199, 0.7), inset 0 2px 14px rgba(0,0,0,0.5);
+      border-color: #38bdf8;
+    }
+
+    .reel-icon {
+      font-size: 28px;
+    }
+
+    /* Модальное окно победы (Улов) */
+    .modal-backdrop {
+      position: absolute;
+      inset: 0;
+      z-index: 50;
+      background: rgba(3, 7, 18, 0.85);
+      backdrop-filter: blur(16px);
+      -webkit-backdrop-filter: blur(16px);
+      display: none;
+      align-items: center;
+      justify-content: center;
+      padding: 24px;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+    }
+
+    .modal-backdrop.active {
+      display: flex;
+      opacity: 1;
+    }
+
+    .catch-card {
+      background: linear-gradient(165deg, rgba(30, 41, 59, 0.95), rgba(15, 23, 42, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      border-radius: 28px;
+      padding: 28px 24px;
+      width: 100%;
+      max-width: 340px;
+      text-align: center;
+      box-shadow: 0 20px 50px rgba(0,0,0,0.7);
+      transform: translateY(20px) scale(0.95);
+      transition: transform 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .modal-backdrop.active .catch-card {
+      transform: translateY(0) scale(1);
+    }
+
+    .rarity-pill {
+      display: inline-block;
+      padding: 4px 14px;
+      border-radius: 20px;
+      font-size: 11px;
+      font-weight: 800;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      margin-bottom: 12px;
+    }
+
+    .rarity-Common { background: rgba(148, 163, 184, 0.2); color: #cbd5e1; border: 1px solid #94a3b8; }
+    .rarity-Rare { background: rgba(6, 182, 212, 0.2); color: #22d3ee; border: 1px solid #06b6d4; }
+    .rarity-Epic { background: rgba(168, 85, 247, 0.2); color: #c084fc; border: 1px solid #a855f7; box-shadow: 0 0 15px rgba(168, 85, 247, 0.3); }
+    .rarity-Legendary { background: rgba(245, 158, 11, 0.25); color: #fbbf24; border: 1px solid #f59e0b; box-shadow: 0 0 20px rgba(245, 158, 11, 0.5); }
+
+    .fish-title {
+      font-size: 24px;
+      font-weight: 800;
+      font-family: 'Outfit', sans-serif;
+      margin-bottom: 6px;
+      color: #fff;
+    }
+
+    .fish-illustration-box {
+      width: 140px;
+      height: 100px;
+      margin: 10px auto;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      position: relative;
+    }
+
+    .fish-weight-tag {
+      font-size: 22px;
+      font-weight: 700;
+      color: #38bdf8;
+      margin-bottom: 16px;
+    }
+
+    .rewards-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+      margin-bottom: 20px;
+    }
+
+    .reward-box {
+      background: rgba(255,255,255,0.05);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 10px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+
+    .reward-val {
+      font-size: 16px;
+      font-weight: 800;
+      color: #fef08a;
+    }
+
+    .reward-lbl {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+
+    .action-btn {
+      width: 100%;
+      padding: 14px;
+      border-radius: 18px;
+      background: linear-gradient(135deg, #0ea5e9, #0284c7);
+      border: none;
+      color: #fff;
+      font-family: 'Rubik', sans-serif;
+      font-size: 15px;
+      font-weight: 700;
+      cursor: pointer;
+      box-shadow: 0 6px 20px rgba(14, 165, 233, 0.4);
+      transition: transform 0.1s;
+    }
+
+    .action-btn:active {
+      transform: scale(0.97);
+    }
+
+    .action-btn-secondary {
+      width: 100%;
+      padding: 12px;
+      border-radius: 18px;
+      background: rgba(255, 255, 255, 0.08);
+      border: 1px solid rgba(255, 255, 255, 0.15);
+      color: #94a3b8;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.15s ease;
+    }
+    .action-btn-secondary:active {
+      transform: scale(0.97);
+      background: rgba(255, 255, 255, 0.14);
+      color: #fff;
+    }
+
+    /* Кнопки меню в HUD */
+    .hud-pill-btn {
+      background: var(--card-bg);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+      border: 1px solid var(--card-border);
+      border-radius: 18px;
+      padding: 6px 12px;
+      font-size: 11px;
+      font-weight: 700;
+      color: #e2e8f0;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.3);
+      transition: all 0.15s ease;
+      white-space: nowrap;
+    }
+    .hud-pill-btn:active {
+      transform: scale(0.94);
+      background: rgba(255,255,255,0.18);
+    }
+    .badge-count {
+      background: #0284c7;
+      color: #fff;
+      padding: 1px 6px;
+      border-radius: 10px;
+      font-size: 10px;
+      font-weight: 800;
+    }
+
+    /* Большие модальные окна (Садок, Торговец, Кабинет) */
+    .modal-card-large {
+      background: linear-gradient(165deg, rgba(24, 35, 51, 0.96), rgba(13, 20, 32, 0.98));
+      border: 1px solid rgba(255, 255, 255, 0.14);
+      border-radius: 28px;
+      padding: 22px 20px;
+      width: 94%;
+      max-width: 440px;
+      max-height: 84vh;
+      display: flex;
+      flex-direction: column;
+      box-shadow: 0 25px 60px rgba(0,0,0,0.8);
+      transform: translateY(20px) scale(0.96);
+      transition: transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+      overflow: hidden;
+      text-align: left;
+    }
+    .modal-backdrop.active .modal-card-large {
+      transform: translateY(0) scale(1);
+    }
+
+    .modal-header-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 12px;
+      padding-bottom: 10px;
+      border-bottom: 1px solid rgba(255,255,255,0.08);
+    }
+    .modal-title {
+      font-size: 18px;
+      font-weight: 800;
+      color: #fff;
+      letter-spacing: 0.3px;
+    }
+    .close-icon-btn {
+      background: rgba(255,255,255,0.08);
+      border: 1px solid rgba(255,255,255,0.12);
+      border-radius: 50%;
+      width: 32px;
+      height: 32px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: #94a3b8;
+      font-weight: 800;
+      cursor: pointer;
+    }
+    .close-icon-btn:active {
+      transform: scale(0.9);
+      background: rgba(255,255,255,0.2);
+    }
+
+    .modal-scrollable {
+      overflow-y: auto;
+      padding-right: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-bottom: 12px;
+      overscroll-behavior: contain;
+    }
+    .modal-scrollable::-webkit-scrollbar {
+      width: 4px;
+    }
+    .modal-scrollable::-webkit-scrollbar-thumb {
+      background: rgba(255,255,255,0.2);
+      border-radius: 2px;
+    }
+
+    /* Табы */
+    .tab-bar {
+      display: flex;
+      gap: 6px;
+      background: rgba(0,0,0,0.3);
+      padding: 4px;
+      border-radius: 16px;
+      margin-bottom: 12px;
+    }
+    .tab-btn {
+      flex: 1;
+      padding: 8px 10px;
+      border-radius: 12px;
+      background: transparent;
+      border: none;
+      color: #94a3b8;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.active {
+      background: #0284c7;
+      color: #fff;
+      box-shadow: 0 2px 10px rgba(2, 132, 199, 0.4);
+    }
+
+    /* Элементы садка */
+    .livewell-item {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 10px 14px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .livewell-item-meta {
+      display: flex;
+      flex-direction: column;
+      gap: 2px;
+    }
+    .livewell-item-name {
+      font-weight: 700;
+      font-size: 14px;
+      color: #f1f5f9;
+    }
+    .livewell-item-sub {
+      font-size: 11px;
+      color: #94a3b8;
+    }
+    .mini-sell-btn {
+      background: rgba(245, 158, 11, 0.15);
+      border: 1px solid rgba(245, 158, 11, 0.4);
+      color: #fbbf24;
+      border-radius: 12px;
+      padding: 6px 12px;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .mini-sell-btn:active {
+      transform: scale(0.95);
+      background: rgba(245, 158, 11, 0.3);
+    }
+
+    /* Карточки магазина улучшений */
+    .shop-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 18px;
+      padding: 12px 14px;
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+    }
+    .shop-card-head {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .shop-card-title {
+      font-size: 14px;
+      font-weight: 800;
+      color: #f8fafc;
+    }
+    .shop-card-desc {
+      font-size: 11px;
+      color: #94a3b8;
+      line-height: 1.4;
+    }
+    .shop-card-actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-top: 4px;
+    }
+    .shop-price {
+      font-size: 13px;
+      font-weight: 800;
+      color: #fef08a;
+    }
+    .buy-btn {
+      background: #0284c7;
+      border: none;
+      border-radius: 12px;
+      padding: 6px 14px;
+      color: #fff;
+      font-size: 12px;
+      font-weight: 700;
+      cursor: pointer;
+    }
+    .buy-btn.equipped {
+      background: rgba(16, 185, 129, 0.2);
+      border: 1px solid #10b981;
+      color: #34d399;
+      cursor: default;
+    }
+    .buy-btn.locked {
+      background: rgba(255,255,255,0.08);
+      color: #64748b;
+      cursor: not-allowed;
+    }
+
+    /* Статистика и FishDex */
+    .stats-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .stat-tile {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.08);
+      border-radius: 16px;
+      padding: 10px;
+      text-align: center;
+    }
+    .stat-tile-val {
+      font-size: 17px;
+      font-weight: 800;
+      color: #38bdf8;
+    }
+    .stat-tile-lbl {
+      font-size: 10px;
+      color: #94a3b8;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-top: 2px;
+    }
+    .equip-box {
+      background: rgba(255,255,255,0.03);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 16px;
+      padding: 10px 14px;
+      font-size: 12px;
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      margin-bottom: 12px;
+    }
+    .fishdex-grid {
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 6px;
+    }
+    .fishdex-card {
+      background: rgba(255,255,255,0.04);
+      border: 1px solid rgba(255,255,255,0.07);
+      border-radius: 14px;
+      padding: 8px 6px;
+      text-align: center;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      gap: 2px;
+    }
+    .fishdex-card.locked {
+      opacity: 0.35;
+    }
+    .fishdex-name {
+      font-size: 11px;
+      font-weight: 700;
+      color: #f8fafc;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 100%;
+    }
+    .fishdex-weight {
+      font-size: 9px;
+      color: #38bdf8;
+    }
+
+    /* Всплывающее уведомление (Toast / Status) */
+    .status-toast {
+      position: absolute;
+      top: calc(env(safe-area-inset-top, 12px) + 56px);
+      left: 50%;
+      transform: translateX(-50%) translateY(-20px);
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid rgba(255,255,255,0.15);
+      backdrop-filter: blur(10px);
+      padding: 8px 18px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      color: #f8fafc;
+      opacity: 0;
+      transition: all 0.25s ease;
+      z-index: 30;
+      pointer-events: none;
+      white-space: nowrap;
+    }
+
+    .status-toast.visible {
+      opacity: 1;
+      transform: translateX(-50%) translateY(0);
+    }
+  </style>
+</head>
+<body>
+
+  <div id="game-container">
+    <!-- Игровой холст -->
+    <canvas id="fishCanvas"></canvas>
+
+    <!-- Верхний HUD -->
+    <div class="hud-top">
+      <div class="player-card">
+        <div class="level-badge" id="playerLevel">1</div>
+        <div class="player-meta">
+          <div class="player-name" id="playerName">Рыбак</div>
+          <div class="xp-bar-container">
+            <div class="xp-bar-fill" id="xpBar"></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="balance-card">
+        <span style="display:inline-flex;align-items:center;justify-content:center;width:18px;height:18px;border-radius:50%;background:#f59e0b;color:#000;font-size:11px;font-weight:900;">C</span>
+        <span id="playerBalance">0</span>
+      </div>
+
+      <div class="hud-actions">
+        <button class="hud-pill-btn" id="openLivewellBtn" title="Садок">
+          Садок <span class="badge-count" id="livewellCountBadge">0</span>
+        </button>
+        <button class="hud-pill-btn" id="openShopBtn" title="Торговец">
+          Торговец
+        </button>
+        <button class="hud-pill-btn" id="openProfileBtn" title="Кабинет">
+          Кабинет
+        </button>
+        <button class="icon-btn" id="soundBtn" title="Звук">
+          <svg id="soundIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- Всплывающий статус -->
+    <div class="status-toast" id="statusToast">Готов к рыбалке</div>
+
+    <!-- Подсказка свайпа -->
+    <div class="swipe-hint" id="swipeHint">
+      <div class="swipe-arrow">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+      </div>
+      <div class="swipe-text">Смахните вверх для заброса</div>
+    </div>
+
+    <!-- Нижний бар выбора наживки -->
+    <div class="bottom-bar" id="bottomBar">
+      <div class="baits-container">
+        <button class="bait-btn active" data-bait="worm">
+          Червь
+        </button>
+        <button class="bait-btn" data-bait="corn">
+          Кукуруза
+        </button>
+        <button class="bait-btn" data-bait="lure">
+          Блесна
+        </button>
+      </div>
+    </div>
+
+    <!-- Оверлей вываживания (Мини-игра) -->
+    <div class="reeling-overlay" id="reelingOverlay">
+      <!-- Шкала прогресса -->
+      <div class="catch-progress-wrapper">
+        <div class="progress-labels">
+          <span>Борьба с рыбой</span>
+          <span id="catchProgressText">0%</span>
+        </div>
+        <div class="progress-bar-track">
+          <div class="progress-bar-fill" id="catchProgressBar"></div>
+        </div>
+      </div>
+
+      <!-- Шкала натяжения (справа) -->
+      <div class="tension-meter-wrapper">
+        <div class="tension-track">
+          <div class="tension-danger-zone"></div>
+          <div class="tension-safe-zone"></div>
+          <div class="tension-bar" id="tensionBar"></div>
+          <div class="tension-needle" id="tensionNeedle"></div>
+        </div>
+        <div class="tension-label">Леска</div>
+      </div>
+
+      <!-- Кнопка вытягивания -->
+      <div class="reel-btn-container">
+        <button class="reel-button" id="reelBtn">
+          <span>ТЯНУТЬ</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Модальное окно успешного вылова -->
+    <div class="modal-backdrop" id="catchModal">
+      <div class="catch-card">
+        <div class="rarity-pill rarity-Common" id="modalRarity">Обычная</div>
+        <h2 class="fish-title" id="modalFishName">Карась</h2>
+        <div class="fish-illustration-box">
+          <canvas id="previewFishCanvas" width="130" height="80"></canvas>
+        </div>
+        <div class="fish-weight-tag" id="modalWeight">0.85 кг</div>
+
+        <div class="rewards-grid">
+          <div class="reward-box">
+            <div class="reward-val" id="modalCoins">+25 монет</div>
+            <div class="reward-lbl">Монеты</div>
+          </div>
+          <div class="reward-box">
+            <div class="reward-val" id="modalXP">+15 XP</div>
+            <div class="reward-lbl">Опыт</div>
+          </div>
+        </div>
+
+        <div style="display:flex;flex-direction:column;gap:8px;width:100%;">
+          <button class="action-btn" id="addToLivewellBtn">В садок (+Опыт)</button>
+          <button class="action-btn-secondary" id="instantSellBtn">Продать сразу</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно: Садок с уловом -->
+    <div class="modal-backdrop" id="livewellModal">
+      <div class="modal-card-large">
+        <div class="modal-header-row">
+          <div class="modal-title">Садок с уловом</div>
+          <button class="close-icon-btn" id="closeLivewellBtn">X</button>
+        </div>
+        <div style="font-size:12px;color:#94a3b8;margin-bottom:10px;display:flex;justify-content:space-between;align-items:center;">
+          <span id="livewellSummaryCount">Рыб: 0 шт.</span>
+          <span id="livewellSummaryWorth" style="color:#fef08a;font-weight:700;">Ценность: 0 C</span>
+        </div>
+        <div class="modal-scrollable" id="livewellList" style="max-height:50vh;min-height:140px;">
+          <!-- Карточки рыб в садке -->
+        </div>
+        <button class="action-btn" id="sellAllLivewellBtn" style="margin-top:auto;">Продать всё</button>
+      </div>
+    </div>
+
+    <!-- Модальное окно: Торговец -->
+    <div class="modal-backdrop" id="shopModal">
+      <div class="modal-card-large">
+        <div class="modal-header-row">
+          <div class="modal-title">Торговец снастями</div>
+          <button class="close-icon-btn" id="closeShopBtn">X</button>
+        </div>
+        <div class="tab-bar">
+          <button class="tab-btn active" data-shoptab="sell">Скупка</button>
+          <button class="tab-btn" data-shoptab="rods">Удочки</button>
+          <button class="tab-btn" data-shoptab="lines">Лески</button>
+        </div>
+        <div class="modal-scrollable" id="shopTabContent" style="max-height:52vh;min-height:180px;">
+          <!-- Динамическое содержимое табов -->
+        </div>
+      </div>
+    </div>
+
+    <!-- Модальное окно: Личный кабинет и статистика -->
+    <div class="modal-backdrop" id="profileModal">
+      <div class="modal-card-large">
+        <div class="modal-header-row">
+          <div class="modal-title">Личный кабинет</div>
+          <button class="close-icon-btn" id="closeProfileBtn">X</button>
+        </div>
+        <div class="modal-scrollable" style="max-height:65vh;">
+          <div class="stats-grid">
+            <div class="stat-tile">
+              <div class="stat-tile-val" id="statFishCaught">0</div>
+              <div class="stat-tile-lbl">Поймано рыб</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" id="statFishSold">0</div>
+              <div class="stat-tile-lbl">Продано рыб</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" id="statTotalEarned">0 C</div>
+              <div class="stat-tile-lbl">Заработано</div>
+            </div>
+            <div class="stat-tile">
+              <div class="stat-tile-val" id="statBestTrophy">-</div>
+              <div class="stat-tile-lbl">Главный трофей</div>
+            </div>
+          </div>
+
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;margin:8px 0 4px 2px;text-transform:uppercase;letter-spacing:0.5px;">Текущее снаряжение</div>
+          <div class="equip-box">
+            <div><strong>Удочка:</strong> <span id="profileRodName">Бамбуковая удочка</span></div>
+            <div><strong>Леска:</strong> <span id="profileLineName">Монофил 0.2мм</span></div>
+          </div>
+
+          <div style="font-size:12px;font-weight:700;color:#94a3b8;margin:8px 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;">Атлас видов (FishDex)</div>
+          <div class="fishdex-grid" id="profileFishdexGrid">
+            <!-- 9 карточек видов -->
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    /* ==========================================================
+       КОНФИГУРАЦИЯ SUPABASE
+       Укажите ваши Project URL и Anon Key из Supabase Settings -> API
+       ========================================================== */
+    const SUPABASE_URL = "https://povytwsehggffkerfpyf.supabase.co";
+    const SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBvdnl0d3NlaGdnZmZrZXJmcHlmIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc5MDE4MzY3MiwiZXhwIjoyMTA1NzU5NjcyfQ.jztX29d1heLgQjONtIstCf5-tKt4LDLfiN7iRW-b3ec";
+
+    // Инициализация Supabase Client
+    let supabaseClient = null;
+    if (window.supabase && SUPABASE_URL && !SUPABASE_URL.includes("your-supabase-project")) {
+      try {
+        supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+          auth: {
+            persistSession: false,
+            autoRefreshToken: false,
+            detectSessionInUrl: false
+          }
+        });
+        console.log("Supabase подключен успешно");
+      } catch (err) {
+        console.warn("Не удалось инициализировать Supabase:", err);
+      }
+    } else {
+      console.log("Работа в автономном демо-режиме");
+    }
+
+    // Telegram WebApp SDK интеграция
+    const tg = window.Telegram?.WebApp;
+    if (tg) {
+      try {
+        tg.ready();
+        tg.expand();
+        if (tg.setHeaderColor) tg.setHeaderColor('#07131e');
+        if (tg.setBackgroundColor) tg.setBackgroundColor('#07131e');
+      } catch (e) {
+        console.error(e);
+      }
+    }
+
+    // Извлечение данных пользователя и чата
+    const urlParams = new URLSearchParams(window.location.search);
+    const chatIdParam = urlParams.get('chat_id') || (tg?.initDataUnsafe?.start_param ? tg.initDataUnsafe.start_param.replace('chat_', '') : null);
+    const currentChatId = chatIdParam ? parseInt(chatIdParam, 10) : null;
+
+    const tgUser = tg?.initDataUnsafe?.user || {
+      id: 99999901,
+      first_name: "Гость",
+      username: "fisherman_guest"
+    };
+
+    // Каталог удочек
+    const RODS = {
+      bamboo: {
+        id: "bamboo",
+        name: "Бамбуковая удочка",
+        price: 0,
+        speedBonus: 1.0,
+        safeZoneMin: 25,
+        safeZoneMax: 75,
+        rareBonus: 0,
+        desc: "Базовое удилище из речного бамбука. Простое и надежное."
+      },
+      carbon: {
+        id: "carbon",
+        name: "Карбоновый спиннинг",
+        price: 350,
+        speedBonus: 1.15,
+        safeZoneMin: 22,
+        safeZoneMax: 78,
+        rareBonus: 6,
+        desc: "+15% к скорости вываживания, шире безопасная зона контроля."
+      },
+      titanium: {
+        id: "titanium",
+        name: "Титановый фидер",
+        price: 1200,
+        speedBonus: 1.30,
+        safeZoneMin: 18,
+        safeZoneMax: 82,
+        rareBonus: 15,
+        desc: "+30% скорость подмотки, +15% шанс редкой рыбы, широкая зона."
+      },
+      gold_master: {
+        id: "gold_master",
+        name: "Золотой Мастер Pro",
+        price: 3500,
+        speedBonus: 1.55,
+        safeZoneMin: 15,
+        safeZoneMax: 85,
+        rareBonus: 30,
+        desc: "Шедевр! +55% скорость, +30% шанс трофеев, огромная зона контроля."
+      }
+    };
+
+    // Каталог лесок
+    const LINES = {
+      mono: {
+        id: "mono",
+        name: "Монофил 0.2мм",
+        price: 0,
+        dangerBuffer: 1.2,
+        desc: "Стандартная леска. 1.2 сек запаса в критической зоне до обрыва."
+      },
+      fluoro: {
+        id: "fluoro",
+        name: "Флюорокарбон 0.35мм",
+        price: 250,
+        dangerBuffer: 1.8,
+        desc: "Невидима в воде и устойчива. 1.8 сек запаса в критической зоне."
+      },
+      braided: {
+        id: "braided",
+        name: "Плетеный шнур Pro",
+        price: 800,
+        dangerBuffer: 2.6,
+        desc: "Сверхпрочный 8-жильный шнур. 2.6 сек запаса на исправление ошибки!"
+      }
+    };
+
+    // Состояние игрока
+    const player = {
+      id: tgUser.id,
+      name: tgUser.first_name || tgUser.username || "Рыбак",
+      username: tgUser.username || "",
+      balance: 100,
+      xp: 0,
+      level: 1,
+      soundEnabled: true,
+      // Игровая статистика
+      fishCaught: 0,
+      fishSold: 0,
+      totalEarned: 0,
+      // Снаряжение
+      rodId: "bamboo",
+      lineId: "mono",
+      ownedRods: ["bamboo"],
+      ownedLines: ["mono"],
+      // Садок и трофеи
+      livewell: [],
+      bestCatch: { name: "", weight: 0, rarity: "" },
+      caughtSpecies: {}
+    };
+
+    /* ==========================================================
+       КАТАЛОГ РЫБЫ (ЛОКАЛЬНЫЙ FALLBACK И СИНХРОНИЗАЦИЯ)
+       ========================================================== */
+    const FISH_DATABASE = [
+      { id: 1, name: "Карась", rarity: "Common", min_weight: 0.20, max_weight: 1.20, base_price: 25, color: "#94a3b8", bodyType: 0 },
+      { id: 2, name: "Окунь", rarity: "Common", min_weight: 0.25, max_weight: 1.80, base_price: 40, color: "#84cc16", bodyType: 1 },
+      { id: 3, name: "Плотва", rarity: "Common", min_weight: 0.15, max_weight: 0.90, base_price: 20, color: "#a3e635", bodyType: 0 },
+      { id: 4, name: "Лещ", rarity: "Rare", min_weight: 0.80, max_weight: 4.20, base_price: 95, color: "#eab308", bodyType: 0 },
+      { id: 5, name: "Судак", rarity: "Rare", min_weight: 1.20, max_weight: 6.50, base_price: 160, color: "#06b6d4", bodyType: 1 },
+      { id: 6, name: "Щука", rarity: "Epic", min_weight: 2.50, max_weight: 14.00, base_price: 380, color: "#10b981", bodyType: 2 },
+      { id: 7, name: "Сом", rarity: "Epic", min_weight: 8.00, max_weight: 55.00, base_price: 850, color: "#64748b", bodyType: 3 },
+      { id: 8, name: "Осетр", rarity: "Legendary", min_weight: 15.00, max_weight: 85.00, base_price: 2400, color: "#f59e0b", bodyType: 2 },
+      { id: 9, name: "Золотая Рыбка", rarity: "Legendary", min_weight: 0.40, max_weight: 2.50, base_price: 5000, color: "#ec4899", bodyType: 0 }
+    ];
+
+    // Настройки приманок
+    const BAITS = {
+      worm: {
+        name: "Червь",
+        speedMultiplier: 1.0,
+        waitMin: 4000,
+        waitMax: 7000,
+        rarityWeights: { Common: 70, Rare: 25, Epic: 4.5, Legendary: 0.5 }
+      },
+      corn: {
+        name: "Кукуруза",
+        speedMultiplier: 1.4,
+        waitMin: 2500,
+        waitMax: 5000,
+        rarityWeights: { Common: 80, Rare: 18, Epic: 1.8, Legendary: 0.2 }
+      },
+      lure: {
+        name: "Блесна",
+        speedMultiplier: 0.7,
+        waitMin: 6000,
+        waitMax: 10000,
+        rarityWeights: { Common: 35, Rare: 45, Epic: 16, Legendary: 4.0 }
+      }
+    };
+    let currentBaitKey = "worm";
+
+    /* ==========================================================
+       СИНТЕЗАТОР ЗВУКОВ (WEB AUDIO API)
+       ========================================================== */
+    class SoundEngine {
+      constructor() {
+        this.ctx = null;
+      }
+      init() {
+        if (!this.ctx && (window.AudioContext || window.webkitAudioContext)) {
+          this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+        if (this.ctx && this.ctx.state === 'suspended') {
+          this.ctx.resume();
+        }
+      }
+      playSplash() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.exponentialRampToValueAtTime(70, now + 0.25);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.25);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.25);
+      }
+      playBite() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(500, now);
+        osc.frequency.setValueAtTime(800, now + 0.08);
+        gain.gain.setValueAtTime(0.4, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.2);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.2);
+      }
+      playReelClick() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(800 + Math.random() * 400, now);
+        gain.gain.setValueAtTime(0.04, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.02);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.02);
+      }
+      playSuccess() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [440, 554, 659, 880];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = this.ctx.currentTime + idx * 0.09;
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.2, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.25);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.25);
+        });
+      }
+      playFail() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(260, now);
+        osc.frequency.linearRampToValueAtTime(100, now + 0.35);
+        gain.gain.setValueAtTime(0.25, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.35);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.35);
+      }
+    }
+    const sound = new SoundEngine();
+
+    // Виброотклик Haptic Feedback
+    function triggerHaptic(type) {
+      if (!tg?.HapticFeedback) return;
+      try {
+        // HapticFeedback доступен только в Telegram WebApp 6.1+
+        if (typeof tg.isVersionAtLeast === 'function') {
+          if (!tg.isVersionAtLeast('6.1')) return;
+        } else if (tg.version) {
+          const parts = tg.version.toString().split('.').map(Number);
+          const major = parts[0] || 0;
+          const minor = parts[1] || 0;
+          if (major < 6 || (major === 6 && minor < 1)) return;
+        } else {
+          return;
+        }
+
+        if (type === 'light' || type === 'medium' || type === 'heavy') {
+          tg.HapticFeedback.impactOccurred(type);
+        } else if (type === 'success' || type === 'error' || type === 'warning') {
+          tg.HapticFeedback.notificationOccurred(type);
+        }
+      } catch (e) {
+        // Игнорируем в средах без поддержки хаптики
+      }
+    }
+
+    /* ==========================================================
+       CANVAS И РЕНДЕРИНГ МИРА
+       ========================================================== */
+    const canvas = document.getElementById("fishCanvas");
+    const ctx = canvas.getContext("2d");
+    let dpr = window.devicePixelRatio || 1;
+    let width = 0;
+    let height = 0;
+
+    function resizeCanvas() {
+      dpr = window.devicePixelRatio || 1;
+      width = window.innerWidth;
+      height = window.innerHeight;
+      canvas.width = width * dpr;
+      canvas.height = height * dpr;
+      ctx.resetTransform?.();
+      ctx.scale(dpr, dpr);
+    }
+    window.addEventListener("resize", resizeCanvas);
+    resizeCanvas();
+
+    // Состояния игры: IDLE, CASTING, WAITING, NIBBLE, REELING, CAUGHT
+    let gameState = "IDLE";
+    let stateTimer = 0;
+
+    // Параметры поплавка и заброса
+    const bobber = {
+      x: 0,
+      y: 0,
+      targetX: 0,
+      targetY: 0,
+      startX: 0,
+      startY: 0,
+      arcHeight: 120,
+      progress: 0,
+      flightDuration: 60,
+      submerged: false,
+      sinkOffset: 0,
+      bobAngle: 0
+    };
+
+    // Физика вываживания
+    let tension = 50; // 0..100
+    let catchProgress = 0; // 0..100
+    let isReelHolding = false;
+    let fishFightDir = 1;
+    let fishFightIntensity = 1;
+    let fishFightChangeTimer = 0;
+
+    // Текущая пойманная рыба
+    let activeFish = null;
+    let activeFishWeight = 0;
+
+    // Процедурная рыба в воде
+    const fishVisual = {
+      x: 0,
+      y: 0,
+      angle: 0,
+      tailOsc: 0,
+      length: 70,
+      width: 25,
+      color: "#38bdf8"
+    };
+
+    // Брызги и частицы
+    const particles = [];
+    function createSplash(x, y, count = 12) {
+      sound.playSplash();
+      for (let i = 0; i < count; i++) {
+        const angle = Math.PI + (Math.random() - 0.5) * Math.PI * 1.2;
+        const spd = 2 + Math.random() * 5;
+        particles.push({
+          x,
+          y,
+          vx: Math.cos(angle) * spd,
+          vy: Math.sin(angle) * spd,
+          rad: 2 + Math.random() * 3,
+          life: 1.0,
+          color: "rgba(224, 242, 254, 0.8)"
+        });
+      }
+      scareAmbientFishes(x, y);
+    }
+
+    /* ==========================================================
+       ЖИВЫЕ РЫБКИ В ВОДЕ (AMBIENT LIVING FISHES)
+       ========================================================== */
+    const ambientFishes = [];
+    const AMBIENT_FISH_COUNT = 9;
+
+    function initAmbientFishes() {
+      ambientFishes.length = 0;
+      for (let i = 0; i < AMBIENT_FISH_COUNT; i++) {
+        let type = 0;
+        if (i === 0) {
+          type = 2; // Редкая Золотая Рыбка (светящаяся)
+        } else if (i === 1 || i === 2) {
+          type = 1; // Глубинный хищник (темный силуэт)
+        }
+
+        const dir = Math.random() > 0.5 ? 1 : -1;
+        const depthRel = 0.46 + Math.random() * 0.42;
+
+        let length = 18 + Math.random() * 10;
+        let bodyWidth = 6 + Math.random() * 4;
+        let color = "#38bdf8";
+        let baseSpeed = 0.35 + Math.random() * 0.35;
+        let alpha = 0.35 + Math.random() * 0.2;
+
+        if (type === 1) {
+          length = 42 + Math.random() * 16;
+          bodyWidth = 12 + Math.random() * 5;
+          color = "#1e293b";
+          baseSpeed = 0.18 + Math.random() * 0.18;
+          alpha = 0.28;
+        } else if (type === 2) {
+          length = 26;
+          bodyWidth = 11;
+          color = "#fbbf24";
+          baseSpeed = 0.32;
+          alpha = 0.75;
+        }
+
+        ambientFishes.push({
+          type,
+          x: Math.random() * (width || 400),
+          depthRel,
+          y: depthRel * (height || 800),
+          dir,
+          speed: baseSpeed,
+          baseSpeed,
+          length,
+          bodyWidth,
+          color,
+          alpha,
+          tailOsc: Math.random() * Math.PI * 2,
+          tailSpeed: 3.5 + Math.random() * 3,
+          scaredTimer: 0
+        });
+      }
+    }
+
+    function scareAmbientFishes(splashX, splashY) {
+      for (const f of ambientFishes) {
+        const dx = f.x - splashX;
+        const dy = f.y - splashY;
+        const dist = Math.hypot(dx, dy);
+        if (dist < 180) {
+          f.scaredTimer = 2.4;
+          f.dir = dx < 0 ? -1 : 1;
+          f.speed = f.baseSpeed * 3.6;
+        }
+      }
+    }
+
+    function updateAndDrawAmbientFishes(dt) {
+      for (const f of ambientFishes) {
+        if (f.scaredTimer > 0) {
+          f.scaredTimer -= dt;
+          if (f.scaredTimer <= 0) {
+            f.speed = f.baseSpeed;
+          }
+        }
+
+        f.tailOsc += f.tailSpeed * (f.speed / f.baseSpeed) * dt * 4;
+        f.x += f.dir * f.speed * 60 * dt;
+
+        if (f.dir > 0 && f.x > width + 60) {
+          f.x = -50;
+          f.depthRel = 0.46 + Math.random() * 0.42;
+        } else if (f.dir < 0 && f.x < -60) {
+          f.x = width + 50;
+          f.depthRel = 0.46 + Math.random() * 0.42;
+        }
+
+        const waveBob = Math.sin(f.tailOsc * 0.4) * 4;
+        f.y = f.depthRel * height + waveBob;
+
+        ctx.save();
+        ctx.translate(f.x, f.y);
+        if (f.dir < 0) {
+          ctx.scale(-1, 1);
+        }
+
+        if (f.type === 2) {
+          ctx.shadowColor = "#fbbf24";
+          ctx.shadowBlur = 16;
+        } else if (f.type === 1) {
+          ctx.shadowColor = "#0f172a";
+          ctx.shadowBlur = 6;
+        }
+
+        ctx.globalAlpha = f.alpha;
+
+        // Тело
+        ctx.fillStyle = f.color;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, f.length * 0.5, f.bodyWidth * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Спинной плавник
+        ctx.fillStyle = f.color;
+        ctx.beginPath();
+        ctx.moveTo(-f.length * 0.1, -f.bodyWidth * 0.45);
+        ctx.lineTo(-f.length * 0.35, -f.bodyWidth * 0.9);
+        ctx.lineTo(-f.length * 0.4, -f.bodyWidth * 0.3);
+        ctx.closePath();
+        ctx.fill();
+
+        // Хвост
+        const tailX = -f.length * 0.5;
+        const tailY = Math.sin(f.tailOsc) * (f.bodyWidth * 0.7);
+        ctx.beginPath();
+        ctx.moveTo(tailX * 0.8, 0);
+        ctx.lineTo(tailX - f.length * 0.35, tailY - f.bodyWidth * 0.6);
+        ctx.lineTo(tailX - f.length * 0.25, tailY);
+        ctx.lineTo(tailX - f.length * 0.35, tailY + f.bodyWidth * 0.6);
+        ctx.closePath();
+        ctx.fill();
+
+        // Глаз
+        ctx.fillStyle = "#ffffff";
+        ctx.beginPath();
+        ctx.arc(f.length * 0.32, -f.bodyWidth * 0.15, Math.max(1, f.bodyWidth * 0.15), 0, Math.PI * 2);
+        ctx.fill();
+
+        ctx.restore();
+      }
+    }
+
+    /* ==========================================================
+       ОБРАБОТКА ЖЕСТОВ (СВАЙП ЗАБРОСА)
+       ========================================================== */
+    let touchStartY = 0;
+    let touchStartX = 0;
+    let touchStartTime = 0;
+
+    function handleStart(x, y) {
+      if (gameState !== "IDLE") return;
+      touchStartX = x;
+      touchStartY = y;
+      touchStartTime = Date.now();
+    }
+
+    function handleEnd(x, y) {
+      if (gameState !== "IDLE") return;
+      const dy = touchStartY - y;
+      const dx = x - touchStartX;
+      const dt = Math.max(1, Date.now() - touchStartTime);
+
+      // Свайп снизу вверх (dy > 40px)
+      if (dy > 50 && dt < 600) {
+        const velocity = dy / dt;
+        executeCast(velocity, dx);
+      }
+    }
+
+    canvas.addEventListener("touchstart", (e) => {
+      const t = e.touches[0];
+      handleStart(t.clientX, t.clientY);
+    }, { passive: true });
+
+    canvas.addEventListener("touchend", (e) => {
+      const t = e.changedTouches[0];
+      handleEnd(t.clientX, t.clientY);
+    }, { passive: true });
+
+    canvas.addEventListener("mousedown", (e) => handleStart(e.clientX, e.clientY));
+    canvas.addEventListener("mouseup", (e) => handleEnd(e.clientX, e.clientY));
+
+    function executeCast(velocity, dx) {
+      gameState = "CASTING";
+      document.getElementById("swipeHint").style.display = "none";
+      document.getElementById("bottomBar").style.display = "none";
+
+      triggerHaptic("light");
+
+      const power = Math.min(Math.max(velocity, 0.3), 2.0);
+      bobber.startX = width * 0.78;
+      bobber.startY = height * 0.76;
+
+      // Нормализуем силу от 0 до 1
+      const normPower = Math.min(1, Math.max(0, (power - 0.3) / 1.5));
+      
+      // Водная гладь строго от 50% до 72% высоты экрана
+      const waterNear = height * 0.70;
+      const waterFar = height * 0.50;
+      bobber.targetY = waterNear - normPower * (waterNear - waterFar);
+      
+      // Горизонталь в пределах 25% .. 75% ширины экрана
+      bobber.targetX = Math.min(Math.max(width * 0.5 + dx * 0.4, width * 0.25), width * 0.75);
+      
+      bobber.arcHeight = 70 + normPower * 80;
+      bobber.progress = 0;
+      bobber.flightDuration = Math.round(35 + normPower * 15);
+      showToast("Летит поплавок...");
+    }
+
+    /* ==========================================================
+       ВЫБОР РЫБЫ И ИГРОВАЯ МАТЕМАТИКА
+       ========================================================== */
+    function rollFish() {
+      const bait = BAITS[currentBaitKey];
+      const rod = RODS[player.rodId] || RODS.bamboo;
+      const rand = Math.random() * 100;
+      let selectedRarity = "Common";
+
+      // Бонус к редкой рыбе от удочки
+      const bonus = rod.rareBonus || 0;
+      const rareWeights = {
+        Common: Math.max(10, bait.rarityWeights.Common - bonus),
+        Rare: bait.rarityWeights.Rare + (bonus * 0.5),
+        Epic: bait.rarityWeights.Epic + (bonus * 0.35),
+        Legendary: bait.rarityWeights.Legendary + (bonus * 0.15)
+      };
+
+      let accum = 0;
+      for (const [rarity, chance] of Object.entries(rareWeights)) {
+        accum += chance;
+        if (rand <= accum) {
+          selectedRarity = rarity;
+          break;
+        }
+      }
+
+      const pool = FISH_DATABASE.filter(f => f.rarity === selectedRarity);
+      const chosen = pool.length ? pool[Math.floor(Math.random() * pool.length)] : FISH_DATABASE[0];
+
+      // Случайный вес с нормальным распределением к середине
+      const r = (Math.random() + Math.random()) / 2;
+      const weight = +(chosen.min_weight + r * (chosen.max_weight - chosen.min_weight)).toFixed(2);
+
+      return { fish: chosen, weight };
+    }
+
+    /* ==========================================================
+       ЛОГИКА МИНИ-ИГРЫ ВЫВАЖИВАНИЯ
+       ========================================================== */
+    const reelBtn = document.getElementById("reelBtn");
+
+    function setReelHold(holding) {
+      if (gameState !== "REELING") return;
+      isReelHolding = holding;
+      if (holding) {
+        reelBtn.classList.add("holding");
+        sound.playReelClick();
+        triggerHaptic("light");
+      } else {
+        reelBtn.classList.remove("holding");
+      }
+    }
+
+    reelBtn.addEventListener("pointerdown", (e) => {
+      e.preventDefault();
+      setReelHold(true);
+    });
+    window.addEventListener("pointerup", () => setReelHold(false));
+    window.addEventListener("pointercancel", () => setReelHold(false));
+
+    let dangerTimer = 0;
+    let slackTimer = 0;
+
+    function startReelingPhase() {
+      gameState = "REELING";
+      tension = 45;
+      catchProgress = 20;
+      dangerTimer = 0;
+      slackTimer = 0;
+      fishFightDir = 1;
+      fishFightIntensity = 1.0;
+      fishFightChangeTimer = 0;
+
+      const roll = rollFish();
+      activeFish = roll.fish;
+      activeFishWeight = roll.weight;
+
+      fishVisual.x = bobber.x;
+      fishVisual.y = bobber.y + 50;
+      fishVisual.color = activeFish.color;
+
+      document.getElementById("reelingOverlay").classList.add("active");
+      triggerHaptic("heavy");
+      showToast("Тяни рыбу! Держи в зелёной зоне!");
+    }
+
+    function updateReeling(dt) {
+      const rod = RODS[player.rodId] || RODS.bamboo;
+      const line = LINES[player.lineId] || LINES.mono;
+
+      // Интенсивность рывков зависит от редкости рыбы
+      const rarityMultiplier = {
+        Common: 1.0,
+        Rare: 1.25,
+        Epic: 1.5,
+        Legendary: 1.8
+      }[activeFish.rarity] || 1.0;
+
+      // Рыба периодически меняет направление тяги
+      fishFightChangeTimer -= dt;
+      if (fishFightChangeTimer <= 0) {
+        fishFightDir = (Math.random() > 0.5 ? 1 : -1);
+        fishFightIntensity = (0.8 + Math.random() * 0.8) * rarityMultiplier;
+        fishFightChangeTimer = 0.8 + Math.random() * 1.5;
+      }
+
+      // Плавное изменение натяжения (dt-базированное)
+      if (isReelHolding) {
+        tension += 35 * dt;
+        if (Math.random() < 0.2) sound.playReelClick();
+      } else {
+        tension -= 28 * dt;
+      }
+
+      // Рыба плавно тянет и подергивает
+      const fishSine = Math.sin(Date.now() * 0.004) * 8 * rarityMultiplier;
+      tension += (fishFightDir * 14 * rarityMultiplier * dt) + (fishSine * dt);
+
+      // Ограничители шкалы (0..100)
+      tension = Math.max(0, Math.min(100, tension));
+
+      // Проверка безопасной зоны в зависимости от надетой удочки
+      const safeMin = rod.safeZoneMin;
+      const safeMax = rod.safeZoneMax;
+      const isSafe = tension >= safeMin && tension <= safeMax;
+
+      if (isSafe) {
+        catchProgress += (13 * rod.speedBonus) * dt;
+      } else {
+        catchProgress -= 6 * dt;
+      }
+      catchProgress = Math.max(0, Math.min(100, catchProgress));
+
+      // Буфер защиты от обрыва в зависимости от надетой лески
+      const maxDangerTime = line.dangerBuffer;
+      if (tension >= 95) {
+        dangerTimer += dt;
+        if (dangerTimer > maxDangerTime) {
+          failFishing("Обрыв лески! Слишком долго удерживали натяжение!");
+          return;
+        }
+      } else {
+        dangerTimer = Math.max(0, dangerTimer - dt * 2);
+      }
+
+      if (tension <= 5) {
+        slackTimer += dt;
+        if (slackTimer > maxDangerTime) {
+          failFishing("Срыв крючка! Леска слишком долго была провисшей!");
+          return;
+        }
+      } else {
+        slackTimer = Math.max(0, slackTimer - dt * 2);
+      }
+
+      // Обновление UI
+      document.getElementById("tensionBar").style.height = `${tension}%`;
+      document.getElementById("tensionNeedle").style.bottom = `${tension}%`;
+      document.getElementById("catchProgressBar").style.width = `${catchProgress}%`;
+      document.getElementById("catchProgressText").textContent = `${Math.round(catchProgress)}%`;
+
+      // Физика процедурной рыбы в воде
+      fishVisual.tailOsc += 8 * dt * fishFightIntensity;
+      fishVisual.x += (bobber.x + fishFightDir * 35 - fishVisual.x) * 0.1;
+      fishVisual.y = bobber.y + 40 + Math.sin(fishVisual.tailOsc) * 8;
+      fishVisual.angle = (fishFightDir * 0.35) + Math.sin(fishVisual.tailOsc) * 0.15;
+
+      // Проверка победы (100%)
+      if (catchProgress >= 100) {
+        winFishing();
+      }
+    }
+
+    function failFishing(reason) {
+      gameState = "IDLE";
+      document.getElementById("reelingOverlay").classList.remove("active");
+      document.getElementById("swipeHint").style.display = "flex";
+      document.getElementById("bottomBar").style.display = "flex";
+
+      sound.playFail();
+      triggerHaptic("error");
+      showToast(reason);
+    }
+
+    let lastCatchData = null;
+
+    function winFishing() {
+      gameState = "CAUGHT";
+      document.getElementById("reelingOverlay").classList.remove("active");
+
+      sound.playSuccess();
+      triggerHaptic("success");
+
+      // Расчет награды и опыта
+      const weightMultiplier = activeFishWeight / activeFish.min_weight;
+      const reward = Math.round(activeFish.base_price * (0.8 + weightMultiplier * 0.3));
+      const xpGained = Math.round(reward * 0.6);
+
+      // Опыт и уровень начисляются сразу
+      player.fishCaught++;
+      player.xp += xpGained;
+      player.level = 1 + Math.floor(Math.sqrt(player.xp / 50));
+
+      // Обновление рекорда и атласа видов
+      if (!player.bestCatch || !player.bestCatch.weight || activeFishWeight > player.bestCatch.weight) {
+        player.bestCatch = {
+          name: activeFish.name,
+          weight: activeFishWeight,
+          rarity: activeFish.rarity
+        };
+      }
+
+      if (!player.caughtSpecies[activeFish.id]) {
+        player.caughtSpecies[activeFish.id] = { maxWeight: activeFishWeight, count: 1 };
+      } else {
+        player.caughtSpecies[activeFish.id].count++;
+        if (activeFishWeight > player.caughtSpecies[activeFish.id].maxWeight) {
+          player.caughtSpecies[activeFish.id].maxWeight = activeFishWeight;
+        }
+      }
+
+      lastCatchData = {
+        fish: activeFish,
+        weight: activeFishWeight,
+        reward: reward,
+        xp: xpGained
+      };
+
+      updatePlayerHUD();
+      savePlayerLocal();
+
+      // Отрисовка рыбы в превью
+      drawPreviewFish(activeFish);
+
+      // Наполнение карточки победы
+      const modalRarity = document.getElementById("modalRarity");
+      modalRarity.className = `rarity-pill rarity-${activeFish.rarity}`;
+      modalRarity.textContent = activeFish.rarity;
+      document.getElementById("modalFishName").textContent = activeFish.name;
+      document.getElementById("modalWeight").textContent = `${activeFishWeight} кг`;
+      document.getElementById("modalCoins").textContent = `+${reward} монет`;
+      document.getElementById("modalXP").textContent = `+${xpGained} XP`;
+
+      document.getElementById("catchModal").classList.add("active");
+    }
+
+    let dbHasStatsColumns = false;
+
+    /* ==========================================================
+       ОТПРАВКА ДАННЫХ В SUPABASE
+       ========================================================== */
+    async function saveCatchToSupabase(fishId, weight, reward, xp) {
+      if (!supabaseClient) {
+        console.log("Локальный режим: сохранение пропущено.");
+        return;
+      }
+
+      try {
+        if (dbHasStatsColumns) {
+          // Попытка вызова атомарной RPC функции log_catch
+          const { data, error } = await supabaseClient.rpc('log_catch', {
+            p_user_id: player.id,
+            p_username: player.username || player.name,
+            p_chat_id: currentChatId || null,
+            p_fish_id: fishId,
+            p_weight: weight,
+            p_reward: reward,
+            p_xp: xp
+          });
+
+          if (!error) {
+            console.log("Улов успешно сохранен через RPC:", data);
+            return;
+          }
+          console.warn("RPC log_catch не сработал, сохраняем через прямые таблицы:", error);
+        }
+
+        // Fallback: запись в catches напрямую
+        await supabaseClient.from('catches').insert([{
+          user_id: player.id,
+          chat_id: currentChatId,
+          fish_id: fishId,
+          weight: weight,
+          reward: reward,
+          is_announced: false
+        }]);
+
+        // Обновление пользователя (гарантированные базовые поля)
+        await supabaseClient.from('users').upsert({
+          id: player.id,
+          username: player.username || player.name,
+          balance: player.balance,
+          xp: player.xp,
+          level: player.level
+        });
+      } catch (err) {
+        console.error("Ошибка сохранения в Supabase:", err);
+      }
+    }
+
+    /* ==========================================================
+       ЛОКАЛЬНОЕ ХРАНИЛИЩЕ И СИНХРОНИЗАЦИЯ
+       ========================================================== */
+    function savePlayerLocal() {
+      try {
+        const payload = {
+          balance: player.balance,
+          xp: player.xp,
+          level: player.level,
+          fishCaught: player.fishCaught,
+          fishSold: player.fishSold,
+          totalEarned: player.totalEarned,
+          rodId: player.rodId,
+          lineId: player.lineId,
+          ownedRods: player.ownedRods,
+          ownedLines: player.ownedLines,
+          livewell: player.livewell,
+          bestCatch: player.bestCatch,
+          caughtSpecies: player.caughtSpecies
+        };
+        localStorage.setItem(`lumibot_player_${player.id}`, JSON.stringify(payload));
+      } catch (e) {
+        console.warn("Ошибка сохранения в localStorage:", e);
+      }
+    }
+
+    function loadPlayerLocal() {
+      try {
+        const raw = localStorage.getItem(`lumibot_player_${player.id}`);
+        if (!raw) return;
+        const saved = JSON.parse(raw);
+        if (saved) {
+          if (typeof saved.balance === 'number') player.balance = saved.balance;
+          if (typeof saved.xp === 'number') player.xp = saved.xp;
+          if (typeof saved.level === 'number') player.level = saved.level;
+          if (typeof saved.fishCaught === 'number') player.fishCaught = saved.fishCaught;
+          if (typeof saved.fishSold === 'number') player.fishSold = saved.fishSold;
+          if (typeof saved.totalEarned === 'number') player.totalEarned = saved.totalEarned;
+          if (saved.rodId && RODS[saved.rodId]) player.rodId = saved.rodId;
+          if (saved.lineId && LINES[saved.lineId]) player.lineId = saved.lineId;
+          if (Array.isArray(saved.ownedRods)) player.ownedRods = saved.ownedRods;
+          if (Array.isArray(saved.ownedLines)) player.ownedLines = saved.ownedLines;
+          if (Array.isArray(saved.livewell)) player.livewell = saved.livewell;
+          if (saved.bestCatch && saved.bestCatch.weight) player.bestCatch = saved.bestCatch;
+          if (saved.caughtSpecies) player.caughtSpecies = saved.caughtSpecies;
+        }
+      } catch (e) {
+        console.warn("Ошибка чтения localStorage:", e);
+      }
+    }
+
+    async function syncUserStatsToSupabase() {
+      if (!supabaseClient) return;
+      try {
+        if (dbHasStatsColumns) {
+          const { error } = await supabaseClient.from('users').upsert({
+            id: player.id,
+            username: player.username || player.name,
+            balance: player.balance,
+            xp: player.xp,
+            level: player.level,
+            fish_caught: player.fishCaught,
+            fish_sold: player.fishSold,
+            total_earned: player.totalEarned,
+            current_rod_id: player.rodId,
+            current_line_id: player.lineId
+          });
+          if (!error) return;
+          console.warn("Ошибка расширенной синхронизации:", error);
+        }
+
+        // Базовый профиль, гарантированно работающий до выполнения SQL-миграции
+        await supabaseClient.from('users').upsert({
+          id: player.id,
+          username: player.username || player.name,
+          balance: player.balance,
+          xp: player.xp,
+          level: player.level
+        });
+      } catch (err) {
+        console.warn("Не удалось синхронизировать статистику с Supabase:", err);
+      }
+    }
+
+    // Загрузка начальных данных пользователя из Supabase
+    async function loadUserData() {
+      loadPlayerLocal();
+      updatePlayerHUD();
+      updateTensionSafeZoneUI();
+
+      if (!supabaseClient) return;
+      try {
+        const { data, error } = await supabaseClient
+          .from('users')
+          .select('*')
+          .eq('id', player.id)
+          .maybeSingle();
+
+        if (data && !error) {
+          if ('fish_caught' in data) {
+            dbHasStatsColumns = true;
+          }
+          player.balance = data.balance ?? player.balance;
+          player.xp = data.xp ?? player.xp;
+          player.level = data.level ?? player.level;
+          player.fishCaught = Math.max(player.fishCaught, data.fish_caught ?? 0);
+          player.fishSold = Math.max(player.fishSold, data.fish_sold ?? 0);
+          player.totalEarned = Math.max(player.totalEarned, data.total_earned ?? 0);
+
+          if (data.current_rod_id && RODS[data.current_rod_id]) {
+            player.rodId = data.current_rod_id;
+            if (!player.ownedRods.includes(data.current_rod_id)) player.ownedRods.push(data.current_rod_id);
+          }
+          if (data.current_line_id && LINES[data.current_line_id]) {
+            player.lineId = data.current_line_id;
+            if (!player.ownedLines.includes(data.current_line_id)) player.ownedLines.push(data.current_line_id);
+          }
+
+          // Загрузка истории вылова для заполнения FishDex
+          const { data: catchesData } = await supabaseClient
+            .from('catches')
+            .select('fish_id, weight, reward')
+            .eq('user_id', player.id);
+
+          if (catchesData && catchesData.length > 0) {
+            for (const c of catchesData) {
+              const fish = FISH_DATABASE.find(f => f.id === c.fish_id);
+              if (!fish) continue;
+              if (!player.bestCatch || !player.bestCatch.weight || c.weight > player.bestCatch.weight) {
+                player.bestCatch = { name: fish.name, weight: c.weight, rarity: fish.rarity };
+              }
+              if (!player.caughtSpecies[c.fish_id]) {
+                player.caughtSpecies[c.fish_id] = { maxWeight: c.weight, count: 1 };
+              } else {
+                player.caughtSpecies[c.fish_id].count++;
+                if (c.weight > player.caughtSpecies[c.fish_id].maxWeight) {
+                  player.caughtSpecies[c.fish_id].maxWeight = c.weight;
+                }
+              }
+            }
+          }
+
+          savePlayerLocal();
+          updatePlayerHUD();
+          updateTensionSafeZoneUI();
+        } else if (!error && !data) {
+          // Пользователя еще нет в базе, регистрируем
+          await supabaseClient.from('users').upsert({
+            id: player.id,
+            username: player.username || player.name,
+            balance: player.balance,
+            xp: player.xp,
+            level: player.level,
+            fish_caught: player.fishCaught,
+            fish_sold: player.fishSold,
+            total_earned: player.totalEarned,
+            current_rod_id: player.rodId,
+            current_line_id: player.lineId
+          });
+        }
+      } catch (e) {
+        console.warn("Не удалось загрузить пользователя из БД:", e);
+      }
+    }
+
+    /* ==========================================================
+       ОТРИСОВКА В CANVAS (ИГРОВОЙ ЦИКЛ)
+       ========================================================== */
+    let waveOffset = 0;
+    let lastFrameTime = performance.now();
+
+    function render() {
+      const now = performance.now();
+      const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
+      lastFrameTime = now;
+
+      ctx.clearRect(0, 0, width, height);
+
+      waveOffset += 0.035;
+
+      // 1. Небо и фон озера
+      const skyGrad = ctx.createLinearGradient(0, 0, 0, height * 0.45);
+      skyGrad.addColorStop(0, '#091522');
+      skyGrad.addColorStop(0.6, '#0f2b48');
+      skyGrad.addColorStop(1, '#1b4d6e');
+      ctx.fillStyle = skyGrad;
+      ctx.fillRect(0, 0, width, height * 0.45);
+
+      // Силуэт далекого берега и леса
+      ctx.fillStyle = '#06111c';
+      ctx.beginPath();
+      ctx.moveTo(0, height * 0.42);
+      for (let x = 0; x <= width; x += 30) {
+        const hill = Math.sin(x * 0.008) * 16 + Math.cos(x * 0.02) * 8;
+        ctx.lineTo(x, height * 0.38 - hill);
+      }
+      ctx.lineTo(width, height * 0.45);
+      ctx.lineTo(0, height * 0.45);
+      ctx.fill();
+
+      // Отражение луны/звезд
+      ctx.fillStyle = "rgba(254, 240, 138, 0.7)";
+      ctx.beginPath();
+      ctx.arc(width * 0.75, height * 0.15, 14, 0, Math.PI * 2);
+      ctx.fill();
+
+      // 2. Вода (Многослойные синусоидальные волны)
+      const waterTop = height * 0.42;
+
+      // Глубинный слой воды
+      const deepGrad = ctx.createLinearGradient(0, waterTop, 0, height);
+      deepGrad.addColorStop(0, '#0d324d');
+      deepGrad.addColorStop(0.4, '#072036');
+      deepGrad.addColorStop(1, '#030d17');
+      ctx.fillStyle = deepGrad;
+      ctx.fillRect(0, waterTop, width, height - waterTop);
+
+      // Живые рыбки под водой (включая редких и глубоководных)
+      updateAndDrawAmbientFishes(dt);
+
+      // Волны поверх воды
+      for (let w = 0; w < 3; w++) {
+        ctx.beginPath();
+        const waveY = waterTop + w * 18;
+        ctx.moveTo(0, height);
+        ctx.lineTo(0, waveY);
+
+        for (let x = 0; x <= width; x += 15) {
+          const y = waveY + Math.sin(x * 0.015 + waveOffset + w) * (6 - w * 1.5) + Math.cos(x * 0.03 - waveOffset) * 3;
+          ctx.lineTo(x, y);
+        }
+        ctx.lineTo(width, height);
+        ctx.fillStyle = `rgba(14, 116, 144, ${0.18 - w * 0.04})`;
+        ctx.fill();
+      }
+
+      // 3. Логика состояний
+      if (gameState === "CASTING") {
+        bobber.progress += 1 / bobber.flightDuration;
+        const p = bobber.progress;
+        bobber.x = bobber.startX + (bobber.targetX - bobber.startX) * p;
+        const lineY = bobber.startY + (bobber.targetY - bobber.startY) * p;
+        const arc = Math.sin(p * Math.PI) * bobber.arcHeight;
+        bobber.y = lineY - arc;
+
+        if (p >= 1) {
+          bobber.progress = 1;
+          bobber.x = bobber.targetX;
+          bobber.y = bobber.targetY;
+          createSplash(bobber.x, bobber.y, 16);
+          gameState = "WAITING";
+
+          // Таймер поклёвки
+          const bait = BAITS[currentBaitKey];
+          const waitTime = (bait.waitMin + Math.random() * (bait.waitMax - bait.waitMin)) / bait.speedMultiplier;
+          stateTimer = setTimeout(() => {
+            triggerNibble();
+          }, waitTime);
+          showToast("Поплавок в воде. Ждем клёва...");
+        }
+      } else if (gameState === "WAITING") {
+        // Покачивание на волне строго в воде
+        const waveY = Math.sin(bobber.x * 0.015 + waveOffset) * 4;
+        bobber.y = bobber.targetY + waveY + bobber.sinkOffset;
+      } else if (gameState === "NIBBLE") {
+        bobber.bobAngle = Math.sin(Date.now() * 0.03) * 0.25;
+        bobber.sinkOffset = 14 + Math.sin(Date.now() * 0.02) * 5;
+      } else if (gameState === "REELING") {
+        updateReeling(dt);
+        drawUnderwaterFish(fishVisual.x, fishVisual.y, fishVisual.angle, fishVisual.tailOsc, fishVisual.color);
+      }
+
+      // 4. Отрисовка удочки и лески
+      const rodBaseX = width * 1.02;
+      const rodBaseY = height + 10;
+      const bendOffset = (gameState === "REELING" ? (tension / 100) : 0.15) * 55;
+      const rodMidX = width * 0.88;
+      const rodMidY = height * 0.86;
+      const rodTipX = width * 0.76 - bendOffset * 0.5;
+      const rodTipY = height * 0.74 + bendOffset * 0.5;
+
+      // Рисуем бланк удочки
+      ctx.save();
+      ctx.strokeStyle = "#0f172a";
+      ctx.lineWidth = 7;
+      ctx.lineCap = "round";
+      ctx.beginPath();
+      ctx.moveTo(rodBaseX, rodBaseY);
+      ctx.quadraticCurveTo(rodMidX, rodMidY, rodTipX, rodTipY);
+      ctx.stroke();
+
+      ctx.strokeStyle = "#38bdf8";
+      ctx.lineWidth = 2.5;
+      ctx.beginPath();
+      ctx.moveTo(rodBaseX - 2, rodBaseY - 2);
+      ctx.quadraticCurveTo(rodMidX, rodMidY, rodTipX, rodTipY);
+      ctx.stroke();
+
+      ctx.fillStyle = "#f59e0b";
+      ctx.beginPath();
+      ctx.arc(rodTipX, rodTipY, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.restore();
+
+      // Леска
+      if (gameState !== "IDLE") {
+        ctx.strokeStyle = "rgba(255, 255, 255, 0.5)";
+        ctx.lineWidth = 1.2;
+        ctx.beginPath();
+        ctx.moveTo(rodTipX, rodTipY);
+        const midX = (rodTipX + bobber.x) / 2;
+        const sag = gameState === "REELING" ? (100 - tension) * 0.3 : 25;
+        const midY = Math.min(rodTipY, bobber.y) + sag;
+        ctx.quadraticCurveTo(midX, midY, bobber.x, bobber.y);
+        ctx.stroke();
+
+        // Отрисовка поплавка
+        drawBobber(bobber.x, bobber.y, bobber.bobAngle);
+
+        // Индикатор поклёвки (!)
+        if (gameState === "NIBBLE") {
+          ctx.fillStyle = "#ef4444";
+          ctx.font = "bold 26px sans-serif";
+          ctx.textAlign = "center";
+          ctx.fillText("!", bobber.x, bobber.y - 25);
+        }
+      }
+
+      // 5. Отрисовка брызг частиц
+      for (let i = particles.length - 1; i >= 0; i--) {
+        const pt = particles[i];
+        pt.x += pt.vx;
+        pt.y += pt.vy;
+        pt.vy += 0.18; // Гравитация
+        pt.life -= 0.025;
+        if (pt.life <= 0) {
+          particles.splice(i, 1);
+          continue;
+        }
+        ctx.fillStyle = pt.color;
+        ctx.beginPath();
+        ctx.arc(pt.x, pt.y, pt.rad * pt.life, 0, Math.PI * 2);
+        ctx.fill();
+      }
+
+      requestAnimationFrame(render);
+    }
+
+    // Отрисовка поплавка
+    function drawBobber(x, y, angle = 0) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+
+      // Антенна поплавка
+      ctx.strokeStyle = "#1e293b";
+      ctx.lineWidth = 2;
+      ctx.beginPath();
+      ctx.moveTo(0, 0);
+      ctx.lineTo(0, -18);
+      ctx.stroke();
+
+      // Верхний яркий набалдашник
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(0, -18, 3.5, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Тело поплавка (верх красный, низ белый)
+      ctx.fillStyle = "#ef4444";
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, Math.PI, 0);
+      ctx.fill();
+
+      ctx.fillStyle = "#f8fafc";
+      ctx.beginPath();
+      ctx.arc(0, 0, 7, 0, Math.PI);
+      ctx.fill();
+
+      // Кольца ряби на воде
+      ctx.strokeStyle = "rgba(255, 255, 255, 0.3)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.ellipse(0, 4, 12, 4, 0, 0, Math.PI * 2);
+      ctx.stroke();
+
+      ctx.restore();
+    }
+
+    // Процедурная отрисовка рыбы под водой
+    function drawUnderwaterFish(x, y, angle, tailOsc, colorHex) {
+      ctx.save();
+      ctx.translate(x, y);
+      ctx.rotate(angle);
+
+      ctx.shadowColor = colorHex;
+      ctx.shadowBlur = 10;
+
+      // Тело
+      ctx.fillStyle = colorHex;
+      ctx.beginPath();
+      ctx.ellipse(0, 0, 22, 10, 0, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Глаз
+      ctx.fillStyle = "#fff";
+      ctx.beginPath();
+      ctx.arc(14, -3, 2.5, 0, Math.PI * 2);
+      ctx.fill();
+      ctx.fillStyle = "#000";
+      ctx.beginPath();
+      ctx.arc(14.5, -3, 1.2, 0, Math.PI * 2);
+      ctx.fill();
+
+      // Хвост с синусоидальным изгибом
+      const tailX = -20;
+      const tailY = Math.sin(tailOsc) * 8;
+      ctx.beginPath();
+      ctx.moveTo(-16, 0);
+      ctx.lineTo(tailX - 12, tailY - 8);
+      ctx.lineTo(tailX - 8, tailY);
+      ctx.lineTo(tailX - 12, tailY + 8);
+      ctx.closePath();
+      ctx.fillStyle = colorHex;
+      ctx.fill();
+
+      ctx.restore();
+    }
+
+    // Отрисовка превью рыбы в модальном окне
+    function drawPreviewFish(fish) {
+      const pCanvas = document.getElementById("previewFishCanvas");
+      const pCtx = pCanvas.getContext("2d");
+      pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
+
+      const cx = pCanvas.width / 2;
+      const cy = pCanvas.height / 2;
+
+      pCtx.save();
+      pCtx.shadowColor = fish.color;
+      pCtx.shadowBlur = 14;
+
+      // Форма рыбы
+      pCtx.fillStyle = fish.color;
+      pCtx.beginPath();
+      pCtx.ellipse(cx, cy, 38, 18, 0, 0, Math.PI * 2);
+      pCtx.fill();
+
+      // Плавники
+      pCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
+      pCtx.beginPath();
+      pCtx.moveTo(cx - 5, cy + 8);
+      pCtx.lineTo(cx - 15, cy + 18);
+      pCtx.lineTo(cx + 2, cy + 12);
+      pCtx.fill();
+
+      // Хвост
+      pCtx.fillStyle = fish.color;
+      pCtx.beginPath();
+      pCtx.moveTo(cx - 32, cy);
+      pCtx.lineTo(cx - 52, cy - 14);
+      pCtx.lineTo(cx - 44, cy);
+      pCtx.lineTo(cx - 52, cy + 14);
+      pCtx.closePath();
+      pCtx.fill();
+
+      // Глаз
+      pCtx.fillStyle = "#fff";
+      pCtx.beginPath();
+      pCtx.arc(cx + 22, cy - 4, 4, 0, Math.PI * 2);
+      pCtx.fill();
+      pCtx.fillStyle = "#000";
+      pCtx.beginPath();
+      pCtx.arc(cx + 23, cy - 4, 2, 0, Math.PI * 2);
+      pCtx.fill();
+
+      pCtx.restore();
+    }
+
+    // Фаза поклёвки
+    function triggerNibble() {
+      if (gameState !== "WAITING") return;
+      gameState = "NIBBLE";
+      sound.playBite();
+      triggerHaptic("heavy");
+      createSplash(bobber.x, bobber.y, 8);
+
+      showToast("КЛЮЁТ! ПОДСЕКАЙ!");
+
+      // Окно для подсечки (1.5 сек) или авто-старт
+      setTimeout(() => {
+        if (gameState === "NIBBLE") {
+          startReelingPhase();
+        }
+      }, 1000);
+    }
+
+    /* ==========================================================
+       ИНТЕРФЕЙС И СОБЫТИЯ
+       ========================================================== */
+    function updateTensionSafeZoneUI() {
+      const rod = RODS[player.rodId] || RODS.bamboo;
+      const safeZoneEl = document.querySelector(".tension-safe-zone");
+      if (safeZoneEl) {
+        safeZoneEl.style.bottom = `${rod.safeZoneMin}%`;
+        safeZoneEl.style.height = `${rod.safeZoneMax - rod.safeZoneMin}%`;
+      }
+    }
+
+    function updatePlayerHUD() {
+      document.getElementById("playerName").textContent = player.name;
+      document.getElementById("playerLevel").textContent = player.level;
+      document.getElementById("playerBalance").textContent = player.balance;
+
+      const nextLevelXp = Math.pow(player.level, 2) * 50;
+      const prevLevelXp = Math.pow(player.level - 1, 2) * 50;
+      const progressPercent = Math.min(100, Math.max(0, ((player.xp - prevLevelXp) / (nextLevelXp - prevLevelXp)) * 100));
+      document.getElementById("xpBar").style.width = `${progressPercent}%`;
+
+      // Счетчик рыбы в садке
+      const badge = document.getElementById("livewellCountBadge");
+      if (badge) {
+        badge.textContent = player.livewell.length;
+      }
+    }
+
+    // Переключение наживок
+    document.querySelectorAll(".bait-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        document.querySelectorAll(".bait-btn").forEach(b => b.classList.remove("active"));
+        btn.classList.add("active");
+        currentBaitKey = btn.dataset.bait;
+        triggerHaptic("light");
+        showToast(`Выбрана наживка: ${BAITS[currentBaitKey].name}`);
+      });
+    });
+
+    // Звук
+    const soundBtn = document.getElementById("soundBtn");
+    soundBtn.addEventListener("click", () => {
+      player.soundEnabled = !player.soundEnabled;
+      soundBtn.innerHTML = player.soundEnabled
+        ? `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>`
+        : `<svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+      triggerHaptic("light");
+    });
+
+    // Действия в окне победы
+    document.getElementById("addToLivewellBtn").addEventListener("click", () => {
+      if (!lastCatchData) return;
+      player.livewell.push({
+        id: Date.now() + Math.random(),
+        fishId: lastCatchData.fish.id,
+        name: lastCatchData.fish.name,
+        rarity: lastCatchData.fish.rarity,
+        weight: lastCatchData.weight,
+        price: lastCatchData.reward,
+        color: lastCatchData.fish.color
+      });
+
+      document.getElementById("catchModal").classList.remove("active");
+      gameState = "IDLE";
+      document.getElementById("swipeHint").style.display = "flex";
+      document.getElementById("bottomBar").style.display = "flex";
+      triggerHaptic("light");
+
+      updatePlayerHUD();
+      savePlayerLocal();
+      saveCatchToSupabase(lastCatchData.fish.id, lastCatchData.weight, lastCatchData.reward, lastCatchData.xp);
+      showToast(`Рыба [${lastCatchData.fish.name}] помещена в садок!`);
+    });
+
+    document.getElementById("instantSellBtn").addEventListener("click", () => {
+      if (!lastCatchData) return;
+      player.balance += lastCatchData.reward;
+      player.totalEarned += lastCatchData.reward;
+      player.fishSold++;
+
+      document.getElementById("catchModal").classList.remove("active");
+      gameState = "IDLE";
+      document.getElementById("swipeHint").style.display = "flex";
+      document.getElementById("bottomBar").style.display = "flex";
+      triggerHaptic("medium");
+
+      updatePlayerHUD();
+      savePlayerLocal();
+      saveCatchToSupabase(lastCatchData.fish.id, lastCatchData.weight, lastCatchData.reward, lastCatchData.xp);
+      showToast(`Рыба [${lastCatchData.fish.name}] продана за +${lastCatchData.reward} C!`);
+    });
+
+    /* ==========================================================
+       МОДАЛЬНОЕ ОКНО: САДОК
+       ========================================================== */
+    const livewellModal = document.getElementById("livewellModal");
+    const openLivewellBtn = document.getElementById("openLivewellBtn");
+    const closeLivewellBtn = document.getElementById("closeLivewellBtn");
+    const sellAllLivewellBtn = document.getElementById("sellAllLivewellBtn");
+
+    function renderLivewell() {
+      const summaryCount = document.getElementById("livewellSummaryCount");
+      const summaryWorth = document.getElementById("livewellSummaryWorth");
+      const listEl = document.getElementById("livewellList");
+
+      const totalWorth = player.livewell.reduce((sum, item) => sum + item.price, 0);
+      summaryCount.textContent = `Рыб: ${player.livewell.length} шт.`;
+      summaryWorth.textContent = `Ценность: ${totalWorth} C`;
+
+      if (player.livewell.length === 0) {
+        listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:#64748b;font-size:13px;">Садок пуст. Забросьте удочку и поймайте трофей!</div>`;
+        sellAllLivewellBtn.style.opacity = "0.5";
+        sellAllLivewellBtn.style.pointerEvents = "none";
+        sellAllLivewellBtn.textContent = "Продать всё";
+      } else {
+        sellAllLivewellBtn.style.opacity = "1";
+        sellAllLivewellBtn.style.pointerEvents = "auto";
+        sellAllLivewellBtn.textContent = `Продать всё (+${totalWorth} C)`;
+
+        listEl.innerHTML = player.livewell.map((item, idx) => `
+          <div class="livewell-item">
+            <div class="livewell-item-meta">
+              <div class="livewell-item-name">
+                ${item.name}
+                <span class="rarity-pill rarity-${item.rarity}" style="font-size:9px;padding:1px 6px;margin-left:6px;">${item.rarity}</span>
+              </div>
+              <div class="livewell-item-sub">Вес: ${item.weight} кг | Цена: ${item.price} C</div>
+            </div>
+            <button class="mini-sell-btn" onclick="sellLivewellFish(${idx})">Продать +${item.price} C</button>
+          </div>
+        `).join('');
+      }
+    }
+
+    window.sellLivewellFish = function(index) {
+      if (index < 0 || index >= player.livewell.length) return;
+      const fish = player.livewell.splice(index, 1)[0];
+      player.balance += fish.price;
+      player.totalEarned += fish.price;
+      player.fishSold++;
+
+      triggerHaptic("light");
+      sound.playSuccess();
+      updatePlayerHUD();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderLivewell();
+      showToast(`Продано: ${fish.name} (+${fish.price} C)`);
+    };
+
+    sellAllLivewellBtn.addEventListener("click", () => {
+      if (player.livewell.length === 0) return;
+      const count = player.livewell.length;
+      const total = player.livewell.reduce((sum, f) => sum + f.price, 0);
+      player.balance += total;
+      player.totalEarned += total;
+      player.fishSold += count;
+      player.livewell = [];
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderLivewell();
+      showToast(`Продано ${count} рыб на сумму +${total} C!`);
+    });
+
+    openLivewellBtn.addEventListener("click", () => {
+      renderLivewell();
+      livewellModal.classList.add("active");
+      triggerHaptic("light");
+    });
+    closeLivewellBtn.addEventListener("click", () => {
+      livewellModal.classList.remove("active");
+      triggerHaptic("light");
+    });
+
+    /* ==========================================================
+       МОДАЛЬНОЕ ОКНО: ТОРГОВЕЦ (МАГАЗИН СНАСТЕЙ И СКУПКА)
+       ========================================================== */
+    const shopModal = document.getElementById("shopModal");
+    const openShopBtn = document.getElementById("openShopBtn");
+    const closeShopBtn = document.getElementById("closeShopBtn");
+    let currentShopTab = "sell";
+
+    function renderShopTab(tabKey) {
+      currentShopTab = tabKey;
+      document.querySelectorAll(".tab-bar .tab-btn").forEach(b => {
+        b.classList.toggle("active", b.dataset.shoptab === tabKey);
+      });
+
+      const container = document.getElementById("shopTabContent");
+
+      if (tabKey === "sell") {
+        const totalWorth = player.livewell.reduce((sum, item) => sum + item.price, 0);
+        if (player.livewell.length === 0) {
+          container.innerHTML = `
+            <div style="text-align:center;padding:30px 10px;color:#64748b;font-size:13px;">
+              Торговец ждет улов! Ваш садок пуст.<br><br>
+              Поймайте рыбу и выберите "В садок", чтобы принести её на рынок.
+            </div>
+          `;
+        } else {
+          container.innerHTML = `
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:#94a3b8;">
+              <span>Рыб в садке: ${player.livewell.length} шт.</span>
+              <span style="color:#fef08a;font-weight:700;">Итого: ${totalWorth} C</span>
+            </div>
+            <button class="action-btn" onclick="sellAllThroughMerchant()" style="margin-bottom:12px;padding:10px;">Продать всё оптом (+${totalWorth} C)</button>
+            <div style="display:flex;flex-direction:column;gap:8px;">
+              ${player.livewell.map((item, idx) => `
+                <div class="livewell-item">
+                  <div class="livewell-item-meta">
+                    <div class="livewell-item-name">${item.name} <span class="rarity-pill rarity-${item.rarity}" style="font-size:9px;padding:1px 6px;">${item.rarity}</span></div>
+                    <div class="livewell-item-sub">Вес: ${item.weight} кг | Цена: ${item.price} C</div>
+                  </div>
+                  <button class="mini-sell-btn" onclick="sellLivewellFishFromShop(${idx})">Сдать +${item.price} C</button>
+                </div>
+              `).join('')}
+            </div>
+          `;
+        }
+      } else if (tabKey === "rods") {
+        container.innerHTML = Object.values(RODS).map(rod => {
+          const isEquipped = player.rodId === rod.id;
+          const isOwned = player.ownedRods.includes(rod.id);
+          const canAfford = player.balance >= rod.price;
+
+          let btnHtml = '';
+          if (isEquipped) {
+            btnHtml = `<button class="buy-btn equipped">Надето</button>`;
+          } else if (isOwned) {
+            btnHtml = `<button class="buy-btn" onclick="equipRod('${rod.id}')">Надеть</button>`;
+          } else {
+            btnHtml = canAfford
+              ? `<button class="buy-btn" onclick="buyRod('${rod.id}')">Купить ${rod.price} C</button>`
+              : `<button class="buy-btn locked" title="Недостаточно монет">Купить ${rod.price} C</button>`;
+          }
+
+          return `
+            <div class="shop-card">
+              <div class="shop-card-head">
+                <span class="shop-card-title">${rod.name}</span>
+                <span class="shop-price">${rod.price === 0 ? "Базовая" : rod.price + " C"}</span>
+              </div>
+              <div class="shop-card-desc">${rod.desc}</div>
+              <div class="shop-card-actions">
+                <span style="font-size:11px;color:#38bdf8;">Зона: ${rod.safeZoneMin}%-${rod.safeZoneMax}%</span>
+                ${btnHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      } else if (tabKey === "lines") {
+        container.innerHTML = Object.values(LINES).map(line => {
+          const isEquipped = player.lineId === line.id;
+          const isOwned = player.ownedLines.includes(line.id);
+          const canAfford = player.balance >= line.price;
+
+          let btnHtml = '';
+          if (isEquipped) {
+            btnHtml = `<button class="buy-btn equipped">Надето</button>`;
+          } else if (isOwned) {
+            btnHtml = `<button class="buy-btn" onclick="equipLine('${line.id}')">Надеть</button>`;
+          } else {
+            btnHtml = canAfford
+              ? `<button class="buy-btn" onclick="buyLine('${line.id}')">Купить ${line.price} C</button>`
+              : `<button class="buy-btn locked" title="Недостаточно монет">Купить ${line.price} C</button>`;
+          }
+
+          return `
+            <div class="shop-card">
+              <div class="shop-card-head">
+                <span class="shop-card-title">${line.name}</span>
+                <span class="shop-price">${line.price === 0 ? "Базовая" : line.price + " C"}</span>
+              </div>
+              <div class="shop-card-desc">${line.desc}</div>
+              <div class="shop-card-actions">
+                <span style="font-size:11px;color:#38bdf8;">Запас: ${line.dangerBuffer} сек</span>
+                ${btnHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
+      }
+    }
+
+    window.sellLivewellFishFromShop = function(idx) {
+      sellLivewellFish(idx);
+      renderShopTab("sell");
+    };
+
+    window.sellAllThroughMerchant = function() {
+      if (player.livewell.length === 0) return;
+      const count = player.livewell.length;
+      const total = player.livewell.reduce((sum, f) => sum + f.price, 0);
+      player.balance += total;
+      player.totalEarned += total;
+      player.fishSold += count;
+      player.livewell = [];
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("sell");
+      showToast(`Торговец выкупил ${count} рыб за +${total} C!`);
+    };
+
+    window.buyRod = function(rodId) {
+      const rod = RODS[rodId];
+      if (!rod || player.balance < rod.price) return;
+      player.balance -= rod.price;
+      player.ownedRods.push(rodId);
+      player.rodId = rodId;
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      updateTensionSafeZoneUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("rods");
+      showToast(`Куплена удочка: ${rod.name}!`);
+    };
+
+    window.equipRod = function(rodId) {
+      if (!player.ownedRods.includes(rodId)) return;
+      player.rodId = rodId;
+      triggerHaptic("light");
+      updateTensionSafeZoneUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("rods");
+      showToast(`Надета: ${RODS[rodId].name}`);
+    };
+
+    window.buyLine = function(lineId) {
+      const line = LINES[lineId];
+      if (!line || player.balance < line.price) return;
+      player.balance -= line.price;
+      player.ownedLines.push(lineId);
+      player.lineId = lineId;
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("lines");
+      showToast(`Куплена леска: ${line.name}!`);
+    };
+
+    window.equipLine = function(lineId) {
+      if (!player.ownedLines.includes(lineId)) return;
+      player.lineId = lineId;
+      triggerHaptic("light");
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("lines");
+      showToast(`Надета: ${LINES[lineId].name}`);
+    };
+
+    document.querySelectorAll(".tab-bar .tab-btn").forEach(btn => {
+      btn.addEventListener("click", () => {
+        renderShopTab(btn.dataset.shoptab);
+        triggerHaptic("light");
+      });
+    });
+
+    openShopBtn.addEventListener("click", () => {
+      renderShopTab(currentShopTab);
+      shopModal.classList.add("active");
+      triggerHaptic("light");
+    });
+    closeShopBtn.addEventListener("click", () => {
+      shopModal.classList.remove("active");
+      triggerHaptic("light");
+    });
+
+    /* ==========================================================
+       МОДАЛЬНОЕ ОКНО: ЛИЧНЫЙ КАБИНЕТ И СТАТИСТИКА
+       ========================================================== */
+    const profileModal = document.getElementById("profileModal");
+    const openProfileBtn = document.getElementById("openProfileBtn");
+    const closeProfileBtn = document.getElementById("closeProfileBtn");
+
+    function renderProfile() {
+      document.getElementById("statFishCaught").textContent = player.fishCaught;
+      document.getElementById("statFishSold").textContent = player.fishSold;
+      document.getElementById("statTotalEarned").textContent = `${player.totalEarned} C`;
+
+      const bestTrophyEl = document.getElementById("statBestTrophy");
+      if (player.bestCatch && player.bestCatch.name) {
+        bestTrophyEl.textContent = `${player.bestCatch.name} (${player.bestCatch.weight} кг)`;
+      } else {
+        bestTrophyEl.textContent = "Пока нет";
+      }
+
+      document.getElementById("profileRodName").textContent = RODS[player.rodId] ? RODS[player.rodId].name : "Бамбуковая удочка";
+      document.getElementById("profileLineName").textContent = LINES[player.lineId] ? LINES[player.lineId].name : "Монофил 0.2мм";
+
+      // Отрисовка Атласа видов (FishDex)
+      const grid = document.getElementById("profileFishdexGrid");
+      grid.innerHTML = FISH_DATABASE.map(fish => {
+        const caught = player.caughtSpecies[fish.id];
+        if (caught) {
+          return `
+            <div class="fishdex-card">
+              <span class="rarity-pill rarity-${fish.rarity}" style="font-size:8px;padding:1px 5px;">${fish.rarity}</span>
+              <div class="fishdex-name" style="color:${fish.color};margin-top:2px;">${fish.name}</div>
+              <div class="fishdex-weight">Рекорд: ${caught.maxWeight} кг</div>
+              <div style="font-size:9px;color:#94a3b8;">Выловлено: ${caught.count} шт.</div>
+            </div>
+          `;
+        } else {
+          return `
+            <div class="fishdex-card locked">
+              <span class="rarity-pill rarity-Common" style="font-size:8px;padding:1px 5px;opacity:0.5;">???</span>
+              <div class="fishdex-name" style="margin-top:2px;">Не поймано</div>
+              <div class="fishdex-weight">-</div>
+            </div>
+          `;
+        }
+      }).join('');
+    }
+
+    openProfileBtn.addEventListener("click", () => {
+      renderProfile();
+      profileModal.classList.add("active");
+      triggerHaptic("light");
+    });
+    closeProfileBtn.addEventListener("click", () => {
+      profileModal.classList.remove("active");
+      triggerHaptic("light");
+    });
+
+    // Закрытие по клику на темный фон модальных окон
+    [livewellModal, shopModal, profileModal].forEach(modal => {
+      modal.addEventListener("click", (e) => {
+        if (e.target === modal) {
+          modal.classList.remove("active");
+        }
+      });
+    });
+
+    // Тосты статуса
+    let toastTimeout;
+    function showToast(text) {
+      const toast = document.getElementById("statusToast");
+      toast.textContent = text;
+      toast.classList.add("visible");
+      clearTimeout(toastTimeout);
+      toastTimeout = setTimeout(() => {
+        toast.classList.remove("visible");
+      }, 2500);
+    }
+
+    // Инициализация при загрузке
+    initAmbientFishes();
+    updateTensionSafeZoneUI();
+    updatePlayerHUD();
+    loadUserData();
+    requestAnimationFrame(render);
+  </script>
+</body>
+</html>
