@@ -149,45 +149,128 @@ var isHomeScene = false;
       bestCatch: { name: "", weight: 0, rarity: "" },
       caughtSpecies: {}
     };
+    window.player = player;
 
     /* ==========================================================
-       КАТАЛОГ РЫБЫ (ЛОКАЛЬНЫЙ FALLBACK И СИНХРОНИЗАЦИЯ)
+       КАТАЛОГ РЫБЫ И СУЩНОСТЕЙ (МОДУЛЬНАЯ ИНТЕГРАЦИЯ)
        ========================================================== */
-    const FISH_DATABASE = [
-      { id: 1, name: "Карась", rarity: "Common", min_weight: 0.20, max_weight: 1.20, base_price: 25, color: "#94a3b8", bodyType: 0 },
-      { id: 2, name: "Окунь", rarity: "Common", min_weight: 0.25, max_weight: 1.80, base_price: 40, color: "#84cc16", bodyType: 1 },
-      { id: 3, name: "Плотва", rarity: "Common", min_weight: 0.15, max_weight: 0.90, base_price: 20, color: "#a3e635", bodyType: 0 },
-      { id: 4, name: "Лещ", rarity: "Rare", min_weight: 0.80, max_weight: 4.20, base_price: 95, color: "#eab308", bodyType: 0 },
-      { id: 5, name: "Судак", rarity: "Rare", min_weight: 1.20, max_weight: 6.50, base_price: 160, color: "#06b6d4", bodyType: 1 },
-      { id: 6, name: "Щука", rarity: "Epic", min_weight: 2.50, max_weight: 14.00, base_price: 380, color: "#10b981", bodyType: 2 },
-      { id: 7, name: "Сом", rarity: "Epic", min_weight: 8.00, max_weight: 55.00, base_price: 850, color: "#64748b", bodyType: 3 },
-      { id: 8, name: "Осетр", rarity: "Legendary", min_weight: 15.00, max_weight: 85.00, base_price: 2400, color: "#f59e0b", bodyType: 2 },
-      { id: 9, name: "Золотая Рыбка", rarity: "Legendary", min_weight: 0.40, max_weight: 2.50, base_price: 5000, color: "#ec4899", bodyType: 0 }
-    ];
+    const FISH_DATABASE = (typeof ENTITY_DATA !== 'undefined' && Array.isArray(ENTITY_DATA.FISH_SPECIES))
+      ? ENTITY_DATA.FISH_SPECIES
+      : [];
 
-    // Настройки приманок
-    const BAITS = {
-      worm: {
-        name: "Червь",
-        speedMultiplier: 1.0,
-        waitMin: 4000,
-        waitMax: 7000,
-        rarityWeights: { Common: 70, Rare: 25, Epic: 4.5, Legendary: 0.5 }
-      },
-      corn: {
-        name: "Кукуруза",
-        speedMultiplier: 1.4,
-        waitMin: 2500,
-        waitMax: 5000,
-        rarityWeights: { Common: 80, Rare: 18, Epic: 1.8, Legendary: 0.2 }
-      },
-      lure: {
-        name: "Блесна",
-        speedMultiplier: 0.7,
-        waitMin: 6000,
-        waitMax: 10000,
-        rarityWeights: { Common: 35, Rare: 45, Epic: 16, Legendary: 4.0 }
+    function getEntityById(id) {
+      if (typeof ENTITY_DATA !== 'undefined') {
+        const fish = ENTITY_DATA.FISH_SPECIES.find(f => f.id === id);
+        if (fish) return fish;
+        const beast = ENTITY_DATA.BEAST_SPECIES.find(b => b.id === id);
+        if (beast) return beast;
+        const junk = ENTITY_DATA.JUNK_ITEMS.find(j => j.id === id);
+        if (junk) return junk;
       }
+      return FISH_DATABASE.find(f => f.id === id) || null;
+    }
+
+    /* ==========================================================
+       SVG ИКОНКИ ДЛЯ СПОСОБОВ ЛОВЛИ И ПРИМАНОК
+       ========================================================== */
+    const SVG_ICONS = {
+      float: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"></circle><path d="M12 2v3M12 19v3"></path><path d="M5 12h14"></path></svg>`,
+      spinning: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>`,
+      feeder: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg>`,
+      fly: `<svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg>`,
+      worm: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 19c2-3 4-2 7-5s2-5 5-6 4 1 4 4-2 5-6 6-5 2-10 1z"></path></svg>`,
+      corn: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="6" ry="9"></ellipse><line x1="12" y1="3" x2="12" y2="21"></line><line x1="7" y1="10" x2="17" y2="10"></line><line x1="7" y1="14" x2="17" y2="14"></line></svg>`,
+      dough: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="8"></circle><circle cx="9" cy="10" r="1" fill="currentColor"></circle><circle cx="15" cy="11" r="1" fill="currentColor"></circle></svg>`,
+      bloodworm: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2a5 5 0 0 0-5 5c0 4 5 13 5 13s5-9 5-13a5 5 0 0 0-5-5z"></path></svg>`,
+      lure_spoon: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2C8 2 5 6 5 11c0 6 7 11 7 11s7-5 7-11c0-5-3-9-7-9z"></path></svg>`,
+      lure_spinner: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="3"></circle><path d="M12 3v6M12 15v6M3 12h6M15 12h6"></path></svg>`,
+      lure_wobbler: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s4-6 10-6 10 6 10 6-4 6-10 6-10-6-10-6z"></path><circle cx="16" cy="12" r="1.5"></circle></svg>`,
+      lure_jig: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="8" cy="8" r="4"></circle><path d="M12 8c4 0 7 2 7 6s-3 6-7 6"></path></svg>`,
+      feeder_mix: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M3 11c0 5 4 9 9 9s9-4 9-9H3z"></path><line x1="3" y1="11" x2="21" y2="11"></line></svg>`,
+      boilie: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"></circle></svg>`,
+      maggot: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="12" cy="12" rx="4" ry="7" transform="rotate(30 12 12)"></ellipse></svg>`,
+      live_bait: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M4 12c3-4 8-4 13 0-5 4-10 4-13 0z"></path><polygon points="17 12 21 9 21 15 17 12"></polygon></svg>`,
+      dry_fly: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m2 2 20 20M7 3l4 4-2 3-5-2zM17 13l4 4-5 2-2-3z"></path></svg>`,
+      nymph: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 4v16M8 8l8 8M16 8l-8 8"></path></svg>`,
+      streamer: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M21 3s-6 2-10 7-5 11-5 11 6-2 10-7 5-11 5-11z"></path></svg>`,
+      mayfly: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 2v20M6 8a6 6 0 0 1 12 0c0 4-6 8-6 8s-6-4-6-8z"></path></svg>`,
+      chest: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="7" width="20" height="14" rx="2" ry="2"></rect><path d="M16 21V5a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"></path></svg>`,
+      fuel: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z"></path></svg>`,
+      hazard: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m21.73 18-8-14a2 2 0 0 0-3.48 0l-8 14A2 2 0 0 0 4 21h16a2 2 0 0 0 1.73-3Z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>`,
+      edible: `<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8h1a4 4 0 0 1 0 8h-1"></path><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"></path><line x1="6" y1="1" x2="6" y2="4"></line><line x1="10" y1="1" x2="10" y2="4"></line><line x1="14" y1="1" x2="14" y2="4"></line></svg>`
+    };
+
+    /* ==========================================================
+       СПОСОБЫ ЛОВЛИ (FISHING METHODS)
+       ========================================================== */
+    const FISHING_METHODS = {
+      float: {
+        id: "float",
+        name: "Поплавок",
+        iconSvg: SVG_ICONS.float,
+        desc: "Классическая ловля с поплавком. Озерная и речная рыба всех горизонтов.",
+        biteSpeedMult: 1.0,
+        rareBonus: 0,
+        baits: ["worm", "corn", "dough", "bloodworm"]
+      },
+      spinning: {
+        id: "spinning",
+        name: "Спиннинг",
+        iconSvg: SVG_ICONS.spinning,
+        desc: "Активная проводка приманки! Приманивает стремительных и яростных хищников.",
+        biteSpeedMult: 1.25,
+        rareBonus: 8,
+        baits: ["lure_spoon", "lure_spinner", "lure_wobbler", "lure_jig"]
+      },
+      feeder: {
+        id: "feeder",
+        name: "Фидер",
+        iconSvg: SVG_ICONS.feeder,
+        desc: "Донная снасть с кормушкой и бубенцом. Охота за донными исполинами!",
+        biteSpeedMult: 0.95,
+        rareBonus: 10,
+        baits: ["feeder_mix", "boilie", "maggot", "live_bait"]
+      },
+      fly: {
+        id: "fly",
+        name: "Нахлыст",
+        iconSvg: SVG_ICONS.fly,
+        desc: "Изящная ловля на плавающую мушку. Верховая рыба и ценные лососевые.",
+        biteSpeedMult: 1.15,
+        rareBonus: 12,
+        baits: ["dry_fly", "nymph", "streamer", "mayfly"]
+      }
+    };
+    var currentFishingMethod = "float";
+
+    // Каталог всех наживок и приманок
+    const BAITS = {
+      // Поплавочные
+      worm: { name: "Червь", iconSvg: SVG_ICONS.worm, method: "float", waitMin: 3500, waitMax: 6500, speedMultiplier: 1.0, rarityWeights: { Common: 70, Rare: 24, Epic: 5.5, Legendary: 0.5 } },
+      corn: { name: "Кукуруза", iconSvg: SVG_ICONS.corn, method: "float", waitMin: 2500, waitMax: 5000, speedMultiplier: 1.35, rarityWeights: { Common: 78, Rare: 19, Epic: 2.7, Legendary: 0.3 } },
+      dough: { name: "Тесто", iconSvg: SVG_ICONS.dough, method: "float", waitMin: 2200, waitMax: 4600, speedMultiplier: 1.45, rarityWeights: { Common: 82, Rare: 16, Epic: 1.8, Legendary: 0.2 } },
+      bloodworm: { name: "Мотыль", iconSvg: SVG_ICONS.bloodworm, method: "float", waitMin: 3000, waitMax: 5600, speedMultiplier: 1.15, rarityWeights: { Common: 60, Rare: 31, Epic: 8.2, Legendary: 0.8 } },
+
+      // Спиннинговые
+      lure_spoon: { name: "Колебалка", iconSvg: SVG_ICONS.lure_spoon, method: "spinning", waitMin: 3800, waitMax: 7000, speedMultiplier: 1.0, rarityWeights: { Common: 30, Rare: 46, Epic: 21, Legendary: 3.0 } },
+      lure_spinner: { name: "Вертушка", iconSvg: SVG_ICONS.lure_spinner, method: "spinning", waitMin: 3000, waitMax: 6000, speedMultiplier: 1.25, rarityWeights: { Common: 40, Rare: 42, Epic: 16, Legendary: 2.0 } },
+      lure_wobbler: { name: "Воблер", iconSvg: SVG_ICONS.lure_wobbler, method: "spinning", waitMin: 3500, waitMax: 6500, speedMultiplier: 1.1, rarityWeights: { Common: 20, Rare: 45, Epic: 29, Legendary: 6.0 } },
+      lure_jig: { name: "Твистер", iconSvg: SVG_ICONS.lure_jig, method: "spinning", waitMin: 2800, waitMax: 5200, speedMultiplier: 1.3, rarityWeights: { Common: 35, Rare: 45, Epic: 18, Legendary: 2.0 } },
+
+      // Фидерные
+      feeder_mix: { name: "Прикормка", iconSvg: SVG_ICONS.feeder_mix, method: "feeder", waitMin: 3600, waitMax: 6600, speedMultiplier: 1.1, rarityWeights: { Common: 50, Rare: 34, Epic: 14, Legendary: 2.0 } },
+      boilie: { name: "Бойлы", iconSvg: SVG_ICONS.boilie, method: "feeder", waitMin: 4600, waitMax: 8200, speedMultiplier: 0.9, rarityWeights: { Common: 25, Rare: 42, Epic: 27, Legendary: 6.0 } },
+      maggot: { name: "Опарыш", iconSvg: SVG_ICONS.maggot, method: "feeder", waitMin: 2600, waitMax: 5200, speedMultiplier: 1.35, rarityWeights: { Common: 65, Rare: 27, Epic: 7.3, Legendary: 0.7 } },
+      live_bait: { name: "Живец", iconSvg: SVG_ICONS.live_bait, method: "feeder", waitMin: 5000, waitMax: 9200, speedMultiplier: 0.8, rarityWeights: { Common: 15, Rare: 40, Epic: 37, Legendary: 8.0 } },
+
+      // Нахлыстовые
+      dry_fly: { name: "Сухая мушка", iconSvg: SVG_ICONS.dry_fly, method: "fly", waitMin: 2800, waitMax: 5600, speedMultiplier: 1.25, rarityWeights: { Common: 35, Rare: 45, Epic: 17, Legendary: 3.0 } },
+      nymph: { name: "Нимфа", iconSvg: SVG_ICONS.nymph, method: "fly", waitMin: 3200, waitMax: 6200, speedMultiplier: 1.15, rarityWeights: { Common: 25, Rare: 48, Epic: 22, Legendary: 5.0 } },
+      streamer: { name: "Стример", iconSvg: SVG_ICONS.streamer, method: "fly", waitMin: 3800, waitMax: 7200, speedMultiplier: 1.0, rarityWeights: { Common: 18, Rare: 44, Epic: 31, Legendary: 7.0 } },
+      mayfly: { name: "Поденка", iconSvg: SVG_ICONS.mayfly, method: "fly", waitMin: 2400, waitMax: 4800, speedMultiplier: 1.4, rarityWeights: { Common: 45, Rare: 40, Epic: 13, Legendary: 2.0 } },
+
+      // Fallback алиасы для совместимости с сохраненными данными
+      lure: { name: "Блесна", iconSvg: SVG_ICONS.lure_spoon, method: "spinning", waitMin: 4000, waitMax: 7000, speedMultiplier: 1.0, rarityWeights: { Common: 35, Rare: 45, Epic: 16, Legendary: 4.0 } }
     };
     let currentBaitKey = "worm";
 
@@ -239,6 +322,65 @@ var isHomeScene = false;
         gain.connect(this.ctx.destination);
         osc.start(now);
         osc.stop(now + 0.2);
+      }
+      playFeederBell() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Звон бубенца / колокольчика донки
+        [1046.5, 1318.5, 1567.98].forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = now + idx * 0.07;
+          osc.type = 'sine';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.2, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.32);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.33);
+        });
+      }
+      playSpinningReel() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Быстрый треск спиннинговой катушки при твичинге
+        for (let i = 0; i < 3; i++) {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = now + i * 0.035;
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(1100 + Math.random() * 400, time);
+          gain.gain.setValueAtTime(0.05, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.025);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.025);
+        }
+      }
+      playFlyStrike() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        // Поверхностный хлопок и заглатывание мушки
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(620, now);
+        osc.frequency.exponentialRampToValueAtTime(160, now + 0.16);
+        gain.gain.setValueAtTime(0.3, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.18);
+        setTimeout(() => this.playSplash(), 70);
       }
       playReelClick() {
         if (!player.soundEnabled) return;
@@ -359,9 +501,12 @@ function failFishing(reason) {
       sound.playSuccess();
       triggerHaptic("success");
 
-      // Расчет награды и опыта
-      const weightMultiplier = activeFishWeight / activeFish.min_weight;
-      const reward = Math.round(activeFish.base_price * (0.8 + weightMultiplier * 0.3));
+      // Расчет награды и опыта с учетом модификаторов
+      const weightMultiplier = (activeFish && activeFish.min_weight) ? (activeFishWeight / activeFish.min_weight) : 1.0;
+      const baseReward = (activeFish && activeFish.base_price) ? activeFish.base_price : 30;
+      const reward = (activeFish && typeof activeFish.price === 'number')
+        ? activeFish.price
+        : Math.round(baseReward * (0.8 + weightMultiplier * 0.3));
       const xpGained = Math.round(reward * 0.6);
 
       // Опыт и уровень начисляются сразу
@@ -379,12 +524,23 @@ function failFishing(reason) {
       }
 
       if (!player.caughtSpecies[activeFish.id]) {
-        player.caughtSpecies[activeFish.id] = { maxWeight: activeFishWeight, count: 1 };
+        player.caughtSpecies[activeFish.id] = {
+          maxWeight: activeFishWeight,
+          count: 1,
+          discoveredVariations: { base: true }
+        };
       } else {
         player.caughtSpecies[activeFish.id].count++;
         if (activeFishWeight > player.caughtSpecies[activeFish.id].maxWeight) {
           player.caughtSpecies[activeFish.id].maxWeight = activeFishWeight;
         }
+        if (!player.caughtSpecies[activeFish.id].discoveredVariations) {
+          player.caughtSpecies[activeFish.id].discoveredVariations = { base: true };
+        }
+      }
+
+      if (activeFish.mutation && activeFish.mutation.id) {
+        player.caughtSpecies[activeFish.id].discoveredVariations[activeFish.mutation.id] = true;
       }
 
       lastCatchData = {
@@ -409,57 +565,197 @@ function failFishing(reason) {
       document.getElementById("modalCoins").textContent = `+${reward} монет`;
       document.getElementById("modalXP").textContent = `+${xpGained} XP`;
 
+      // Динамические бейджи мутаций, среды и титула
+      const badgesRow = document.getElementById("modalBadgesRow");
+      if (badgesRow) {
+        badgesRow.innerHTML = "";
+        if (activeFish.environment) {
+          badgesRow.innerHTML += `<span class="badge-pill badge-env">${activeFish.environment.name}</span>`;
+        }
+        if (activeFish.mutation) {
+          const mutClass = activeFish.mutation.id === 'radioactive' ? 'radioactive' : (activeFish.mutation.id === 'golden' ? 'golden' : '');
+          badgesRow.innerHTML += `<span class="badge-pill badge-mutation ${mutClass}">${activeFish.mutation.name}</span>`;
+        }
+        if (activeFish.title) {
+          badgesRow.innerHTML += `<span class="badge-pill badge-title">${activeFish.title.title}</span>`;
+        }
+      }
+
+      // Чипы свойств (сытность семьи, яд, топливо)
+      const propsRow = document.getElementById("modalPropertiesRow");
+      if (propsRow) {
+        propsRow.innerHTML = "";
+        if (activeFish.isLootbox) {
+          propsRow.innerHTML += `<span class="prop-chip prop-chest"><span class="chip-svg">${SVG_ICONS.chest}</span>Ларец с ценностями</span>`;
+        }
+        if (activeFish.fuelValue > 0) {
+          propsRow.innerHTML += `<span class="prop-chip prop-fuel"><span class="chip-svg">${SVG_ICONS.fuel}</span>Дрова для очага (+${activeFish.fuelValue})</span>`;
+        }
+        if (activeFish.poison) {
+          propsRow.innerHTML += `<span class="prop-chip prop-poison"><span class="chip-svg">${SVG_ICONS.hazard}</span>Ядовито (не для еды)</span>`;
+        } else if (activeFish.edible) {
+          propsRow.innerHTML += `<span class="prop-chip prop-edible"><span class="chip-svg">${SVG_ICONS.edible}</span>Сытность: +${activeFish.hungerValue || 25}</span>`;
+        }
+      }
+
+      // Переключение кнопки "В садок" / "Открыть ларец"
+      const addLivewellBtn = document.getElementById("addToLivewellBtn");
+      const openChestBtn = document.getElementById("openChestBtn");
+      if (activeFish.isLootbox) {
+        if (openChestBtn) openChestBtn.style.display = "block";
+        if (addLivewellBtn) addLivewellBtn.style.display = "none";
+      } else {
+        if (openChestBtn) openChestBtn.style.display = "none";
+        if (addLivewellBtn) addLivewellBtn.style.display = "block";
+      }
+
       document.getElementById("catchModal").classList.add("active");
     }
 
     let dbHasStatsColumns = false;
 
-// Отрисовка превью рыбы в модальном окне
+// Отрисовка превью сущности через модульный анатомический Canvas-рендер
     function drawPreviewFish(fish) {
       const pCanvas = document.getElementById("previewFishCanvas");
+      if (!pCanvas) return;
+      if (typeof ProceduralFishRenderer !== 'undefined') {
+        ProceduralFishRenderer.drawPreview(pCanvas, fish);
+        return;
+      }
       const pCtx = pCanvas.getContext("2d");
       pCtx.clearRect(0, 0, pCanvas.width, pCanvas.height);
 
       const cx = pCanvas.width / 2;
       const cy = pCanvas.height / 2;
+      const bodyType = typeof fish.bodyType === 'number' ? fish.bodyType : 0;
 
       pCtx.save();
       pCtx.shadowColor = fish.color;
-      pCtx.shadowBlur = 14;
+      pCtx.shadowBlur = bodyType === 4 ? 22 : 12;
 
-      // Форма рыбы
+      // 1. Форма туловища в зависимости от типа рыбы
       pCtx.fillStyle = fish.color;
       pCtx.beginPath();
-      pCtx.ellipse(cx, cy, 38, 18, 0, 0, Math.PI * 2);
+      if (bodyType === 0) {
+        // Высокотелая озерная (Карась, Лещ, Карп, Линь)
+        pCtx.ellipse(cx, cy, 34, 21, 0, 0, Math.PI * 2);
+      } else if (bodyType === 1) {
+        // Хищник / лосось (Окунь, Судак, Форель, Хариус)
+        pCtx.ellipse(cx, cy, 38, 16, 0, 0, Math.PI * 2);
+      } else if (bodyType === 2) {
+        // Стремительная торпеда (Щука, Таймень, Жерех, Осетр)
+        pCtx.ellipse(cx, cy, 44, 13, 0, 0, Math.PI * 2);
+      } else if (bodyType === 3) {
+        // Донный гигант / сом (Сом, Налим, Белуга)
+        pCtx.ellipse(cx - 3, cy, 40, 16, 0, 0, Math.PI * 2);
+      } else {
+        // Легендарная мифическая (Золотая Рыбка, Царь-Рыба, Лунный Лосось)
+        pCtx.ellipse(cx, cy, 36, 18, 0, 0, Math.PI * 2);
+      }
       pCtx.fill();
 
-      // Плавники
-      pCtx.fillStyle = "rgba(255, 255, 255, 0.4)";
-      pCtx.beginPath();
-      pCtx.moveTo(cx - 5, cy + 8);
-      pCtx.lineTo(cx - 15, cy + 18);
-      pCtx.lineTo(cx + 2, cy + 12);
+      // Светлое брюшко
+      const bellyGrad = pCtx.createLinearGradient(cx, cy, cx, cy + 20);
+      bellyGrad.addColorStop(0, "rgba(255, 255, 255, 0)");
+      bellyGrad.addColorStop(1, "rgba(255, 255, 255, 0.4)");
+      pCtx.fillStyle = bellyGrad;
       pCtx.fill();
 
-      // Хвост
-      pCtx.fillStyle = fish.color;
+      // 2. Спинной плавник
+      pCtx.fillStyle = bodyType === 4 ? "rgba(255, 255, 255, 0.75)" : "rgba(255, 255, 255, 0.4)";
       pCtx.beginPath();
-      pCtx.moveTo(cx - 32, cy);
-      pCtx.lineTo(cx - 52, cy - 14);
-      pCtx.lineTo(cx - 44, cy);
-      pCtx.lineTo(cx - 52, cy + 14);
+      if (bodyType === 1) {
+        // Высокий колючий гребень (Окунь, Судак, Хариус)
+        pCtx.moveTo(cx - 14, cy - 15);
+        pCtx.lineTo(cx - 2, cy - 27);
+        pCtx.lineTo(cx + 10, cy - 24);
+        pCtx.lineTo(cx + 18, cy - 13);
+      } else if (bodyType === 2) {
+        // Сдвинут назад к хвосту (Щука)
+        pCtx.moveTo(cx - 26, cy - 11);
+        pCtx.lineTo(cx - 18, cy - 19);
+        pCtx.lineTo(cx - 10, cy - 12);
+      } else if (bodyType === 4) {
+        // Пышный полупрозрачный парус
+        pCtx.moveTo(cx - 18, cy - 17);
+        pCtx.bezierCurveTo(cx - 5, cy - 32, cx + 15, cy - 28, cx + 22, cy - 14);
+      } else {
+        // Классический
+        pCtx.moveTo(cx - 10, cy - 19);
+        pCtx.lineTo(cx + 4, cy - 25);
+        pCtx.lineTo(cx + 14, cy - 18);
+      }
       pCtx.closePath();
       pCtx.fill();
 
-      // Глаз
+      // 3. Хвостовой плавник
+      pCtx.fillStyle = fish.color;
+      pCtx.beginPath();
+      if (bodyType === 4) {
+        // Роскошный вуалевый хвост
+        pCtx.moveTo(cx - 30, cy);
+        pCtx.bezierCurveTo(cx - 55, cy - 24, cx - 62, cy - 10, cx - 58, 0);
+        pCtx.bezierCurveTo(cx - 62, cy + 10, cx - 55, cy + 24, cx - 30, cy);
+      } else if (bodyType === 3) {
+        // Сомовий округлый хвост
+        pCtx.moveTo(cx - 32, cy - 7);
+        pCtx.lineTo(cx - 52, cy - 10);
+        pCtx.lineTo(cx - 54, cy + 10);
+        pCtx.lineTo(cx - 32, cy + 7);
+      } else {
+        // V-образный раздвоенный хвост
+        pCtx.moveTo(cx - 32, cy);
+        pCtx.lineTo(cx - 54, cy - 15);
+        pCtx.lineTo(cx - 45, cy);
+        pCtx.lineTo(cx - 54, cy + 15);
+      }
+      pCtx.closePath();
+      pCtx.fill();
+
+      // 4. Усы для донных сомов и осетров
+      if (bodyType === 3 || fish.id === 23) {
+        pCtx.strokeStyle = "rgba(255, 255, 255, 0.85)";
+        pCtx.lineWidth = 1.6;
+        pCtx.beginPath();
+        pCtx.moveTo(cx + 32, cy);
+        pCtx.quadraticCurveTo(cx + 44, cy - 6, cx + 40, cy + 16);
+        pCtx.stroke();
+        pCtx.beginPath();
+        pCtx.moveTo(cx + 28, cy + 5);
+        pCtx.quadraticCurveTo(cx + 38, cy + 14, cx + 30, cy + 20);
+        pCtx.stroke();
+      }
+
+      // 5. Глаз
       pCtx.fillStyle = "#fff";
       pCtx.beginPath();
-      pCtx.arc(cx + 22, cy - 4, 4, 0, Math.PI * 2);
+      const eyeX = bodyType === 2 ? cx + 28 : cx + 22;
+      const eyeY = cy - 4;
+      pCtx.arc(eyeX, eyeY, 4, 0, Math.PI * 2);
       pCtx.fill();
       pCtx.fillStyle = "#000";
       pCtx.beginPath();
-      pCtx.arc(cx + 23, cy - 4, 2, 0, Math.PI * 2);
+      pCtx.arc(eyeX + 1, eyeY, 2, 0, Math.PI * 2);
       pCtx.fill();
+
+      // 6. Узор/полоски/крапинки
+      if (bodyType === 1) {
+        pCtx.strokeStyle = "rgba(0, 0, 0, 0.22)";
+        pCtx.lineWidth = 2;
+        for (let s = -12; s <= 12; s += 8) {
+          pCtx.beginPath();
+          pCtx.moveTo(cx + s, cy - 14);
+          pCtx.lineTo(cx + s - 3, cy + 6);
+          pCtx.stroke();
+        }
+      } else if (bodyType === 4) {
+        pCtx.fillStyle = "#fff";
+        pCtx.beginPath();
+        pCtx.arc(cx - 6, cy - 4, 2, 0, Math.PI * 2);
+        pCtx.arc(cx + 8, cy + 3, 1.5, 0, Math.PI * 2);
+        pCtx.arc(cx - 16, cy + 4, 1.8, 0, Math.PI * 2);
+        pCtx.fill();
+      }
 
       pCtx.restore();
     }
@@ -530,6 +826,8 @@ function failFishing(reason) {
           totalEarned: player.totalEarned,
           rodId: player.rodId,
           lineId: player.lineId,
+          methodId: currentFishingMethod,
+          baitKey: currentBaitKey,
           ownedRods: player.ownedRods,
           ownedLines: player.ownedLines,
           livewell: player.livewell,
@@ -556,11 +854,40 @@ function failFishing(reason) {
           if (typeof saved.totalEarned === 'number') player.totalEarned = saved.totalEarned;
           if (saved.rodId && RODS[saved.rodId]) player.rodId = saved.rodId;
           if (saved.lineId && LINES[saved.lineId]) player.lineId = saved.lineId;
+          if (saved.methodId && FISHING_METHODS[saved.methodId]) currentFishingMethod = saved.methodId;
+          if (saved.baitKey && BAITS[saved.baitKey]) currentBaitKey = saved.baitKey;
           if (Array.isArray(saved.ownedRods)) player.ownedRods = saved.ownedRods;
           if (Array.isArray(saved.ownedLines)) player.ownedLines = saved.ownedLines;
-          if (Array.isArray(saved.livewell)) player.livewell = saved.livewell;
+          if (Array.isArray(saved.livewell)) {
+            player.livewell = saved.livewell;
+            if (typeof GridInventory !== 'undefined') {
+              const placed = [];
+              player.livewell.forEach(item => {
+                if (typeof item.gridX !== 'number' || typeof item.gridY !== 'number') {
+                  const place = GridInventory.autoPlaceItem(placed, item);
+                  if (place) {
+                    item.gridX = place.x;
+                    item.gridY = place.y;
+                    item.gridShape = place.shape;
+                    placed.push(item);
+                  }
+                } else {
+                  placed.push(item);
+                }
+              });
+              player.livewell = placed;
+            }
+          }
           if (saved.bestCatch && saved.bestCatch.weight) player.bestCatch = saved.bestCatch;
-          if (saved.caughtSpecies) player.caughtSpecies = saved.caughtSpecies;
+          if (saved.caughtSpecies) {
+            player.caughtSpecies = saved.caughtSpecies;
+            Object.keys(player.caughtSpecies).forEach(id => {
+              if (!player.caughtSpecies[id].discoveredVariations) {
+                player.caughtSpecies[id].discoveredVariations = { base: true };
+              }
+            });
+          }
+          window.player = player;
         }
       } catch (e) {
         console.warn("Ошибка чтения localStorage:", e);
@@ -714,16 +1041,77 @@ function failFishing(reason) {
       }
     }
 
-    // Переключение наживок
-    document.querySelectorAll(".bait-btn").forEach(btn => {
-      btn.addEventListener("click", () => {
-        document.querySelectorAll(".bait-btn").forEach(b => b.classList.remove("active"));
-        btn.classList.add("active");
-        currentBaitKey = btn.dataset.bait;
-        triggerHaptic("light");
-        showToast(`Выбрана наживка: ${BAITS[currentBaitKey].name}`);
+    // Рендеринг и логика способов ловли и приманок
+    function renderBaitsUI() {
+      const container = document.getElementById("baitsContainer");
+      if (!container) return;
+      const method = FISHING_METHODS[currentFishingMethod] || FISHING_METHODS.float;
+      const availableBaits = method.baits || [];
+
+      // Если текущая приманка не подходит для метода, выбираем первую доступную
+      if (!availableBaits.includes(currentBaitKey)) {
+        currentBaitKey = availableBaits[0] || "worm";
+      }
+
+      container.innerHTML = availableBaits.map(baitKey => {
+        const bait = BAITS[baitKey];
+        if (!bait) return '';
+        const isActive = baitKey === currentBaitKey;
+        return `
+          <button class="bait-btn ${isActive ? 'active' : ''}" data-bait="${baitKey}">
+            <span class="bait-icon">${bait.iconSvg || ''}</span>
+            <span class="bait-name">${bait.name}</span>
+          </button>
+        `;
+      }).join('');
+
+      container.querySelectorAll(".bait-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          container.querySelectorAll(".bait-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentBaitKey = btn.dataset.bait;
+          triggerHaptic("light");
+          savePlayerLocal();
+          showToast(`Выбрана приманка: ${BAITS[currentBaitKey]?.name || ''}`);
+        });
       });
-    });
+    }
+
+    function initMethodAndBaitsUI() {
+      document.querySelectorAll(".method-btn").forEach(btn => {
+        const methodKey = btn.dataset.method;
+        btn.classList.toggle("active", methodKey === currentFishingMethod);
+
+        btn.addEventListener("click", () => {
+          document.querySelectorAll(".method-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentFishingMethod = btn.dataset.method;
+          const method = FISHING_METHODS[currentFishingMethod];
+          renderBaitsUI();
+          triggerHaptic("medium");
+          savePlayerLocal();
+          showToast(`${method.icon} Способ: ${method.name}. ${method.desc}`);
+        });
+      });
+
+      renderBaitsUI();
+
+      const twitchBtn = document.getElementById("twitchBtn");
+      if (twitchBtn) {
+        twitchBtn.addEventListener("click", () => {
+          if (typeof window.onLureTwitch === 'function') {
+            window.onLureTwitch();
+          }
+        });
+      }
+    }
+
+    function showLureTwitchButton(show) {
+      const wrapper = document.getElementById("twitchBtnWrapper");
+      if (wrapper) {
+        wrapper.style.display = show ? "flex" : "none";
+      }
+    }
 
     // Звук
     const soundBtn = document.getElementById("soundBtn");
@@ -738,15 +1126,41 @@ function failFishing(reason) {
     // Действия в окне победы
     document.getElementById("addToLivewellBtn").addEventListener("click", () => {
       if (!lastCatchData) return;
-      player.livewell.push({
+      const newFishItem = {
         id: Date.now() + Math.random(),
         fishId: lastCatchData.fish.id,
         name: lastCatchData.fish.name,
         rarity: lastCatchData.fish.rarity,
         weight: lastCatchData.weight,
         price: lastCatchData.reward,
-        color: lastCatchData.fish.color
-      });
+        color: lastCatchData.fish.color,
+        bodyType: lastCatchData.fish.bodyType,
+        fuelValue: lastCatchData.fish.fuelValue || 0,
+        isLootbox: !!lastCatchData.fish.isLootbox,
+        isFuel: !!lastCatchData.fish.isFuel,
+        isJunk: !!lastCatchData.fish.isJunk,
+        isBeast: !!lastCatchData.fish.isBeast,
+        edible: lastCatchData.fish.edible,
+        hungerValue: lastCatchData.fish.hungerValue,
+        poison: lastCatchData.fish.poison,
+        mutation: lastCatchData.fish.mutation || null,
+        environment: lastCatchData.fish.environment || null,
+        title: lastCatchData.fish.title || null
+      };
+
+      if (typeof GridInventory !== 'undefined') {
+        const place = GridInventory.autoPlaceItem(player.livewell, newFishItem);
+        if (!place) {
+          showToast("Садок полон! Нет места для рыбы такого размера. Освободите место!");
+          triggerHaptic("error");
+          return;
+        }
+        newFishItem.gridX = place.x;
+        newFishItem.gridY = place.y;
+        newFishItem.gridShape = place.shape;
+      }
+
+      player.livewell.push(newFishItem);
 
       document.getElementById("catchModal").classList.remove("active");
       gameState = "IDLE";
@@ -757,101 +1171,412 @@ function failFishing(reason) {
       updatePlayerHUD();
       savePlayerLocal();
       saveCatchToSupabase(lastCatchData.fish.id, lastCatchData.weight, lastCatchData.reward, lastCatchData.xp);
-      showToast(`Рыба [${lastCatchData.fish.name}] помещена в садок!`);
+      showToast(`[${lastCatchData.fish.name}] помещен(а) в садок!`);
     });
 
-    document.getElementById("instantSellBtn").addEventListener("click", () => {
-      if (!lastCatchData) return;
-      player.balance += lastCatchData.reward;
-      player.totalEarned += lastCatchData.reward;
-      player.fishSold++;
+    const openChestBtn = document.getElementById("openChestBtn");
+    if (openChestBtn) {
+      openChestBtn.addEventListener("click", () => {
+        if (!lastCatchData || !lastCatchData.fish.isLootbox) return;
+        const loot = (typeof EntityGenerator !== 'undefined')
+          ? EntityGenerator.unpackChest(lastCatchData.fish)
+          : { coins: lastCatchData.reward * 2, xp: lastCatchData.xp * 2, bait: "live_bait", baitCount: 3 };
 
-      document.getElementById("catchModal").classList.remove("active");
-      gameState = "IDLE";
-      document.getElementById("swipeHint").style.display = "flex";
-      document.getElementById("bottomBar").style.display = "flex";
-      triggerHaptic("medium");
+        player.balance += loot.coins;
+        player.totalEarned += loot.coins;
+        player.xp += loot.xp;
+        player.level = 1 + Math.floor(Math.sqrt(player.xp / 50));
 
-      updatePlayerHUD();
-      savePlayerLocal();
-      saveCatchToSupabase(lastCatchData.fish.id, lastCatchData.weight, lastCatchData.reward, lastCatchData.xp);
-      showToast(`Рыба [${lastCatchData.fish.name}] продана за +${lastCatchData.reward} C!`);
-    });
+        document.getElementById("catchModal").classList.remove("active");
+        gameState = "IDLE";
+        document.getElementById("swipeHint").style.display = "flex";
+        document.getElementById("bottomBar").style.display = "flex";
+        triggerHaptic("success");
+        sound.playSuccess();
+
+        updatePlayerHUD();
+        savePlayerLocal();
+        showToast(`Ларец открыт: +${loot.coins} C, +${loot.xp} XP, наживка x${loot.baitCount}!`);
+      });
+    }
+
+    const releaseCatchBtn = document.getElementById("releaseCatchBtn");
+    if (releaseCatchBtn) {
+      releaseCatchBtn.addEventListener("click", () => {
+        if (!lastCatchData) return;
+        // Единение с природой: отпускание рыбы даёт опыт
+        player.xp += 5;
+        checkLevelUp();
+
+        document.getElementById("catchModal").classList.remove("active");
+        gameState = "IDLE";
+        document.getElementById("swipeHint").style.display = "flex";
+        document.getElementById("bottomBar").style.display = "flex";
+        triggerHaptic("medium");
+
+        updatePlayerHUD();
+        savePlayerLocal();
+        showToast(`[${lastCatchData.fish.name}] отпущен(а) обратно в озеро (+5 XP)`);
+      });
+    }
 
     /* ==========================================================
-       МОДАЛЬНОЕ ОКНО: САДОК
+       САДОК: СЕТОЧНЫЙ ТЕТРИС-ИНВЕНТАРЬ (RESIDENT EVIL STYLE)
        ========================================================== */
     const livewellModal = document.getElementById("livewellModal");
     const openLivewellBtn = document.getElementById("openLivewellBtn");
     const closeLivewellBtn = document.getElementById("closeLivewellBtn");
-    const sellAllLivewellBtn = document.getElementById("sellAllLivewellBtn");
+    const rotateGridItemBtn = document.getElementById("rotateGridItemBtn");
+    const discardGridItemBtn = document.getElementById("discardGridItemBtn");
 
-    function renderLivewell() {
-      const summaryCount = document.getElementById("livewellSummaryCount");
-      const summaryWorth = document.getElementById("livewellSummaryWorth");
-      const listEl = document.getElementById("livewellList");
+    let selectedLivewellItem = null;
 
-      const totalWorth = player.livewell.reduce((sum, item) => sum + item.price, 0);
-      summaryCount.textContent = `Рыб: ${player.livewell.length} шт.`;
-      summaryWorth.textContent = `Ценность: ${totalWorth} C`;
-
-      if (player.livewell.length === 0) {
-        listEl.innerHTML = `<div style="text-align:center;padding:32px 16px;color:#64748b;font-size:13px;">Садок пуст. Забросьте удочку и поймайте трофей!</div>`;
-        sellAllLivewellBtn.style.opacity = "0.5";
-        sellAllLivewellBtn.style.pointerEvents = "none";
-        sellAllLivewellBtn.textContent = "Продать всё";
-      } else {
-        sellAllLivewellBtn.style.opacity = "1";
-        sellAllLivewellBtn.style.pointerEvents = "auto";
-        sellAllLivewellBtn.textContent = `Продать всё (+${totalWorth} C)`;
-
-        listEl.innerHTML = player.livewell.map((item, idx) => `
-          <div class="livewell-item">
-            <div class="livewell-item-meta">
-              <div class="livewell-item-name">
-                ${item.name}
-                <span class="rarity-pill rarity-${item.rarity}" style="font-size:9px;padding:1px 6px;margin-left:6px;">${item.rarity}</span>
-              </div>
-              <div class="livewell-item-sub">Вес: ${item.weight} кг | Цена: ${item.price} C</div>
-            </div>
-            <button class="mini-sell-btn" onclick="sellLivewellFish(${idx})">Продать +${item.price} C</button>
-          </div>
-        `).join('');
+    function getCellBgForRarity(rarity) {
+      switch (rarity) {
+        case 'Legendary': return 'rgba(245, 158, 11, 0.35)';
+        case 'Epic': return 'rgba(168, 85, 247, 0.3)';
+        case 'Rare': return 'rgba(6, 182, 212, 0.28)';
+        default: return 'rgba(148, 163, 184, 0.2)';
       }
     }
 
-    window.sellLivewellFish = function(index) {
-      if (index < 0 || index >= player.livewell.length) return;
-      const fish = player.livewell.splice(index, 1)[0];
-      player.balance += fish.price;
-      player.totalEarned += fish.price;
-      player.fishSold++;
+    let draggedLivewellItem = null;
+    let dragGrabOffsetX = 0;
+    let dragGrabOffsetY = 0;
 
-      triggerHaptic("light");
-      sound.playSuccess();
-      updatePlayerHUD();
-      savePlayerLocal();
-      syncUserStatsToSupabase();
-      renderLivewell();
-      showToast(`Продано: ${fish.name} (+${fish.price} C)`);
-    };
+    function clearDragPreview() {
+      const gridContainer = document.getElementById("livewellInventoryGrid");
+      if (!gridContainer) return;
+      gridContainer.querySelectorAll(".drag-valid, .drag-invalid").forEach(el => {
+        el.classList.remove("drag-valid", "drag-invalid");
+      });
+    }
 
-    sellAllLivewellBtn.addEventListener("click", () => {
-      if (player.livewell.length === 0) return;
-      const count = player.livewell.length;
-      const total = player.livewell.reduce((sum, f) => sum + f.price, 0);
-      player.balance += total;
-      player.totalEarned += total;
-      player.fishSold += count;
-      player.livewell = [];
+    function updateDragPreview(originX, originY, item) {
+      clearDragPreview();
+      const gridContainer = document.getElementById("livewellInventoryGrid");
+      if (!gridContainer || !item || typeof GridInventory === 'undefined') return;
 
-      triggerHaptic("success");
-      sound.playSuccess();
-      updatePlayerHUD();
-      savePlayerLocal();
-      syncUserStatsToSupabase();
-      renderLivewell();
-      showToast(`Продано ${count} рыб на сумму +${total} C!`);
+      const shape = item.gridShape || GridInventory.getItemGridShape(item);
+      const cleanMap = GridInventory.buildGridMap(player.livewell, item.id);
+      const canPlace = GridInventory.canPlace(cleanMap, shape, originX, originY);
+      const cls = canPlace ? "drag-valid" : "drag-invalid";
+
+      const rows = shape.length;
+      const cols = shape[0].length;
+      for (let r = 0; r < rows; r++) {
+        for (let c = 0; c < cols; c++) {
+          if (shape[r][c] === 1) {
+            const gx = originX + c;
+            const gy = originY + r;
+            if (gx >= 0 && gx < GridInventory.COLS && gy >= 0 && gy < GridInventory.ROWS) {
+              const targetEl = gridContainer.querySelector(`.inv-cell[data-x="${gx}"][data-y="${gy}"]`);
+              if (targetEl) targetEl.classList.add(cls);
+            }
+          }
+        }
+      }
+    }
+
+    function executeMoveItem(item, targetX, targetY) {
+      if (!item || typeof GridInventory === 'undefined') return false;
+      const shape = item.gridShape || GridInventory.getItemGridShape(item);
+      const cleanMap = GridInventory.buildGridMap(player.livewell, item.id);
+
+      if (GridInventory.canPlace(cleanMap, shape, targetX, targetY)) {
+        item.gridX = targetX;
+        item.gridY = targetY;
+        triggerHaptic("medium");
+        savePlayerLocal();
+        renderLivewell();
+        return true;
+      } else {
+        triggerHaptic("error");
+        showToast("Невозможно поместить: ячейки заняты или выходят за край!");
+        renderLivewell();
+        return false;
+      }
+    }
+
+    function renderLivewell() {
+      const cellCountEl = document.getElementById("livewellCellCount");
+      const summaryCount = document.getElementById("livewellSummaryCount");
+      const gridContainer = document.getElementById("livewellInventoryGrid");
+
+      if (!gridContainer || typeof GridInventory === 'undefined') return;
+
+      const occupied = GridInventory.getOccupiedCellsCount(player.livewell);
+      if (cellCountEl) cellCountEl.textContent = occupied;
+      if (summaryCount) summaryCount.textContent = `${player.livewell.length} шт.`;
+
+      const gridMap = GridInventory.buildGridMap(player.livewell);
+      gridContainer.innerHTML = '';
+
+      // Рендерим 48 ячеек (8 колонок x 6 строк)
+      for (let r = 0; r < GridInventory.ROWS; r++) {
+        for (let c = 0; c < GridInventory.COLS; c++) {
+          const cell = document.createElement("div");
+          cell.className = "inv-cell";
+          cell.dataset.x = c;
+          cell.dataset.y = r;
+
+          const itemAtCell = gridMap[r][c];
+          if (itemAtCell) {
+            cell.classList.add("occupied");
+            cell.dataset.itemId = itemAtCell.id;
+            cell.setAttribute("draggable", "true");
+
+            if (selectedLivewellItem && selectedLivewellItem.id === itemAtCell.id) {
+              cell.classList.add("selected");
+            }
+            cell.style.background = getCellBgForRarity(itemAtCell.rarity);
+
+            // Главная опорная ячейка рыбы (gridX, gridY)
+            if (itemAtCell.gridX === c && itemAtCell.gridY === r) {
+              const label = document.createElement("div");
+              label.className = "inv-cell-content";
+              const shortName = itemAtCell.name.length > 5 ? itemAtCell.name.slice(0, 4) + '…' : itemAtCell.name;
+              label.innerHTML = `<span style="color:${itemAtCell.color || '#fff'};font-weight:700;">${shortName}</span><span style="font-size:8px;color:#94a3b8;">${itemAtCell.weight}k</span>`;
+              cell.appendChild(label);
+            } else {
+              const dot = document.createElement("div");
+              dot.className = "inv-cell-connector";
+              cell.appendChild(dot);
+            }
+          }
+
+          // Выбор или перемещение по клику
+          cell.addEventListener("click", () => {
+            const item = gridMap[r][c];
+            if (item) {
+              selectedLivewellItem = item;
+              updateSelectedItemControls();
+              renderLivewell();
+              triggerHaptic("light");
+            } else if (selectedLivewellItem) {
+              executeMoveItem(selectedLivewellItem, c, r);
+            }
+          });
+
+          // Подсветка всех ячеек одного предмета при наведении
+          cell.addEventListener("mouseenter", () => {
+            const itm = gridMap[r][c];
+            if (itm && !draggedLivewellItem) {
+              gridContainer.querySelectorAll(`[data-item-id="${itm.id}"]`).forEach(el => el.classList.add("hover-item"));
+            }
+          });
+          cell.addEventListener("mouseleave", () => {
+            gridContainer.querySelectorAll(".hover-item").forEach(el => el.classList.remove("hover-item"));
+          });
+
+          // HTML5 Drag & Drop (Десктоп / мышь)
+          cell.addEventListener("dragstart", (e) => {
+            const item = gridMap[r][c];
+            if (!item) {
+              e.preventDefault();
+              return;
+            }
+            draggedLivewellItem = item;
+            selectedLivewellItem = item;
+            dragGrabOffsetX = c - item.gridX;
+            dragGrabOffsetY = r - item.gridY;
+            e.dataTransfer.setData("text/plain", String(item.id));
+            e.dataTransfer.effectAllowed = "move";
+            gridContainer.querySelectorAll(`[data-item-id="${item.id}"]`).forEach(el => el.classList.add("dragging"));
+            updateSelectedItemControls();
+          });
+
+          cell.addEventListener("dragover", (e) => {
+            e.preventDefault();
+            e.dataTransfer.dropEffect = "move";
+            if (!draggedLivewellItem) return;
+
+            const targetOriginX = c - dragGrabOffsetX;
+            const targetOriginY = r - dragGrabOffsetY;
+            updateDragPreview(targetOriginX, targetOriginY, draggedLivewellItem);
+          });
+
+          cell.addEventListener("drop", (e) => {
+            e.preventDefault();
+            if (!draggedLivewellItem) return;
+            const targetOriginX = c - dragGrabOffsetX;
+            const targetOriginY = r - dragGrabOffsetY;
+            executeMoveItem(draggedLivewellItem, targetOriginX, targetOriginY);
+            clearDragPreview();
+            draggedLivewellItem = null;
+          });
+
+          cell.addEventListener("dragend", () => {
+            clearDragPreview();
+            draggedLivewellItem = null;
+            gridContainer.querySelectorAll(".dragging").forEach(el => el.classList.remove("dragging"));
+          });
+
+          // Touch Drag (Мобильные экраны / Telegram WebApp)
+          cell.addEventListener("pointerdown", (e) => {
+            const item = gridMap[r][c];
+            if (!item || e.pointerType === "mouse") return;
+            let touchMoved = false;
+            const startX = e.clientX;
+            const startY = e.clientY;
+            const itemToDrag = item;
+            const grabX = c - itemToDrag.gridX;
+            const grabY = r - itemToDrag.gridY;
+
+            function onPointerMove(pe) {
+              const dist = Math.hypot(pe.clientX - startX, pe.clientY - startY);
+              if (dist > 8) {
+                touchMoved = true;
+                draggedLivewellItem = itemToDrag;
+                selectedLivewellItem = itemToDrag;
+                const under = document.elementFromPoint(pe.clientX, pe.clientY);
+                const underCell = under ? under.closest(".inv-cell") : null;
+                if (underCell) {
+                  const uc = parseInt(underCell.dataset.x, 10);
+                  const ur = parseInt(underCell.dataset.y, 10);
+                  updateDragPreview(uc - grabX, ur - grabY, itemToDrag);
+                }
+              }
+            }
+
+            function onPointerUp(pe) {
+              window.removeEventListener("pointermove", onPointerMove);
+              window.removeEventListener("pointerup", onPointerUp);
+              window.removeEventListener("pointercancel", onPointerUp);
+              if (touchMoved && draggedLivewellItem) {
+                const under = document.elementFromPoint(pe.clientX, pe.clientY);
+                const underCell = under ? under.closest(".inv-cell") : null;
+                if (underCell) {
+                  const uc = parseInt(underCell.dataset.x, 10);
+                  const ur = parseInt(underCell.dataset.y, 10);
+                  executeMoveItem(draggedLivewellItem, uc - grabX, ur - grabY);
+                }
+                clearDragPreview();
+                draggedLivewellItem = null;
+              }
+            }
+
+            window.addEventListener("pointermove", onPointerMove);
+            window.addEventListener("pointerup", onPointerUp);
+            window.addEventListener("pointercancel", onPointerUp);
+          });
+
+          gridContainer.appendChild(cell);
+        }
+      }
+
+      updateSelectedItemControls();
+    }
+
+    function updateSelectedItemControls() {
+      const nameEl = document.getElementById("selectedItemName");
+      const subEl = document.getElementById("selectedItemSub");
+      if (!rotateGridItemBtn || !discardGridItemBtn) return;
+
+      if (!selectedLivewellItem) {
+        if (nameEl) nameEl.textContent = "Нажмите на рыбу в садке";
+        if (subEl) subEl.textContent = "Перетаскивайте или двигайте ячейки";
+        rotateGridItemBtn.disabled = true;
+        discardGridItemBtn.disabled = true;
+        return;
+      }
+
+      const shape = selectedLivewellItem.gridShape || GridInventory.getItemGridShape(selectedLivewellItem);
+      const cellsCount = GridInventory.countShapeCells(shape);
+
+      if (nameEl) nameEl.textContent = `${selectedLivewellItem.name} (${selectedLivewellItem.weight} кг)`;
+      if (subEl) subEl.textContent = `Форма: ${cellsCount} яч. | Цена у скупщика: ${selectedLivewellItem.price} C`;
+      rotateGridItemBtn.disabled = false;
+      discardGridItemBtn.disabled = false;
+    }
+
+    function tryMoveSelectedItem(targetX, targetY) {
+      if (!selectedLivewellItem) return;
+      executeMoveItem(selectedLivewellItem, targetX, targetY);
+    }
+
+    function rotateSelectedItem() {
+      if (!selectedLivewellItem || typeof GridInventory === 'undefined') return;
+      const currentShape = selectedLivewellItem.gridShape || GridInventory.getItemGridShape(selectedLivewellItem);
+      const rotated = GridInventory.rotateMatrix(currentShape);
+      const gridMap = GridInventory.buildGridMap(player.livewell, selectedLivewellItem.id);
+
+      let bestX = selectedLivewellItem.gridX;
+      let bestY = selectedLivewellItem.gridY;
+      let fits = false;
+
+      const offsets = [
+        [0, 0], [-1, 0], [0, -1], [1, 0], [0, 1], [-2, 0], [0, -2], [1, -1], [-1, 1]
+      ];
+
+      for (const [ox, oy] of offsets) {
+        const tx = selectedLivewellItem.gridX + ox;
+        const ty = selectedLivewellItem.gridY + oy;
+        if (GridInventory.canPlace(gridMap, rotated, tx, ty)) {
+          bestX = tx;
+          bestY = ty;
+          fits = true;
+          break;
+        }
+      }
+
+      if (fits) {
+        selectedLivewellItem.gridX = bestX;
+        selectedLivewellItem.gridY = bestY;
+        selectedLivewellItem.gridShape = rotated;
+        triggerHaptic("medium");
+        savePlayerLocal();
+        renderLivewell();
+        showToast("Предмет повёрнут на 90°");
+      } else {
+        triggerHaptic("error");
+        showToast("Недостаточно места для поворота предмета!");
+      }
+    }
+
+    function discardSelectedItem() {
+      if (!selectedLivewellItem) return;
+      const itemName = selectedLivewellItem.name;
+      const index = player.livewell.findIndex(i => i.id === selectedLivewellItem.id);
+      if (index !== -1) {
+        const discarded = player.livewell.splice(index, 1)[0];
+        selectedLivewellItem = null;
+        triggerHaptic("heavy");
+        savePlayerLocal();
+        updatePlayerHUD();
+        renderLivewell();
+        showToast(`[${discarded.name}] выпущена обратно в озеро.`);
+      }
+    }
+
+    if (rotateGridItemBtn) rotateGridItemBtn.addEventListener("click", rotateSelectedItem);
+    if (discardGridItemBtn) discardGridItemBtn.addEventListener("click", discardSelectedItem);
+
+    // Горячие клавиши (R - повернуть, Delete - выпустить, стрелки - атлас)
+    window.addEventListener("keydown", (e) => {
+      if (livewellModal && livewellModal.classList.contains("active")) {
+        if (e.key === "r" || e.key === "R" || e.key === "к" || e.key === "К") {
+          e.preventDefault();
+          rotateSelectedItem();
+        } else if (e.key === "Delete" || e.key === "Backspace") {
+          e.preventDefault();
+          discardSelectedItem();
+        } else if (e.key === "Escape") {
+          livewellModal.classList.remove("active");
+        }
+      }
+
+      if (atlasModal && atlasModal.classList.contains("active")) {
+        if (e.key === "ArrowLeft") {
+          e.preventDefault();
+          if (window.AtlasBook) window.AtlasBook.prevPage();
+        } else if (e.key === "ArrowRight") {
+          e.preventDefault();
+          if (window.AtlasBook) window.AtlasBook.nextPage();
+        } else if (e.key === "Escape") {
+          atlasModal.classList.remove("active");
+        }
+      }
     });
 
     if (openLivewellBtn) {
@@ -861,18 +1586,39 @@ function failFishing(reason) {
         triggerHaptic("light");
       });
     }
-    closeLivewellBtn.addEventListener("click", () => {
-      livewellModal.classList.remove("active");
-      triggerHaptic("light");
-    });
+
+    if (closeLivewellBtn) {
+      closeLivewellBtn.addEventListener("click", () => {
+        livewellModal.classList.remove("active");
+        triggerHaptic("light");
+        if (isHomeScene) {
+          renderHome();
+          homeModal.classList.add("active");
+        }
+      });
+    }
+
 
     /* ==========================================================
-       МОДАЛЬНОЕ ОКНО: ТОРГОВЕЦ (МАГАЗИН СНАСТЕЙ И СКУПКА)
+       МОДУЛЬ МАГАЗИНА СНАСТЕЙ И УЛУЧШЕНИЙ
        ========================================================== */
     const shopModal = document.getElementById("shopModal");
     const openShopBtn = document.getElementById("openShopBtn");
     const closeShopBtn = document.getElementById("closeShopBtn");
     let currentShopTab = "sell";
+
+    function sellLivewellFish(idx) {
+      if (idx < 0 || idx >= player.livewell.length) return;
+      const fish = player.livewell.splice(idx, 1)[0];
+      player.balance += fish.price;
+      player.totalEarned += fish.price;
+      player.fishSold++;
+      triggerHaptic("medium");
+      updatePlayerHUD();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      showToast(`Продано на скупке: ${fish.name} (+${fish.price} C)`);
+    }
 
     function renderShopTab(tabKey) {
       currentShopTab = tabKey;
@@ -881,6 +1627,7 @@ function failFishing(reason) {
       });
 
       const container = document.getElementById("shopTabContent");
+      if (!container) return;
 
       if (tabKey === "sell") {
         const totalWorth = player.livewell.reduce((sum, item) => sum + item.price, 0);
@@ -888,7 +1635,7 @@ function failFishing(reason) {
           container.innerHTML = `
             <div style="text-align:center;padding:30px 10px;color:#64748b;font-size:13px;">
               Торговец ждет улов! Ваш садок пуст.<br><br>
-              Поймайте рыбу и выберите "В садок", чтобы принести её на рынок.
+              Поймайте рыбу и принесите её на скупку.
             </div>
           `;
         } else {
@@ -1068,6 +1815,17 @@ function failFishing(reason) {
       });
     }
 
+    if (closeShopBtn) {
+      closeShopBtn.addEventListener("click", () => {
+        shopModal.classList.remove("active");
+        triggerHaptic("light");
+        if (isHomeScene) {
+          renderHome();
+          homeModal.classList.add("active");
+        }
+      });
+    }
+
     /* ==========================================================
        МЕНЮ ДОМА (ХИЖИНА РЫБАКА) И ДЕЙСТВИЯ
        ========================================================== */
@@ -1078,6 +1836,7 @@ function failFishing(reason) {
     const homeGoMerchantBtn = document.getElementById("homeGoMerchantBtn");
     const homeGoLivewellBtn = document.getElementById("homeGoLivewellBtn");
     const homeGoSleepBtn = document.getElementById("homeGoSleepBtn");
+    const homeGoStoveBtn = document.getElementById("homeGoStoveBtn");
 
     function renderHome() {
       document.getElementById("statFishCaught").textContent = player.fishCaught;
@@ -1085,6 +1844,11 @@ function failFishing(reason) {
       document.getElementById("statTotalEarned").textContent = `${player.totalEarned} C`;
       const livewellCountEl = document.getElementById("homeLivewellCount");
       if (livewellCountEl) livewellCountEl.textContent = player.livewell.length;
+
+      // Количество дров/топлива в садке
+      const fuelItems = player.livewell.filter(i => (i.fuelValue && i.fuelValue > 0) || i.isFuel);
+      const fuelCountEl = document.getElementById("homeFuelCount");
+      if (fuelCountEl) fuelCountEl.textContent = fuelItems.length;
 
       const bestTrophyEl = document.getElementById("statBestTrophy");
       if (player.bestCatch && player.bestCatch.name) {
@@ -1096,9 +1860,45 @@ function failFishing(reason) {
       document.getElementById("profileRodName").textContent = RODS[player.rodId] ? RODS[player.rodId].name : "Бамбуковая удочка";
       document.getElementById("profileLineName").textContent = LINES[player.lineId] ? LINES[player.lineId].name : "Монофил 0.2мм";
 
-      // Отрисовка Атласа видов (FishDex)
+      // Прогресс Атласа видов (среди 116 видов)
+      const caughtCount = Object.keys(player.caughtSpecies || {}).length;
+      const progressBadge = document.getElementById("fishdexProgressBadge");
+      if (progressBadge) {
+        progressBadge.textContent = `${caughtCount} / 116`;
+      }
+
+      // Привязка фильтров FishDex
+      document.querySelectorAll(".fishdex-tab-btn").forEach(btn => {
+        btn.onclick = () => {
+          document.querySelectorAll(".fishdex-tab-btn").forEach(b => b.classList.remove("active"));
+          btn.classList.add("active");
+          currentFishdexFilter = btn.dataset.filter;
+          renderFishdexCards();
+          triggerHaptic("light");
+        };
+      });
+
+      renderFishdexCards();
+    }
+
+    let currentFishdexFilter = "all";
+
+    function renderFishdexCards() {
       const grid = document.getElementById("profileFishdexGrid");
-      grid.innerHTML = FISH_DATABASE.map(fish => {
+      if (!grid) return;
+      const ED = window.ENTITY_DATA;
+      let itemsToDisplay = [];
+
+      if (currentFishdexFilter === "beasts") {
+        itemsToDisplay = (ED && ED.BEAST_SPECIES) ? ED.BEAST_SPECIES : [];
+      } else if (currentFishdexFilter === "all") {
+        itemsToDisplay = (ED && ED.FISH_SPECIES) ? ED.FISH_SPECIES : (window.FISH_DATABASE || []);
+      } else {
+        const all = [...((ED && ED.FISH_SPECIES) ? ED.FISH_SPECIES : (window.FISH_DATABASE || [])), ...((ED && ED.BEAST_SPECIES) ? ED.BEAST_SPECIES : [])];
+        itemsToDisplay = all.filter(f => f.family === currentFishdexFilter || f.rarity === currentFishdexFilter);
+      }
+
+      grid.innerHTML = itemsToDisplay.map(fish => {
         const caught = player.caughtSpecies[fish.id];
         if (caught) {
           return `
@@ -1112,9 +1912,9 @@ function failFishing(reason) {
         } else {
           return `
             <div class="fishdex-card locked">
-              <span class="rarity-pill rarity-Common" style="font-size:8px;padding:1px 5px;opacity:0.5;">???</span>
-              <div class="fishdex-name" style="margin-top:2px;">Не поймано</div>
-              <div class="fishdex-weight">-</div>
+              <span class="rarity-pill rarity-${fish.rarity}" style="font-size:8px;padding:1px 5px;opacity:0.4;">${fish.rarity}</span>
+              <div class="fishdex-name" style="margin-top:2px;color:#94a3b8;">${fish.name}</div>
+              <div class="fishdex-weight" style="color:#475569;">Не поймано</div>
             </div>
           `;
         }
@@ -1191,26 +1991,97 @@ function failFishing(reason) {
 
     if (homeGoSleepBtn) homeGoSleepBtn.addEventListener("click", sleepAtHome);
 
-    closeShopBtn.addEventListener("click", () => {
-      shopModal.classList.remove("active");
+    if (homeGoStoveBtn) {
+      homeGoStoveBtn.addEventListener("click", () => {
+        const fuelIndex = player.livewell.findIndex(item => (item.fuelValue && item.fuelValue > 0) || item.isFuel);
+        if (fuelIndex === -1) {
+          showToast("В садке нет брёвен или дров для печи!");
+          triggerHaptic("error");
+          return;
+        }
+
+        const burnedItem = player.livewell.splice(fuelIndex, 1)[0];
+        const warmthBonus = Math.round((burnedItem.fuelValue || 25) * 1.5);
+        player.xp += warmthBonus;
+        player.level = 1 + Math.floor(Math.sqrt(player.xp / 50));
+
+        sound.playSuccess();
+        triggerHaptic("heavy");
+        savePlayerLocal();
+        renderHome();
+        updatePlayerHUD();
+        showToast(`Очаг затоплен [${burnedItem.name}]! +${warmthBonus} XP за уют.`);
+      });
+    }
+
+    /* ==========================================================
+       ПОЛЕВОЙ АТЛАС ВИДОВ (КНИГА ИССЛЕДОВАТЕЛЯ)
+       ========================================================== */
+    const atlasModal = document.getElementById("atlasModal");
+    const openAtlasBtn = document.getElementById("openAtlasBtn");
+    const closeAtlasBtn = document.getElementById("closeAtlasBtn");
+    const homeGoAtlasBtn = document.getElementById("homeGoAtlasBtn");
+    const atlasPrevBtn = document.getElementById("atlasPrevBtn");
+    const atlasNextBtn = document.getElementById("atlasNextBtn");
+    const atlasTocToggleBtn = document.getElementById("atlasTocToggleBtn");
+
+    function openAtlas() {
+      if (!atlasModal) return;
+      window.player = player;
+      const ED = window.ENTITY_DATA;
+      const totalCount = ((ED && ED.FISH_SPECIES) ? ED.FISH_SPECIES.length : 100) + ((ED && ED.BEAST_SPECIES) ? ED.BEAST_SPECIES.length : 16);
+      const discoveredCount = Object.keys(player.caughtSpecies || {}).length;
+
+      const badge = document.getElementById("atlasDiscoveredBadge");
+      if (badge) badge.textContent = `${discoveredCount} / ${totalCount}`;
+
+      atlasModal.classList.add("active");
+      triggerHaptic("light");
+
+      if (window.AtlasBook) {
+        window.AtlasBook.renderBookPage();
+      }
+    }
+
+    function closeAtlas() {
+      if (!atlasModal) return;
+      atlasModal.classList.remove("active");
       triggerHaptic("light");
       if (isHomeScene) {
         renderHome();
         homeModal.classList.add("active");
       }
+    }
+
+    if (openAtlasBtn) openAtlasBtn.addEventListener("click", openAtlas);
+    if (closeAtlasBtn) closeAtlasBtn.addEventListener("click", closeAtlas);
+    if (homeGoAtlasBtn) {
+      homeGoAtlasBtn.addEventListener("click", () => {
+        homeModal.classList.remove("active");
+        openAtlas();
+      });
+    }
+
+    if (atlasPrevBtn) atlasPrevBtn.addEventListener("click", () => {
+      if (window.AtlasBook) window.AtlasBook.prevPage();
+    });
+    if (atlasNextBtn) atlasNextBtn.addEventListener("click", () => {
+      if (window.AtlasBook) window.AtlasBook.nextPage();
+    });
+    if (atlasTocToggleBtn) atlasTocToggleBtn.addEventListener("click", () => {
+      if (window.AtlasBook) window.AtlasBook.toggleOverviewMode();
     });
 
-    closeLivewellBtn.addEventListener("click", () => {
-      livewellModal.classList.remove("active");
-      triggerHaptic("light");
-      if (isHomeScene) {
-        renderHome();
-        homeModal.classList.add("active");
-      }
+    document.querySelectorAll("#atlasFamilyTabs .atlas-tab-btn").forEach(btn => {
+      btn.addEventListener("click", (e) => {
+        document.querySelectorAll("#atlasFamilyTabs .atlas-tab-btn").forEach(b => b.classList.remove("active"));
+        e.currentTarget.classList.add("active");
+        if (window.AtlasBook) window.AtlasBook.setFamilyFilter(e.currentTarget.dataset.family);
+      });
     });
 
     // Закрытие по клику на темный фон модальных окон
-    [livewellModal, shopModal, homeModal].forEach(modal => {
+    [livewellModal, shopModal, homeModal, atlasModal].forEach(modal => {
       if (!modal) return;
       modal.addEventListener("click", (e) => {
         if (e.target === modal) {
@@ -1245,3 +2116,4 @@ function failFishing(reason) {
     updateTensionSafeZoneUI();
     updatePlayerHUD();
     loadUserData();
+    initMethodAndBaitsUI();
