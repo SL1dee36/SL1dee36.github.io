@@ -13,7 +13,7 @@ let width = 0;
 let height = 0;
 
 function resizeCanvas() {
-  dpr = window.devicePixelRatio || 1;
+  dpr = window.devicePixelRatio || 1, 2.0;
   width = window.innerWidth;
   height = window.innerHeight;
   canvas.width = width * dpr;
@@ -292,6 +292,25 @@ canvas.addEventListener("mousedown", (e) => handleStart(e.clientX, e.clientY));
 canvas.addEventListener("mouseup", (e) => handleEnd(e.clientX, e.clientY));
 
 function executeCast(velocity, dx) {
+  // Проверка запаса выбранной наживки
+  const baitCount = (player && player.baits && typeof player.baits[currentBaitKey] === 'number')
+    ? player.baits[currentBaitKey]
+    : 0;
+
+  if (baitCount <= 0) {
+    const baitObj = (typeof BAITS !== 'undefined' && BAITS[currentBaitKey]) ? BAITS[currentBaitKey] : null;
+    const baitName = baitObj ? baitObj.name : "Наживка";
+    // Requirement 5: Убрано открытие торговца из панели снастей
+    showToast(`Наживка «${baitName}» закончилась! Пополните запасы в Хижине.`);
+    triggerHaptic("error");
+    return;
+  }
+
+  // Requirement 6: Каждый заброс повышает усталость игрока (+2.5%)
+  if (typeof addPlayerFatigue === 'function') {
+    addPlayerFatigue(2.5);
+  }
+
   gameState = "CASTING";
   document.getElementById("swipeHint").style.display = "none";
   document.getElementById("bottomBar").style.display = "none";
@@ -378,9 +397,17 @@ function rollFish() {
 }
 
 /* ==========================================================
-   ЛОГИКА МИНИ-ИГРЫ ВЫВАЖИВАНИЯ
+   ЛОГИКА МИНИ-ИГРЫ ВЫВАЖИВАНИЯ (УТОМЛЕНИЕ И ПАРИРОВАНИЕ РЫВКОВ)
    ========================================================== */
 const reelBtn = document.getElementById("reelBtn");
+const fightTouchZone = document.getElementById("fightTouchZone");
+const fishFightTargetEl = document.getElementById("fishFightTarget");
+const rodControlReticleEl = document.getElementById("rodControlReticle");
+const fightPromptEl = document.getElementById("fightStatePrompt");
+const fightPromptTextEl = document.getElementById("fightPromptText");
+const targetLockLabelEl = document.getElementById("targetLockLabel");
+const staminaProgressBarEl = document.getElementById("staminaProgressBar");
+const staminaProgressTextEl = document.getElementById("staminaProgressText");
 
 function setReelHold(holding) {
   if (gameState !== "REELING") return;
@@ -404,10 +431,71 @@ window.addEventListener("pointercancel", () => setReelHold(false));
 let dangerTimer = 0;
 let slackTimer = 0;
 
+// Переменные состояния динамической борьбы и выносливости рыбы
+let fishStamina = 100;
+let fishFightPhase = "FIGHTING"; // "FIGHTING" | "TIRED"
+let targetRingX = 0;
+let targetRingY = 0;
+let targetVelocityX = 0;
+let targetVelocityY = 0;
+let targetWaypointTimer = 0;
+let playerControlX = 0;
+let playerControlY = 0;
+let isTargetLocked = false;
+let tiredTimer = 0;
+let fightHapticTimer = 0;
+
+function updatePlayerControlPos(clientX, clientY) {
+  if (gameState !== "REELING") return;
+  const rect = canvas.getBoundingClientRect();
+  playerControlX = Math.max(30, Math.min(width - 30, clientX - rect.left));
+  playerControlY = Math.max(height * 0.35, Math.min(height * 0.82, clientY - rect.top));
+}
+
+if (fightTouchZone) {
+  fightTouchZone.addEventListener("pointerdown", (e) => {
+    try {
+      e.target.setPointerCapture(e.pointerId);
+    } catch (_) { }
+    updatePlayerControlPos(e.clientX, e.clientY);
+  });
+  fightTouchZone.addEventListener("pointermove", (e) => {
+    if (e.buttons > 0 || e.pointerType === "touch" || e.pointerType === "mouse") {
+      updatePlayerControlPos(e.clientX, e.clientY);
+    }
+  });
+  fightTouchZone.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches[0]) {
+      updatePlayerControlPos(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: true });
+  fightTouchZone.addEventListener("touchmove", (e) => {
+    if (e.touches && e.touches[0]) {
+      updatePlayerControlPos(e.touches[0].clientX, e.touches[0].clientY);
+    }
+  }, { passive: false });
+}
+
+window.addEventListener("pointermove", (e) => {
+  if (gameState === "REELING") {
+    if (e.target !== reelBtn && !reelBtn.contains(e.target)) {
+      updatePlayerControlPos(e.clientX, e.clientY);
+    }
+  }
+});
+window.addEventListener("touchmove", (e) => {
+  if (gameState === "REELING" && e.touches && e.touches[0]) {
+    const t = e.touches[0];
+    if (e.target !== reelBtn && !reelBtn.contains(e.target)) {
+      updatePlayerControlPos(t.clientX, t.clientY);
+    }
+  }
+}, { passive: true });
+
 function startReelingPhase() {
   gameState = "REELING";
   tension = 45;
-  catchProgress = 20;
+  catchProgress = 15;
   dangerTimer = 0;
   slackTimer = 0;
   fishFightDir = 1;
@@ -418,18 +506,57 @@ function startReelingPhase() {
   activeFish = roll.fish;
   activeFishWeight = roll.weight;
 
+  // Списание 1 единицы наживки при хватке рыбы
+  if (player && player.baits && typeof player.baits[currentBaitKey] === 'number') {
+    player.baits[currentBaitKey] = Math.max(0, player.baits[currentBaitKey] - 1);
+    if (typeof savePlayerLocal === 'function') savePlayerLocal();
+    if (typeof renderBaitsUI === 'function') renderBaitsUI();
+  }
+
+  // Инициализация утомления и координат
+  fishStamina = 100;
+  fishFightPhase = "FIGHTING";
+  tiredTimer = 0;
+  isTargetLocked = false;
+  fightHapticTimer = 0;
+
+  targetRingX = width * 0.5;
+  targetRingY = height * 0.56;
+  targetVelocityX = (Math.random() > 0.5 ? 1 : -1) * 70;
+  targetVelocityY = (Math.random() - 0.5) * 35;
+  targetWaypointTimer = 0;
+
+  playerControlX = width * 0.5;
+  playerControlY = height * 0.56;
+
   fishVisual.x = bobber.x;
   fishVisual.y = bobber.y + 50;
   fishVisual.color = activeFish.color;
 
+  if (staminaProgressBarEl) staminaProgressBarEl.style.width = "100%";
+  if (staminaProgressTextEl) staminaProgressTextEl.textContent = "100%";
+  if (fightPromptEl) fightPromptEl.classList.remove("tired");
+  if (fightPromptTextEl) fightPromptTextEl.textContent = "РЫВОК! УДЕРЖИВАЙ РЫБУ!";
+  if (reelBtn) reelBtn.classList.remove("highlight-pull");
+  if (fishFightTargetEl) {
+    fishFightTargetEl.style.transform = `translate3d(${targetRingX}px, ${targetRingY}px, 0)`;
+    fishFightTargetEl.classList.remove("tired", "locked-on");
+  }
+  if (rodControlReticleEl) {
+    rodControlReticleEl.style.transform = `translate3d(${playerControlX}px, ${playerControlY}px, 0)`;
+    rodControlReticleEl.classList.remove("locked-on");
+  }
+
   document.getElementById("reelingOverlay").classList.add("active");
   triggerHaptic("heavy");
-  showToast("Тяни рыбу! Держи в зелёной зоне!");
+  showToast("Рыба на крючке! Удерживай кончик удочки на рыбе!");
 }
 
 function updateReeling(dt) {
   const rod = RODS[player.rodId] || RODS.bamboo;
   const line = LINES[player.lineId] || LINES.mono;
+  const safeMin = (rod && typeof rod.safeZoneMin === 'number') ? rod.safeZoneMin : 25;
+  const safeMax = (rod && typeof rod.safeZoneMax === 'number') ? rod.safeZoneMax : 75;
 
   const aggroMult = (activeFish && activeFish.aggroMultiplier) ? activeFish.aggroMultiplier : 1.0;
   const combatStyle = (activeFish && activeFish.combatStyle) ? activeFish.combatStyle : 'standard';
@@ -438,86 +565,209 @@ function updateReeling(dt) {
   const rarityMultiplier = ({
     Common: 1.0,
     Rare: 1.25,
-    Epic: 1.5,
-    Legendary: 1.8
+    Epic: 1.55,
+    Legendary: 1.95
   }[activeFish ? activeFish.rarity : "Common"] || 1.0) * aggroMult;
 
-  // Рыба периодически меняет направление тяги
+  // Плавное повышение сложности в зависимости от уровня игрока (Requirement 3)
+  const levelDifficulty = 1.0 + Math.min(Math.max(0, (player.level || 1) - 1), 10) * 0.05;
+  const totalDifficulty = rarityMultiplier * levelDifficulty;
+
+  // Requirement 6: Накопление усталости игрока в процессе вываживания
+  if (typeof addPlayerFatigue === 'function') {
+    const fightFatigueRate = (0.5 + totalDifficulty * 0.7 + (tension > 75 ? 0.6 : 0)) * dt;
+    addPlayerFatigue(fightFatigueRate);
+  }
+
+  // Requirement 6: При усталости >90% руки слабеют: появляется тремор прицела и штраф к подмотке
+  const isWeakHands = (player && typeof player.fatigue === 'number' && player.fatigue >= 90);
+  if (isWeakHands) {
+    const tremorStrength = ((player.fatigue - 90) / 10) * 40;
+    const timeVal = Date.now() * 0.012;
+    playerControlX += (Math.sin(timeVal * 1.5) + Math.cos(timeVal * 2.1)) * tremorStrength * dt;
+    playerControlY += (Math.cos(timeVal * 1.7) - Math.sin(timeVal * 2.3)) * tremorStrength * dt;
+  }
+  const fatiguePenalty = isWeakHands ? 0.65 : 1.0;
+
+  // Рыба периодически меняет направление тяги для визуализации
   fishFightChangeTimer -= dt;
   if (fishFightChangeTimer <= 0) {
     fishFightDir = (Math.random() > 0.5 ? 1 : -1);
-    fishFightIntensity = (0.8 + Math.random() * 0.8) * rarityMultiplier;
+    fishFightIntensity = (0.8 + Math.random() * 0.8) * totalDifficulty;
     if (combatStyle === 'death_roll') {
-      fishFightChangeTimer = 0.25 + Math.random() * 0.4; // частое вращение крокодила
+      fishFightChangeTimer = 0.25 + Math.random() * 0.4;
     } else {
-      fishFightChangeTimer = (0.8 + Math.random() * 1.5) / Math.max(0.7, aggroMult);
+      fishFightChangeTimer = (0.7 + Math.random() * 1.3) / Math.max(0.7, aggroMult);
     }
   }
 
-  // Плавное изменение натяжения (dt-базированное)
-  if (isReelHolding) {
-    tension += 35 * dt;
-    if (Math.random() < 0.2) sound.playReelClick();
-  } else {
-    tension -= 28 * dt;
-  }
+  // --- ЛОГИКА ФАЗЫ БОРЬБЫ И УТОМЛЕНИЯ ---
+  if (fishFightPhase === "FIGHTING") {
+    targetWaypointTimer -= dt;
+    if (targetWaypointTimer <= 0) {
+      const angle = Math.random() * Math.PI * 2;
+      const baseSpeed = (120 + Math.random() * 90) * totalDifficulty;
+      targetVelocityX = Math.cos(angle) * baseSpeed;
+      targetVelocityY = Math.sin(angle) * (baseSpeed * 0.55);
+      targetWaypointTimer = (0.45 + Math.random() * 0.75) / Math.max(0.8, totalDifficulty * 0.7);
+      if (Math.random() < 0.35) {
+        createSplash(targetRingX, targetRingY, 4);
+      }
+    }
 
-  // Уникальные боевые стили сущностей
-  let styleTensionDelta = 0;
-  if (combatStyle === 'death_roll') {
-    // Вращение крокодила: резкие синусоидальные скачки
-    const rollSine = Math.sin(Date.now() * 0.014) * 18 * rarityMultiplier;
-    styleTensionDelta = (fishFightDir * 20 * rarityMultiplier * dt) + (rollSine * dt);
-  } else if (combatStyle === 'stone_sink') {
-    // Уход камнем на дно: тяжелая постоянная тяга вниз к обрыву
-    styleTensionDelta = (22 * rarityMultiplier * dt) + (Math.sin(Date.now() * 0.003) * 6 * dt);
-  } else if (combatStyle === 'claw_snag') {
-    // Зацеп клешнями/когтями: хаотичные микро-удары
-    const snap = (Math.random() < 0.16 ? (Math.random() > 0.5 ? 26 : -22) : 0);
-    styleTensionDelta = (snap * dt) + (fishFightDir * 12 * rarityMultiplier * dt);
-  } else {
-    // Стандартное поведение рыбы
-    const fishSine = Math.sin(Date.now() * 0.004) * 8 * rarityMultiplier;
-    styleTensionDelta = (fishFightDir * 14 * rarityMultiplier * dt) + (fishSine * dt);
-  }
+    targetRingX += targetVelocityX * dt;
+    targetRingY += targetVelocityY * dt;
 
-  tension += styleTensionDelta;
+    // Границы маневрирования по озеру
+    const minX = width * 0.18;
+    const maxX = width * 0.82;
+    const minY = height * 0.46;
+    const maxY = height * 0.68;
+
+    if (targetRingX < minX) { targetRingX = minX; targetVelocityX = Math.abs(targetVelocityX); }
+    if (targetRingX > maxX) { targetRingX = maxX; targetVelocityX = -Math.abs(targetVelocityX); }
+    if (targetRingY < minY) { targetRingY = minY; targetVelocityY = Math.abs(targetVelocityY); }
+    if (targetRingY > maxY) { targetRingY = maxY; targetVelocityY = -Math.abs(targetVelocityY); }
+
+    // Проверка дистанции между прицелом удилища и целью
+    const distToFish = Math.hypot(playerControlX - targetRingX, playerControlY - targetRingY);
+    const lockRadius = 58 + (safeMax - safeMin) * 0.25;
+    isTargetLocked = distToFish <= lockRadius;
+    const accuracy = isTargetLocked ? Math.max(0, 1 - (distToFish / lockRadius)) : 0;
+
+    if (isTargetLocked) {
+      // Игрок удерживает рыбу в зеленом кружке:
+      // 1. Натяжение плавно увеличивается и уменьшается в безопасной зоне (живое дыхание лески и сопротивление рыбы)
+      const safeCenter = (safeMin + safeMax) / 2;
+      const waveAmp = (safeMax - safeMin) * 0.26;
+      const dynamicWave = Math.sin(Date.now() * 0.0055) * waveAmp;
+      const targetTension = safeCenter + dynamicWave + (isReelHolding ? 16 : 0);
+      tension += (targetTension - tension) * 4.8 * dt;
+
+      // Сбрасываем таймеры срыва и обрыва: пока игрок держит прицел, рыба не срывается!
+      slackTimer = Math.max(0, slackTimer - dt * 4);
+      dangerTimer = Math.max(0, dangerTimer - dt * 4);
+
+      // 2. Чем лучше игрок держит прицел (accuracy от 0 до 1), тем выше прирост процента вылова!
+      const progressGain = (15 + 24 * accuracy) * (rod.speedBonus || 1.0) * fatiguePenalty * dt + (isReelHolding ? 12 * (rod.speedBonus || 1.0) * fatiguePenalty * dt : 0);
+      catchProgress += progressGain;
+
+      // 3. Выносливость рыбы стремительно тает при точной фиксации
+      const drainSpeed = (22 + 30 * accuracy) * (rod.speedBonus || 1.0) / Math.max(0.7, aggroMult * 0.8);
+      fishStamina -= drainSpeed * dt;
+
+      fightHapticTimer -= dt;
+      if (fightHapticTimer <= 0) {
+        triggerHaptic("light");
+        fightHapticTimer = 0.26;
+        if (Math.random() < 0.4) sound.playReelClick();
+      }
+
+      const accPct = Math.round(accuracy * 100);
+      if (targetLockLabelEl) targetLockLabelEl.textContent = `🎯 УДЕРЖАНИЕ ${accPct}%`;
+      if (fightPromptEl) fightPromptEl.classList.remove("tired");
+      if (fightPromptTextEl) {
+        if (isWeakHands) {
+          fightPromptTextEl.textContent = "⚠️ РУКИ СЛАБЕЮТ! ТЯЖЕЛО УДЕРЖИВАТЬ УДОЧКУ!";
+        } else {
+          fightPromptTextEl.textContent = `В ЗОНЕ! ВЫВАЖИВАНИЕ (+${accPct}%)`;
+        }
+      }
+
+      if (fishStamina <= 0) {
+        fishStamina = 0;
+        fishFightPhase = "TIRED";
+        // Окно передышки (сокращается с ростом сложности)
+        tiredTimer = Math.max(2.6, 5.2 - (totalDifficulty - 1.0) * 1.5);
+        triggerHaptic("medium");
+        sound.playSuccess();
+        if (fightPromptEl) fightPromptEl.classList.add("tired");
+        if (fightPromptTextEl) fightPromptTextEl.textContent = "РЫБА ВЫДОХЛАСЬ! ТЯНИ!";
+        if (reelBtn) reelBtn.classList.add("highlight-pull");
+        if (targetLockLabelEl) targetLockLabelEl.textContent = "ВЫДОХЛАСЬ";
+        showToast("Рыба выдохлась! Крути катушку!");
+      }
+    } else {
+      // Прицел упущен: рыба совершает рывок в сторону!
+      tension += (24 * totalDifficulty) * dt;
+      if (isReelHolding) {
+        tension += 18 * dt;
+      } else {
+        tension -= 12 * dt;
+      }
+
+      // Прогресс вылова плавно теряется при потере рыбы
+      catchProgress -= 4.5 * dt;
+      fishStamina = Math.min(100, fishStamina + 2 * dt);
+
+      if (targetLockLabelEl) targetLockLabelEl.textContent = "РЫВОК!";
+      if (fightPromptEl) fightPromptEl.classList.remove("tired");
+      if (fightPromptTextEl) fightPromptTextEl.textContent = "РЫВОК! ВЕРНИ УДОЧКУ К РЫБЕ!";
+    }
+  } else if (fishFightPhase === "TIRED") {
+    // Фаза истощения рыбы: натяжение мягко покачивается в центре
+    targetVelocityX *= 0.88;
+    targetVelocityY *= 0.88;
+    targetRingX += (bobber.x - targetRingX) * 0.06;
+    targetRingY += (bobber.y + 35 - targetRingY) * 0.06;
+
+    const safeCenter = (safeMin + safeMax) / 2;
+    const targetTension = safeCenter + Math.sin(Date.now() * 0.004) * 8 + (isReelHolding ? 16 : -4);
+    tension += (targetTension - tension) * 4.0 * dt;
+
+    slackTimer = 0;
+    dangerTimer = Math.max(0, dangerTimer - dt * 3);
+
+    // В фазе усталости удерживание прицела или кнопки дает мощнейший прирост подмотки
+    const pullSpeed = (isReelHolding ? 32 : 18) * fatiguePenalty;
+    catchProgress += (pullSpeed * (rod.speedBonus || 1.0)) * dt;
+    if (isReelHolding && Math.random() < 0.25) sound.playReelClick();
+
+    tiredTimer -= dt;
+    if (tiredTimer <= 0) {
+      // Рыба восстанавливает дыхание и снова рвется в бой
+      fishFightPhase = "FIGHTING";
+      fishStamina = Math.min(75, 40 + Math.random() * 25 * rarityMultiplier);
+      targetWaypointTimer = 0;
+      triggerHaptic("heavy");
+      sound.playBite();
+      createSplash(targetRingX, targetRingY, 7);
+      if (fightPromptEl) fightPromptEl.classList.remove("tired");
+      if (fightPromptTextEl) fightPromptTextEl.textContent = "НОВЫЙ РЫВОК! УДЕРЖИВАЙ РЫБУ!";
+      if (reelBtn) reelBtn.classList.remove("highlight-pull");
+      showToast("Рыба снова рванула! Держи кончик удочки!");
+    }
+  }
 
   // Ограничители шкалы (0..100)
   tension = Math.max(0, Math.min(100, tension));
-
-  // Проверка безопасной зоны в зависимости от надетой удочки
-  const safeMin = rod.safeZoneMin;
-  const safeMax = rod.safeZoneMax;
-  const isSafe = tension >= safeMin && tension <= safeMax;
-
-  if (isSafe) {
-    catchProgress += (13 * rod.speedBonus) * dt;
-  } else {
-    catchProgress -= 6 * dt;
-  }
   catchProgress = Math.max(0, Math.min(100, catchProgress));
 
-  // Буфер защиты от обрыва в зависимости от надетой лески
+  // Буфер защиты от обрыва/срыва: тикает ТОЛЬКО когда игрок потерял рыбу
   const maxDangerTime = line.dangerBuffer;
-  if (tension >= 95) {
-    dangerTimer += dt;
-    if (dangerTimer > maxDangerTime) {
-      failFishing("Обрыв лески! Слишком долго удерживали натяжение!");
-      return;
+  if (!isTargetLocked && fishFightPhase !== "TIRED") {
+    if (tension >= 95) {
+      dangerTimer += dt;
+      if (dangerTimer > maxDangerTime) {
+        failFishing("Обрыв лески! Слишком долго удерживали критическое натяжение!");
+        return;
+      }
+    } else {
+      dangerTimer = Math.max(0, dangerTimer - dt * 2);
     }
-  } else {
-    dangerTimer = Math.max(0, dangerTimer - dt * 2);
-  }
 
-  if (tension <= 5) {
-    slackTimer += dt;
-    if (slackTimer > maxDangerTime) {
-      failFishing("Срыв крючка! Леска слишком долго была провисшей!");
-      return;
+    if (tension <= 5) {
+      slackTimer += dt;
+      if (slackTimer > maxDangerTime) {
+        failFishing("Срыв крючка! Леска провисла при потере рыбы!");
+        return;
+      }
+    } else {
+      slackTimer = Math.max(0, slackTimer - dt * 2);
     }
   } else {
-    slackTimer = Math.max(0, slackTimer - dt * 2);
+    dangerTimer = Math.max(0, dangerTimer - dt * 3);
+    slackTimer = Math.max(0, slackTimer - dt * 3);
   }
 
   // Обновление UI
@@ -526,11 +776,30 @@ function updateReeling(dt) {
   document.getElementById("catchProgressBar").style.width = `${catchProgress}%`;
   document.getElementById("catchProgressText").textContent = `${Math.round(catchProgress)}%`;
 
+  if (staminaProgressBarEl) {
+    staminaProgressBarEl.style.width = `${Math.max(0, Math.min(100, fishStamina))}%`;
+  }
+  if (staminaProgressTextEl) {
+    staminaProgressTextEl.textContent = `${Math.round(fishStamina)}%`;
+  }
+
+  if (fishFightTargetEl) {
+    fishFightTargetEl.style.transform = `translate3d(${targetRingX}px, ${targetRingY}px, 0)`;
+    fishFightTargetEl.classList.toggle("locked-on", isTargetLocked && fishFightPhase === "FIGHTING");
+    fishFightTargetEl.classList.toggle("tired", fishFightPhase === "TIRED");
+  }
+  if (rodControlReticleEl) {
+    rodControlReticleEl.style.transform = `translate3d(${playerControlX}px, ${playerControlY}px, 0)`;
+    rodControlReticleEl.classList.toggle("locked-on", isTargetLocked && fishFightPhase === "FIGHTING");
+  }
+
   // Физика процедурной рыбы в воде
   fishVisual.tailOsc += 8 * dt * fishFightIntensity;
-  fishVisual.x += (bobber.x + fishFightDir * 35 - fishVisual.x) * 0.1;
-  fishVisual.y = bobber.y + 40 + Math.sin(fishVisual.tailOsc) * 8;
+  fishVisual.x += (targetRingX - fishVisual.x) * 0.12;
+  fishVisual.y = targetRingY + Math.sin(fishVisual.tailOsc) * 8;
   fishVisual.angle = (fishFightDir * 0.35) + Math.sin(fishVisual.tailOsc) * 0.15;
+  bobber.x = fishVisual.x;
+  bobber.y = fishVisual.y;
 
   // Проверка победы (100%)
   if (catchProgress >= 100) {
@@ -1081,8 +1350,10 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
 
   if (gameState === "REELING") {
     const tensionFactor = tension / 100;
-    bendX = 35 + tensionFactor * 72;
-    bendY = 28 + tensionFactor * 76;
+    const playerShiftX = (playerControlX - w * 0.5) * 0.22;
+    const playerShiftY = (playerControlY - h * 0.55) * 0.16;
+    bendX = 35 + tensionFactor * 72 - playerShiftX;
+    bendY = 28 + tensionFactor * 76 + playerShiftY;
     if (tension > 75) {
       jitter = Math.sin(Date.now() * 0.06) * ((tension - 75) * 0.14);
     }
@@ -1130,23 +1401,9 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
     const ptB = getRodPt(tB);
     const widthA = 7.5 * (1 - tA * 0.7);
 
-    let baseColor = '#d97706';
-    let highlightColor = '#fbbf24';
-    let shadowColor = '#78350f';
-
-    if (rod.id === 'carbon') {
-      baseColor = '#1e293b';
-      highlightColor = '#38bdf8';
-      shadowColor = '#090d16';
-    } else if (rod.id === 'titanium') {
-      baseColor = '#64748b';
-      highlightColor = '#cbd5e1';
-      shadowColor = '#334155';
-    } else if (rod.id === 'gold_master') {
-      baseColor = '#eab308';
-      highlightColor = '#fef08a';
-      shadowColor = '#a16207';
-    }
+    let baseColor = (rod && rod.blankColor) ? rod.blankColor : '#d97706';
+    let highlightColor = (rod && rod.highlightColor) ? rod.highlightColor : '#fbbf24';
+    let shadowColor = (rod && rod.shadowColor) ? rod.shadowColor : '#78350f';
 
     // Теневая линия бланка
     ctx.strokeStyle = shadowColor;
@@ -1271,7 +1528,7 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
   ctx.fill();
 
   // Намотанная леска на шпуле
-  const spoolLineColor = (player.lineId === 'braided' ? '#38bdf8' : player.lineId === 'fluoro' ? '#a7f3d0' : '#f8fafc');
+  const spoolLineColor = (line && line.spoolColor) ? line.spoolColor : (player.lineId === 'braided' ? '#38bdf8' : player.lineId === 'fluoro' ? '#a7f3d0' : '#f8fafc');
   ctx.fillStyle = spoolLineColor;
   ctx.beginPath();
   ctx.ellipse(spoolX + Math.cos(handleAngle) * 4, spoolY + Math.sin(handleAngle) * 4, 7, 10, normAngle, 0, Math.PI * 2);

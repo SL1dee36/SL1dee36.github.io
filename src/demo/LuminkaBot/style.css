@@ -373,6 +373,10 @@ body {
   box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
 }
 
+.method-btn.locked {
+  display: none !important;
+}
+
 .method-btn .method-icon {
   display: inline-flex;
   align-items: center;
@@ -440,6 +444,41 @@ body {
   border-color: #38bdf8;
   color: #f0f9ff;
   font-weight: 700;
+}
+
+.bait-count {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
+.bait-btn.active .bait-count {
+  background: rgba(56, 189, 248, 0.28);
+  color: #e0f2fe;
+}
+
+.bait-count.zero {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.bait-btn.locked {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+  border-style: dashed;
+}
+
+.bait-btn.locked .bait-name {
+  color: #64748b;
+}
+
+.bait-btn.empty {
+  border-color: rgba(239, 68, 68, 0.35);
 }
 
 /* Кнопка активной проводки для спиннинга */
@@ -519,13 +558,23 @@ body {
   pointer-events: none;
   flex-direction: column;
   justify-content: space-between;
-  padding: calc(env(safe-area-inset-top, 16px) + 60px) 24px calc(env(safe-area-inset-bottom, 16px) + 20px) 24px;
+  padding: calc(env(safe-area-inset-top, 16px) + 82px) 24px calc(env(safe-area-inset-bottom, 16px) + 20px) 24px;
   transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
 }
 
 .reeling-overlay.active {
   opacity: 1;
   visibility: visible;
+}
+
+/* Верхняя панель шкал вываживания */
+.reeling-top-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  z-index: 12;
+  pointer-events: none;
 }
 
 /* Шкала прогресса вылова */
@@ -535,24 +584,24 @@ body {
   backdrop-filter: blur(12px);
   border: 1px solid var(--card-border);
   border-radius: 16px;
-  padding: 10px 14px;
+  padding: 8px 14px;
   display: flex;
   flex-direction: column;
-  gap: 6px;
+  gap: 5px;
 }
 
 .progress-labels {
   display: flex;
   justify-content: space-between;
-  font-size: 12px;
+  font-size: 11px;
   font-weight: 700;
   color: #cbd5e1;
 }
 
 .progress-bar-track {
-  height: 12px;
+  height: 10px;
   background: rgba(255, 255, 255, 0.1);
-  border-radius: 6px;
+  border-radius: 5px;
   overflow: hidden;
   position: relative;
 }
@@ -561,8 +610,281 @@ body {
   height: 100%;
   width: 0%;
   background: #10b981;
-  border-radius: 6px;
-  transition: width 0.1s linear;
+  border-radius: 5px;
+  transition: width 0.08s linear;
+}
+
+/* Шкала выносливости рыбы */
+.stamina-progress-wrapper {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 14px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.stamina-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.stamina-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 45%, #10b981 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  border-radius: 5px;
+  transition: width 0.08s linear;
+}
+
+/* Динамическая статусная плашка боя */
+.fight-state-prompt {
+  align-self: center;
+  margin-top: 4px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  backdrop-filter: blur(8px);
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+  animation: promptPulse 1.2s ease-in-out infinite alternate;
+  z-index: 12;
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.fight-state-prompt.tired {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: rgba(16, 185, 129, 0.85);
+  color: #a7f3d0;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.7);
+  animation: promptTiredPulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes promptPulse {
+  0% {
+    transform: scale(0.97);
+    opacity: 0.88;
+  }
+
+  100% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes promptTiredPulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+  }
+
+  100% {
+    transform: scale(1.06);
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.95);
+  }
+}
+
+/* Интерактивная боевая зона удержания кончиком удилища */
+.fight-touch-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: auto;
+  touch-action: none;
+  overflow: hidden;
+}
+
+/* Целевой маркер рывка рыбы */
+.fish-fight-target {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -38px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s;
+  will-change: transform;
+}
+
+.target-ring-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 158, 11, 0.7);
+  animation: targetWave 1.4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.target-ring-core {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.4) 0%, rgba(245, 158, 11, 0.08) 70%);
+  border: 2px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fef08a;
+  box-shadow: 0 0 16px rgba(245, 158, 11, 0.6);
+  transition: all 0.15s ease;
+}
+
+.target-lock-label {
+  position: absolute;
+  bottom: -18px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fef08a;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.fish-fight-target.locked-on .target-ring-core {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(16, 185, 129, 0.12) 70%);
+  border-color: #10b981;
+  color: #a7f3d0;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.9);
+  transform: scale(1.12);
+}
+
+.fish-fight-target.locked-on .target-ring-pulse {
+  border-color: rgba(16, 185, 129, 0.85);
+}
+
+.fish-fight-target.locked-on .target-lock-label {
+  color: #6ee7b7;
+}
+
+.fish-fight-target.tired {
+  opacity: 0.35;
+  filter: grayscale(0.6);
+}
+
+@keyframes targetWave {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Контрольный прицел удилища игрока */
+.rod-control-reticle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 68px;
+  margin-left: -34px;
+  margin-top: -34px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition: opacity 0.2s;
+}
+
+.reticle-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px dashed rgba(56, 189, 248, 0.75);
+  animation: reticleSpin 8s linear infinite;
+}
+
+.reticle-dot {
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #38bdf8;
+}
+
+.reticle-crosshair {
+  position: absolute;
+  background: rgba(56, 189, 248, 0.8);
+}
+
+.ch-top {
+  width: 2px;
+  height: 8px;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ch-bottom {
+  width: 2px;
+  height: 8px;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ch-left {
+  height: 2px;
+  width: 8px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ch-right {
+  height: 2px;
+  width: 8px;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.rod-control-reticle.locked-on .reticle-ring {
+  border-color: #10b981;
+  border-style: solid;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.8);
+}
+
+.rod-control-reticle.locked-on .reticle-dot {
+  background: #10b981;
+  box-shadow: 0 0 14px #10b981;
+}
+
+.rod-control-reticle.locked-on .reticle-crosshair {
+  background: #10b981;
+}
+
+@keyframes reticleSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 /* Индикатор натяжения лески */
@@ -681,6 +1003,25 @@ body {
   transform: scale(0.92);
   background: #0369a1;
   border-color: #38bdf8;
+}
+
+.reel-button.highlight-pull {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #6ee7b7;
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.85);
+  animation: reelGlowPulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes reelGlowPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+  }
+
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 32px rgba(16, 185, 129, 0.95);
+  }
 }
 
 .reel-icon {
@@ -1683,6 +2024,65 @@ body {
   cursor: not-allowed;
 }
 
+.req-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 7px;
+  border-radius: 6px;
+  background: rgba(245, 158, 11, 0.12);
+  color: #fbbf24;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.req-badge.ok {
+  background: rgba(16, 185, 129, 0.12);
+  color: #34d399;
+  border-color: rgba(16, 185, 129, 0.25);
+}
+
+.shop-category-header {
+  font-size: 11px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #38bdf8;
+  margin: 14px 0 6px 2px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shop-category-header:first-child {
+  margin-top: 2px;
+}
+
+.bait-method-badge {
+  font-size: 9px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(56, 189, 248, 0.12);
+  color: #7dd3fc;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+}
+
+.bait-stock-tag {
+  font-size: 11px;
+  font-weight: 700;
+  color: #94a3b8;
+}
+
+.bait-stock-tag b {
+  color: #f1f5f9;
+}
+
+.bait-stock-tag.zero b {
+  color: #f87171;
+}
+
 /* Карточки рыбы на скупке у торговца */
 .livewell-item {
   display: flex;
@@ -1860,7 +2260,10 @@ body {
   transition: all 0.25s ease;
   z-index: 30;
   pointer-events: none;
-  white-space: nowrap;
+  /* white-space: pre-line;
+  width: 80%;
+  min-width: -webkit-fill-available;
+  max-width: 320px; */
 }
 
 .status-toast.visible {
@@ -1964,4 +2367,223 @@ body {
 
 .chip-svg svg {
   display: block;
+}
+
+/* ==========================================================
+   СИСТЕМА УСТАЛОСТИ И ЭФФЕКТЫ (HUD, ВИНЬЕТКА, ОБМОРОК)
+   ========================================================== */
+.fatigue-pill {
+  cursor: default;
+  transition: all 0.25s ease;
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.fatigue-pill.fatigue-good {
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.fatigue-pill.fatigue-warn {
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fde047;
+}
+
+.fatigue-pill.fatigue-tired {
+  border-color: rgba(249, 115, 22, 0.6);
+  color: #fb923c;
+}
+
+.fatigue-pill.fatigue-critical {
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.2);
+  animation: pulseCritical 1s infinite alternate;
+}
+
+@keyframes pulseCritical {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+  }
+}
+
+/* Виньетка потемнения в глазах (>80% усталости) */
+.fatigue-vignette-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 65;
+  opacity: 0;
+  background: radial-gradient(circle at center, transparent 25%, rgba(0, 0, 0, 0.65) 65%, rgba(0, 0, 0, 0.96) 98%);
+  transition: opacity 0.4s ease-out;
+}
+
+.fatigue-vignette-overlay.active {
+  animation: vignetteBreathing 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes vignetteBreathing {
+  0% {
+    transform: scale(1);
+    filter: contrast(100%);
+  }
+
+  100% {
+    transform: scale(1.04);
+    filter: contrast(125%);
+  }
+}
+
+/* Оверлей обморока и ограбления */
+.faint-overlay {
+  z-index: 300 !important;
+  background: rgba(3, 7, 18, 0.96) !important;
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.faint-overlay.active {
+  display: flex !important;
+  animation: fadeInModal 0.6s ease-out forwards;
+}
+
+.faint-box {
+  background: linear-gradient(180deg, #1e1b4b 0%, #0f172a 100%);
+  border: 1px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 35px rgba(239, 68, 68, 0.25);
+  border-radius: 20px;
+  max-width: 360px;
+  width: 100%;
+  padding: 24px 20px;
+  text-align: center;
+  color: #f8fafc;
+}
+
+.faint-icon {
+  font-size: 40px;
+  margin-bottom: 10px;
+}
+
+.faint-title {
+  font-size: 19px;
+  font-weight: 800;
+  letter-spacing: -0.3px;
+  margin-bottom: 10px;
+  color: #f87171;
+}
+
+.faint-text {
+  font-size: 13px;
+  line-height: 1.5;
+  color: #cbd5e1;
+  margin-bottom: 14px;
+}
+
+.faint-loot-lost {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+  color: #fca5a5;
+}
+
+/* Оверлей сна в Хижине */
+.sleep-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  background: rgba(2, 6, 23, 0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.sleep-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.sleep-box {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+  border-radius: 18px;
+  max-width: 340px;
+  width: 100%;
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.sleep-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.sleep-text {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   ДИНАМИЧЕСКИЙ РЫНОК И БЕЙДЖИ ТРЕНДОВ В СКУПКЕ
+   ========================================================== */
+.market-info-bar {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.price-trend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.trend-up {
+  background: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.trend-down {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.trend-neutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
 }

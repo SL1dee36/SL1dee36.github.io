@@ -57,72 +57,218 @@ var isHomeScene = false;
       username: "fisherman_guest"
     };
 
-    // Каталог удочек
+    // Каталог удочек и спиннингов
     const RODS = {
       bamboo: {
         id: "bamboo",
         name: "Бамбуковая удочка",
+        levelReq: 1,
         price: 0,
         speedBonus: 1.0,
         safeZoneMin: 25,
         safeZoneMax: 75,
         rareBonus: 0,
+        blankColor: '#d97706',
+        highlightColor: '#fbbf24',
+        shadowColor: '#78350f',
         desc: "Базовое удилище из речного бамбука. Простое и надежное."
+      },
+      spinning_beginner: {
+        id: "spinning_beginner",
+        name: "Спиннинг «Ветерок 1.8м»",
+        levelReq: 1,
+        price: 160,
+        speedBonus: 1.10,
+        safeZoneMin: 23,
+        safeZoneMax: 77,
+        rareBonus: 4,
+        blankColor: '#0284c7',
+        highlightColor: '#38bdf8',
+        shadowColor: '#0369a1',
+        desc: "Лёгкий стеклопластиковый спиннинг для начинающих рыболовов."
       },
       carbon: {
         id: "carbon",
-        name: "Карбоновый спиннинг",
-        price: 350,
-        speedBonus: 1.15,
-        safeZoneMin: 22,
-        safeZoneMax: 78,
-        rareBonus: 6,
-        desc: "+15% к скорости вываживания, шире безопасная зона контроля."
+        name: "Карбоновый спиннинг Pro",
+        levelReq: 2,
+        price: 420,
+        speedBonus: 1.20,
+        safeZoneMin: 20,
+        safeZoneMax: 80,
+        rareBonus: 8,
+        blankColor: '#1e293b',
+        highlightColor: '#38bdf8',
+        shadowColor: '#090d16',
+        desc: "Быстрый строй бланка IM7, +20% к скорости вываживания хищника."
+      },
+      spinning_pike: {
+        id: "spinning_pike",
+        name: "Щучий спиннинг «Хищник-М»",
+        levelReq: 3,
+        price: 900,
+        speedBonus: 1.28,
+        safeZoneMin: 18,
+        safeZoneMax: 82,
+        rareBonus: 14,
+        blankColor: '#15803d',
+        highlightColor: '#4ade80',
+        shadowColor: '#14532d',
+        desc: "Усиленный комлевый спиннинг для агрессивного твичинга зубастой щуки."
+      },
+      spinning_heavy: {
+        id: "spinning_heavy",
+        name: "Джиг-спиннинг «Тайфун»",
+        levelReq: 4,
+        price: 1750,
+        speedBonus: 1.38,
+        safeZoneMin: 16,
+        safeZoneMax: 84,
+        rareBonus: 20,
+        blankColor: '#b91c1c',
+        highlightColor: '#f87171',
+        shadowColor: '#7f1d1d',
+        desc: "Мощный джиговый бланк. Уверенно гасит сопротивление судаков и сомов."
+      },
+      spinning_berkley: {
+        id: "spinning_berkley",
+        name: "Спиннинг «Сибирский Таймень»",
+        levelReq: 5,
+        price: 3100,
+        speedBonus: 1.50,
+        safeZoneMin: 14,
+        safeZoneMax: 86,
+        rareBonus: 28,
+        blankColor: '#475569',
+        highlightColor: '#94a3b8',
+        shadowColor: '#1e293b',
+        desc: "Высокомодульный композит для вываживания речных гигантов и лососей."
       },
       titanium: {
         id: "titanium",
-        name: "Титановый фидер",
-        price: 1200,
-        speedBonus: 1.30,
-        safeZoneMin: 18,
-        safeZoneMax: 82,
-        rareBonus: 15,
-        desc: "+30% скорость подмотки, +15% шанс редкой рыбы, широкая зона."
+        name: "Титановый спиннинг «Predator-X»",
+        levelReq: 6,
+        price: 5200,
+        speedBonus: 1.65,
+        safeZoneMin: 12,
+        safeZoneMax: 88,
+        rareBonus: 38,
+        blankColor: '#64748b',
+        highlightColor: '#cbd5e1',
+        shadowColor: '#334155',
+        desc: "Титановые пропускные кольца, непревзойденный контроль и дальность."
+      },
+      spinning_aurora: {
+        id: "spinning_aurora",
+        name: "Спиннинг «Северное Сияние»",
+        levelReq: 7,
+        price: 8500,
+        speedBonus: 1.80,
+        safeZoneMin: 10,
+        safeZoneMax: 90,
+        rareBonus: 50,
+        blankColor: '#7c3aed',
+        highlightColor: '#c084fc',
+        shadowColor: '#4c1d95',
+        desc: "Светящийся в сумерках мифический бланк. Завораживает трофейную рыбу."
       },
       gold_master: {
         id: "gold_master",
         name: "Золотой Мастер Pro",
-        price: 3500,
-        speedBonus: 1.55,
-        safeZoneMin: 15,
-        safeZoneMax: 85,
-        rareBonus: 30,
-        desc: "Шедевр! +55% скорость, +30% шанс трофеев, огромная зона контроля."
+        levelReq: 8,
+        price: 14000,
+        speedBonus: 2.00,
+        safeZoneMin: 8,
+        safeZoneMax: 92,
+        rareBonus: 65,
+        blankColor: '#eab308',
+        highlightColor: '#fef08a',
+        shadowColor: '#a16207',
+        desc: "Шедевр ручной работы! Максимальная зона контроля и скорость подмотки."
       }
     };
 
     // Каталог лесок
     const LINES = {
+      mono_light: {
+        id: "mono_light",
+        name: "Нейлон 0.16мм (Ультра)",
+        levelReq: 1,
+        price: 0,
+        dangerBuffer: 1.0,
+        spoolColor: '#f1f5f9',
+        desc: "Тончайшая леска. 1.0 сек запаса прочности в критической зоне."
+      },
       mono: {
         id: "mono",
-        name: "Монофил 0.2мм",
-        price: 0,
-        dangerBuffer: 1.2,
-        desc: "Стандартная леска. 1.2 сек запаса в критической зоне до обрыва."
+        name: "Монофил Classic 0.22мм",
+        levelReq: 1,
+        price: 90,
+        dangerBuffer: 1.4,
+        spoolColor: '#cbd5e1',
+        desc: "Надежный монофил. 1.4 сек запаса на исправление ошибки натяжения."
+      },
+      mono_heavy: {
+        id: "mono_heavy",
+        name: "Усиленный монофил 0.28мм",
+        levelReq: 2,
+        price: 220,
+        dangerBuffer: 1.7,
+        spoolColor: '#86efac',
+        desc: "Толстая эластичная леска с амортизацией. 1.7 сек буфера."
       },
       fluoro: {
         id: "fluoro",
-        name: "Флюорокарбон 0.35мм",
-        price: 250,
-        dangerBuffer: 1.8,
-        desc: "Невидима в воде и устойчива. 1.8 сек запаса в критической зоне."
+        name: "Флюорокарбон Stealth 0.35мм",
+        levelReq: 3,
+        price: 400,
+        dangerBuffer: 2.1,
+        spoolColor: '#5eead4',
+        desc: "Невидима в чистой таёжной воде. 2.1 сек запаса в критической зоне."
+      },
+      braided_4x: {
+        id: "braided_4x",
+        name: "Плетёный шнур 4X Камуфляж",
+        levelReq: 4,
+        price: 750,
+        dangerBuffer: 2.6,
+        spoolColor: '#4ade80',
+        desc: "Плотное 4-жильное плетение без растяжения. 2.6 сек запаса."
       },
       braided: {
         id: "braided",
-        name: "Плетеный шнур Pro",
-        price: 800,
-        dangerBuffer: 2.6,
-        desc: "Сверхпрочный 8-жильный шнур. 2.6 сек запаса на исправление ошибки!"
+        name: "Плетёный шнур Pro 8X",
+        levelReq: 5,
+        price: 1300,
+        dangerBuffer: 3.2,
+        spoolColor: '#38bdf8',
+        desc: "Сверхгладкий 8-жильный японский шнур. 3.2 сек запаса на исправление!"
+      },
+      titanium_leader: {
+        id: "titanium_leader",
+        name: "Шнур с титановым поводком",
+        levelReq: 6,
+        price: 2200,
+        dangerBuffer: 3.9,
+        spoolColor: '#c084fc',
+        desc: "Щучьи зубы бессильны против титана. 3.9 сек запаса до обрыва."
+      },
+      nanofil_trophy: {
+        id: "nanofil_trophy",
+        name: "Нанонить «Стальной Шёлк»",
+        levelReq: 7,
+        price: 3800,
+        dangerBuffer: 4.7,
+        spoolColor: '#facc15',
+        desc: "Экстремальная прочность микроволокон. 4.7 сек запаса!"
+      },
+      mythic_cord: {
+        id: "mythic_cord",
+        name: "Мифический корд «Драконья Жила»",
+        levelReq: 8,
+        price: 6500,
+        dangerBuffer: 5.8,
+        spoolColor: '#f43f5e',
+        desc: "Древний плетёный корд. 5.8 сек абсолютной стойкости к перегрузкам."
       }
     };
 
@@ -135,6 +281,7 @@ var isHomeScene = false;
       xp: 0,
       level: 1,
       soundEnabled: true,
+      fatigue: 0,
       // Игровая статистика
       fishCaught: 0,
       fishSold: 0,
@@ -144,6 +291,11 @@ var isHomeScene = false;
       lineId: "mono",
       ownedRods: ["bamboo"],
       ownedLines: ["mono"],
+      ownedMethods: ["float"],
+      unlockedBaits: ["worm"],
+      baits: {
+        worm: 20
+      },
       // Садок и трофеи
       livewell: [],
       bestCatch: { name: "", weight: 0, rarity: "" },
@@ -207,6 +359,8 @@ var isHomeScene = false;
       float: {
         id: "float",
         name: "Поплавок",
+        levelReq: 1,
+        price: 0,
         iconSvg: SVG_ICONS.float,
         desc: "Классическая ловля с поплавком. Озерная и речная рыба всех горизонтов.",
         biteSpeedMult: 1.0,
@@ -216,6 +370,8 @@ var isHomeScene = false;
       spinning: {
         id: "spinning",
         name: "Спиннинг",
+        levelReq: 2,
+        price: 250,
         iconSvg: SVG_ICONS.spinning,
         desc: "Активная проводка приманки! Приманивает стремительных и яростных хищников.",
         biteSpeedMult: 1.25,
@@ -225,6 +381,8 @@ var isHomeScene = false;
       feeder: {
         id: "feeder",
         name: "Фидер",
+        levelReq: 4,
+        price: 600,
         iconSvg: SVG_ICONS.feeder,
         desc: "Донная снасть с кормушкой и бубенцом. Охота за донными исполинами!",
         biteSpeedMult: 0.95,
@@ -234,6 +392,8 @@ var isHomeScene = false;
       fly: {
         id: "fly",
         name: "Нахлыст",
+        levelReq: 6,
+        price: 1200,
         iconSvg: SVG_ICONS.fly,
         desc: "Изящная ловля на плавающую мушку. Верховая рыба и ценные лососевые.",
         biteSpeedMult: 1.15,
@@ -241,37 +401,277 @@ var isHomeScene = false;
         baits: ["dry_fly", "nymph", "streamer", "mayfly"]
       }
     };
+    window.FISHING_METHODS = FISHING_METHODS;
     var currentFishingMethod = "float";
 
-    // Каталог всех наживок и приманок
+    // Каталог всех наживок и приманок с уровневой прогрессией и ценами закупки
     const BAITS = {
       // Поплавочные
-      worm: { name: "Червь", iconSvg: SVG_ICONS.worm, method: "float", waitMin: 3500, waitMax: 6500, speedMultiplier: 1.0, rarityWeights: { Common: 70, Rare: 24, Epic: 5.5, Legendary: 0.5 } },
-      corn: { name: "Кукуруза", iconSvg: SVG_ICONS.corn, method: "float", waitMin: 2500, waitMax: 5000, speedMultiplier: 1.35, rarityWeights: { Common: 78, Rare: 19, Epic: 2.7, Legendary: 0.3 } },
-      dough: { name: "Тесто", iconSvg: SVG_ICONS.dough, method: "float", waitMin: 2200, waitMax: 4600, speedMultiplier: 1.45, rarityWeights: { Common: 82, Rare: 16, Epic: 1.8, Legendary: 0.2 } },
-      bloodworm: { name: "Мотыль", iconSvg: SVG_ICONS.bloodworm, method: "float", waitMin: 3000, waitMax: 5600, speedMultiplier: 1.15, rarityWeights: { Common: 60, Rare: 31, Epic: 8.2, Legendary: 0.8 } },
+      worm: {
+        id: "worm",
+        name: "Червь",
+        levelReq: 1,
+        unlockPrice: 0,
+        packPrice: 50,
+        packCount: 10,
+        desc: "Классическая наживка. Любимое лакомство карасей, плотвы и окуней.",
+        iconSvg: SVG_ICONS.worm,
+        method: "float",
+        waitMin: 3500,
+        waitMax: 6500,
+        speedMultiplier: 1.0,
+        rarityWeights: { Common: 70, Rare: 24, Epic: 5.5, Legendary: 0.5 }
+      },
+      corn: {
+        id: "corn",
+        name: "Кукуруза",
+        levelReq: 2,
+        unlockPrice: 100,
+        packPrice: 120,
+        packCount: 10,
+        desc: "Сладкие консервированные зерна. Манят золотистого карася, амура и карпа.",
+        iconSvg: SVG_ICONS.corn,
+        method: "float",
+        waitMin: 2500,
+        waitMax: 5000,
+        speedMultiplier: 1.35,
+        rarityWeights: { Common: 78, Rare: 19, Epic: 2.7, Legendary: 0.3 }
+      },
+      dough: {
+        id: "dough",
+        name: "Тесто",
+        levelReq: 3,
+        unlockPrice: 250,
+        packPrice: 250,
+        packCount: 10,
+        desc: "Ароматное сдобное тесто с анисом. Мгновенный клёв стайной озерной рыбы.",
+        iconSvg: SVG_ICONS.dough,
+        method: "float",
+        waitMin: 2200,
+        waitMax: 4600,
+        speedMultiplier: 1.45,
+        rarityWeights: { Common: 82, Rare: 16, Epic: 1.8, Legendary: 0.2 }
+      },
+      bloodworm: {
+        id: "bloodworm",
+        name: "Мотыль",
+        levelReq: 4,
+        unlockPrice: 500,
+        packPrice: 550,
+        packCount: 10,
+        desc: "Красные личинки комара-дергуна. Повышенный шанс редкой донной рыбы.",
+        iconSvg: SVG_ICONS.bloodworm,
+        method: "float",
+        waitMin: 3000,
+        waitMax: 5600,
+        speedMultiplier: 1.15,
+        rarityWeights: { Common: 60, Rare: 31, Epic: 8.2, Legendary: 0.8 }
+      },
 
       // Спиннинговые
-      lure_spoon: { name: "Колебалка", iconSvg: SVG_ICONS.lure_spoon, method: "spinning", waitMin: 3800, waitMax: 7000, speedMultiplier: 1.0, rarityWeights: { Common: 30, Rare: 46, Epic: 21, Legendary: 3.0 } },
-      lure_spinner: { name: "Вертушка", iconSvg: SVG_ICONS.lure_spinner, method: "spinning", waitMin: 3000, waitMax: 6000, speedMultiplier: 1.25, rarityWeights: { Common: 40, Rare: 42, Epic: 16, Legendary: 2.0 } },
-      lure_wobbler: { name: "Воблер", iconSvg: SVG_ICONS.lure_wobbler, method: "spinning", waitMin: 3500, waitMax: 6500, speedMultiplier: 1.1, rarityWeights: { Common: 20, Rare: 45, Epic: 29, Legendary: 6.0 } },
-      lure_jig: { name: "Твистер", iconSvg: SVG_ICONS.lure_jig, method: "spinning", waitMin: 2800, waitMax: 5200, speedMultiplier: 1.3, rarityWeights: { Common: 35, Rare: 45, Epic: 18, Legendary: 2.0 } },
+      lure_spoon: {
+        id: "lure_spoon",
+        name: "Колебалка",
+        levelReq: 2,
+        unlockPrice: 250,
+        packPrice: 350,
+        packCount: 5,
+        desc: "Тяжелая колеблющаяся блесна. Классика для щуки и крупного окуня.",
+        iconSvg: SVG_ICONS.lure_spoon,
+        method: "spinning",
+        waitMin: 3800,
+        waitMax: 7000,
+        speedMultiplier: 1.0,
+        rarityWeights: { Common: 30, Rare: 46, Epic: 21, Legendary: 3.0 }
+      },
+      lure_spinner: {
+        id: "lure_spinner",
+        name: "Вертушка",
+        levelReq: 3,
+        unlockPrice: 550,
+        packPrice: 700,
+        packCount: 5,
+        desc: "Вращающийся лепесток с мощной вибрацией. Провоцирует любого хищника.",
+        iconSvg: SVG_ICONS.lure_spinner,
+        method: "spinning",
+        waitMin: 3000,
+        waitMax: 6000,
+        speedMultiplier: 1.25,
+        rarityWeights: { Common: 40, Rare: 42, Epic: 16, Legendary: 2.0 }
+      },
+      lure_jig: {
+        id: "lure_jig",
+        name: "Твистер",
+        levelReq: 5,
+        unlockPrice: 1200,
+        packPrice: 1500,
+        packCount: 5,
+        desc: "Мягкий силиконовый твистер для придонной ступенчатой проводки на судака.",
+        iconSvg: SVG_ICONS.lure_jig,
+        method: "spinning",
+        waitMin: 2800,
+        waitMax: 5200,
+        speedMultiplier: 1.3,
+        rarityWeights: { Common: 35, Rare: 45, Epic: 18, Legendary: 2.0 }
+      },
+      lure_wobbler: {
+        id: "lure_wobbler",
+        name: "Воблер",
+        levelReq: 7,
+        unlockPrice: 2800,
+        packPrice: 3500,
+        packCount: 5,
+        desc: "Шедевр спиннинга! Собственная игра выманивает трофейную щуку и тайменя.",
+        iconSvg: SVG_ICONS.lure_wobbler,
+        method: "spinning",
+        waitMin: 3500,
+        waitMax: 6500,
+        speedMultiplier: 1.1,
+        rarityWeights: { Common: 20, Rare: 45, Epic: 29, Legendary: 6.0 }
+      },
 
       // Фидерные
-      feeder_mix: { name: "Прикормка", iconSvg: SVG_ICONS.feeder_mix, method: "feeder", waitMin: 3600, waitMax: 6600, speedMultiplier: 1.1, rarityWeights: { Common: 50, Rare: 34, Epic: 14, Legendary: 2.0 } },
-      boilie: { name: "Бойлы", iconSvg: SVG_ICONS.boilie, method: "feeder", waitMin: 4600, waitMax: 8200, speedMultiplier: 0.9, rarityWeights: { Common: 25, Rare: 42, Epic: 27, Legendary: 6.0 } },
-      maggot: { name: "Опарыш", iconSvg: SVG_ICONS.maggot, method: "feeder", waitMin: 2600, waitMax: 5200, speedMultiplier: 1.35, rarityWeights: { Common: 65, Rare: 27, Epic: 7.3, Legendary: 0.7 } },
-      live_bait: { name: "Живец", iconSvg: SVG_ICONS.live_bait, method: "feeder", waitMin: 5000, waitMax: 9200, speedMultiplier: 0.8, rarityWeights: { Common: 15, Rare: 40, Epic: 37, Legendary: 8.0 } },
+      maggot: {
+        id: "maggot",
+        name: "Опарыш",
+        levelReq: 4,
+        unlockPrice: 450,
+        packPrice: 600,
+        packCount: 10,
+        desc: "Живые активные личинки. Универсальная насадка для ловли леща и синца со дна.",
+        iconSvg: SVG_ICONS.maggot,
+        method: "feeder",
+        waitMin: 2600,
+        waitMax: 5200,
+        speedMultiplier: 1.35,
+        rarityWeights: { Common: 65, Rare: 27, Epic: 7.3, Legendary: 0.7 }
+      },
+      feeder_mix: {
+        id: "feeder_mix",
+        name: "Прикормка",
+        levelReq: 5,
+        unlockPrice: 900,
+        packPrice: 1100,
+        packCount: 10,
+        desc: "Питательная смесь злаков и жмыха. Собирает стаи рыбы со всего омута.",
+        iconSvg: SVG_ICONS.feeder_mix,
+        method: "feeder",
+        waitMin: 3600,
+        waitMax: 6600,
+        speedMultiplier: 1.1,
+        rarityWeights: { Common: 50, Rare: 34, Epic: 14, Legendary: 2.0 }
+      },
+      boilie: {
+        id: "boilie",
+        name: "Бойлы",
+        levelReq: 6,
+        unlockPrice: 1800,
+        packPrice: 2200,
+        packCount: 10,
+        desc: "Крупные протеиновые шарики. Оружие против огромных трофейных карпов и сазанов.",
+        iconSvg: SVG_ICONS.boilie,
+        method: "feeder",
+        waitMin: 4600,
+        waitMax: 8200,
+        speedMultiplier: 0.9,
+        rarityWeights: { Common: 25, Rare: 42, Epic: 27, Legendary: 6.0 }
+      },
+      live_bait: {
+        id: "live_bait",
+        name: "Живец",
+        levelReq: 8,
+        unlockPrice: 4500,
+        packPrice: 5500,
+        packCount: 5,
+        desc: "Живой малёк на тяжелой оснастке. Приманка для глубоководных сомов и налимов.",
+        iconSvg: SVG_ICONS.live_bait,
+        method: "feeder",
+        waitMin: 5000,
+        waitMax: 9200,
+        speedMultiplier: 0.8,
+        rarityWeights: { Common: 15, Rare: 40, Epic: 37, Legendary: 8.0 }
+      },
 
       // Нахлыстовые
-      dry_fly: { name: "Сухая мушка", iconSvg: SVG_ICONS.dry_fly, method: "fly", waitMin: 2800, waitMax: 5600, speedMultiplier: 1.25, rarityWeights: { Common: 35, Rare: 45, Epic: 17, Legendary: 3.0 } },
-      nymph: { name: "Нимфа", iconSvg: SVG_ICONS.nymph, method: "fly", waitMin: 3200, waitMax: 6200, speedMultiplier: 1.15, rarityWeights: { Common: 25, Rare: 48, Epic: 22, Legendary: 5.0 } },
-      streamer: { name: "Стример", iconSvg: SVG_ICONS.streamer, method: "fly", waitMin: 3800, waitMax: 7200, speedMultiplier: 1.0, rarityWeights: { Common: 18, Rare: 44, Epic: 31, Legendary: 7.0 } },
-      mayfly: { name: "Поденка", iconSvg: SVG_ICONS.mayfly, method: "fly", waitMin: 2400, waitMax: 4800, speedMultiplier: 1.4, rarityWeights: { Common: 45, Rare: 40, Epic: 13, Legendary: 2.0 } },
+      mayfly: {
+        id: "mayfly",
+        name: "Поденка",
+        levelReq: 6,
+        unlockPrice: 1500,
+        packPrice: 1800,
+        packCount: 5,
+        desc: "Крылатая поденка. Идеальна для верховой охоты на хариуса и быстрых голавлей.",
+        iconSvg: SVG_ICONS.mayfly,
+        method: "fly",
+        waitMin: 2400,
+        waitMax: 4800,
+        speedMultiplier: 1.4,
+        rarityWeights: { Common: 45, Rare: 40, Epic: 13, Legendary: 2.0 }
+      },
+      dry_fly: {
+        id: "dry_fly",
+        name: "Сухая мушка",
+        levelReq: 7,
+        unlockPrice: 3200,
+        packPrice: 4000,
+        packCount: 5,
+        desc: "Плавающая перьевая мушка. Высокий шанс поклёвки благородной ручьевой форели.",
+        iconSvg: SVG_ICONS.dry_fly,
+        method: "fly",
+        waitMin: 2800,
+        waitMax: 5600,
+        speedMultiplier: 1.25,
+        rarityWeights: { Common: 35, Rare: 45, Epic: 17, Legendary: 3.0 }
+      },
+      nymph: {
+        id: "nymph",
+        name: "Нимфа",
+        levelReq: 9,
+        unlockPrice: 7000,
+        packPrice: 8500,
+        packCount: 5,
+        desc: "Тяжелая мушка для средних глубин. Ловит редких арктических гольцов и лосося.",
+        iconSvg: SVG_ICONS.nymph,
+        method: "fly",
+        waitMin: 3200,
+        waitMax: 6200,
+        speedMultiplier: 1.15,
+        rarityWeights: { Common: 25, Rare: 48, Epic: 22, Legendary: 5.0 }
+      },
+      streamer: {
+        id: "streamer",
+        name: "Стример",
+        levelReq: 10,
+        unlockPrice: 12000,
+        packPrice: 15000,
+        packCount: 5,
+        desc: "Легендарная крупная мушка из блестящего люрекса. Экстремальный шанс легендарных монстров!",
+        iconSvg: SVG_ICONS.streamer,
+        method: "fly",
+        waitMin: 3800,
+        waitMax: 7200,
+        speedMultiplier: 1.0,
+        rarityWeights: { Common: 18, Rare: 44, Epic: 31, Legendary: 7.0 }
+      },
 
-      // Fallback алиасы для совместимости с сохраненными данными
-      lure: { name: "Блесна", iconSvg: SVG_ICONS.lure_spoon, method: "spinning", waitMin: 4000, waitMax: 7000, speedMultiplier: 1.0, rarityWeights: { Common: 35, Rare: 45, Epic: 16, Legendary: 4.0 } }
+      // Fallback алиасы
+      lure: {
+        id: "lure_spoon",
+        name: "Колебалка",
+        levelReq: 2,
+        unlockPrice: 250,
+        packPrice: 350,
+        packCount: 5,
+        desc: "Колеблющаяся блесна.",
+        iconSvg: SVG_ICONS.lure_spoon,
+        method: "spinning",
+        waitMin: 4000,
+        waitMax: 7000,
+        speedMultiplier: 1.0,
+        rarityWeights: { Common: 35, Rare: 45, Epic: 16, Legendary: 4.0 }
+      }
     };
+    window.BAITS = BAITS;
     let currentBaitKey = "worm";
 
     /* ==========================================================
@@ -486,6 +886,8 @@ function failFishing(reason) {
       document.getElementById("reelingOverlay").classList.remove("active");
       document.getElementById("swipeHint").style.display = "flex";
       document.getElementById("bottomBar").style.display = "flex";
+      const reelBtn = document.getElementById("reelBtn");
+      if (reelBtn) reelBtn.classList.remove("highlight-pull");
 
       sound.playFail();
       triggerHaptic("error");
@@ -497,6 +899,8 @@ function failFishing(reason) {
     function winFishing() {
       gameState = "CAUGHT";
       document.getElementById("reelingOverlay").classList.remove("active");
+      const reelBtn = document.getElementById("reelBtn");
+      if (reelBtn) reelBtn.classList.remove("highlight-pull");
 
       sound.playSuccess();
       triggerHaptic("success");
@@ -510,9 +914,13 @@ function failFishing(reason) {
       const xpGained = Math.round(reward * 0.6);
 
       // Опыт и уровень начисляются сразу
+      const oldLevel = player.level;
       player.fishCaught++;
       player.xp += xpGained;
       player.level = 1 + Math.floor(Math.sqrt(player.xp / 50));
+      if (player.level > oldLevel && typeof updateMethodsUI === 'function') {
+        updateMethodsUI();
+      }
 
       // Обновление рекорда и атласа видов
       if (!player.bestCatch || !player.bestCatch.weight || activeFishWeight > player.bestCatch.weight) {
@@ -830,6 +1238,10 @@ function failFishing(reason) {
           baitKey: currentBaitKey,
           ownedRods: player.ownedRods,
           ownedLines: player.ownedLines,
+          ownedMethods: player.ownedMethods || ["float"],
+          unlockedBaits: player.unlockedBaits || ["worm"],
+          baits: player.baits || { worm: 20 },
+          fatigue: typeof player.fatigue === 'number' ? Math.max(0, Math.min(100, Math.round(player.fatigue))) : 0,
           livewell: player.livewell,
           bestCatch: player.bestCatch,
           caughtSpecies: player.caughtSpecies
@@ -849,12 +1261,35 @@ function failFishing(reason) {
           if (typeof saved.balance === 'number') player.balance = saved.balance;
           if (typeof saved.xp === 'number') player.xp = saved.xp;
           if (typeof saved.level === 'number') player.level = saved.level;
+          if (typeof saved.fatigue === 'number') player.fatigue = Math.max(0, Math.min(100, saved.fatigue));
           if (typeof saved.fishCaught === 'number') player.fishCaught = saved.fishCaught;
           if (typeof saved.fishSold === 'number') player.fishSold = saved.fishSold;
           if (typeof saved.totalEarned === 'number') player.totalEarned = saved.totalEarned;
           if (saved.rodId && RODS[saved.rodId]) player.rodId = saved.rodId;
           if (saved.lineId && LINES[saved.lineId]) player.lineId = saved.lineId;
-          if (saved.methodId && FISHING_METHODS[saved.methodId]) currentFishingMethod = saved.methodId;
+          if (Array.isArray(saved.ownedMethods) && saved.ownedMethods.length) {
+            player.ownedMethods = saved.ownedMethods;
+          } else {
+            player.ownedMethods = ["float"];
+          }
+          if (saved.methodId && FISHING_METHODS[saved.methodId] && player.ownedMethods.includes(saved.methodId)) {
+            currentFishingMethod = saved.methodId;
+          } else {
+            currentFishingMethod = player.ownedMethods[0] || "float";
+          }
+          if (Array.isArray(saved.unlockedBaits) && saved.unlockedBaits.length) {
+            player.unlockedBaits = saved.unlockedBaits;
+          } else {
+            player.unlockedBaits = ["worm"];
+          }
+          if (saved.baits && typeof saved.baits === 'object') {
+            player.baits = saved.baits;
+          } else {
+            player.baits = { worm: 20 };
+          }
+          if (typeof player.baits.worm !== 'number') {
+            player.baits.worm = 20;
+          }
           if (saved.baitKey && BAITS[saved.baitKey]) currentBaitKey = saved.baitKey;
           if (Array.isArray(saved.ownedRods)) player.ownedRods = saved.ownedRods;
           if (Array.isArray(saved.ownedLines)) player.ownedLines = saved.ownedLines;
@@ -908,7 +1343,8 @@ function failFishing(reason) {
             fish_sold: player.fishSold,
             total_earned: player.totalEarned,
             current_rod_id: player.rodId,
-            current_line_id: player.lineId
+            current_line_id: player.lineId,
+            fatigue: Math.round(player.fatigue || 0)
           });
           if (!error) return;
           console.warn("Ошибка расширенной синхронизации:", error);
@@ -951,6 +1387,10 @@ function failFishing(reason) {
           player.fishCaught = Math.max(player.fishCaught, data.fish_caught ?? 0);
           player.fishSold = Math.max(player.fishSold, data.fish_sold ?? 0);
           player.totalEarned = Math.max(player.totalEarned, data.total_earned ?? 0);
+          if (typeof data.fatigue === 'number') {
+            player.fatigue = Math.max(0, Math.min(100, data.fatigue));
+            updatePlayerHUD();
+          }
 
           if (data.current_rod_id && RODS[data.current_rod_id]) {
             player.rodId = data.current_rod_id;
@@ -959,6 +1399,19 @@ function failFishing(reason) {
           if (data.current_line_id && LINES[data.current_line_id]) {
             player.lineId = data.current_line_id;
             if (!player.ownedLines.includes(data.current_line_id)) player.ownedLines.push(data.current_line_id);
+          }
+
+          // Загрузка статистики скупки рыбы для глобального рынка цен
+          try {
+            const { data: marketData } = await supabaseClient.from('market_sales').select('fish_id, total_sold');
+            if (marketData && marketData.length > 0) {
+              marketData.forEach(row => {
+                marketSales[row.fish_id] = Math.max(marketSales[row.fish_id] || 0, Number(row.total_sold) || 0);
+              });
+              try { localStorage.setItem("lumibot_market_sales", JSON.stringify(marketSales)); } catch (e) {}
+            }
+          } catch (mErr) {
+            console.log("Таблица market_sales еще не создана или оффлайн");
           }
 
           // Загрузка истории вылова для заполнения FishDex
@@ -1039,7 +1492,161 @@ function failFishing(reason) {
       if (homeBadge) {
         homeBadge.textContent = player.livewell.length;
       }
+
+      // Индикатор усталости игрока
+      const fatiguePill = document.getElementById("fatigueHudPill");
+      const fatigueText = document.getElementById("fatigueText");
+      const currentFatigue = Math.max(0, Math.min(100, Math.round(player.fatigue || 0)));
+
+      if (fatigueText) {
+        fatigueText.textContent = `${currentFatigue}%`;
+      }
+      if (fatiguePill) {
+        fatiguePill.className = "hud-pill-btn fatigue-pill";
+        if (currentFatigue >= 90) {
+          fatiguePill.classList.add("fatigue-critical");
+        } else if (currentFatigue >= 80) {
+          fatiguePill.classList.add("fatigue-tired");
+        } else if (currentFatigue >= 50) {
+          fatiguePill.classList.add("fatigue-warn");
+        } else {
+          fatiguePill.classList.add("fatigue-good");
+        }
+      }
+
+      // Потемнение в глазах (>80% усталости)
+      const vignette = document.getElementById("fatigueVignetteOverlay");
+      if (vignette) {
+        if (currentFatigue >= 80) {
+          const vigOpacity = Math.min(0.92, 0.40 + ((currentFatigue - 80) / 20) * 0.52);
+          vignette.style.opacity = vigOpacity;
+          vignette.classList.add("active");
+        } else {
+          vignette.style.opacity = "0";
+          vignette.classList.remove("active");
+        }
+      }
     }
+
+    // Добавление усталости и проверка эффектов
+    let isCollapsing = false;
+    function addPlayerFatigue(amount) {
+      if (isCollapsing) return;
+      const prevFatigue = player.fatigue || 0;
+      player.fatigue = Math.max(0, Math.min(100, prevFatigue + amount));
+      updatePlayerHUD();
+      savePlayerLocal();
+
+      // Предупреждающие тосты при переходе порогов
+      if (prevFatigue < 80 && player.fatigue >= 80) {
+        showToast("⚠️ В глазах начинает темнеть... Усталость выше 80%!");
+        triggerHaptic("warning");
+      } else if (prevFatigue < 90 && player.fatigue >= 90) {
+        showToast("⚠️ Руки слабеют и дрожат! Усталость выше 90%!");
+        triggerHaptic("error");
+      }
+
+      // Проверка на обморок при усталости >95% (вероятность 50%)
+      if (player.fatigue >= 95 && Math.random() < 0.50) {
+        triggerCollapseEvent();
+      }
+    }
+    window.addPlayerFatigue = addPlayerFatigue;
+
+    // Событие обморока от переутомления и утреннего ограбления
+    function triggerCollapseEvent() {
+      if (isCollapsing) return;
+      isCollapsing = true;
+
+      // Прерываем текущую рыбалку
+      if (typeof gameState !== 'undefined') gameState = "IDLE";
+      const reelingOverlay = document.getElementById("reelingOverlay");
+      if (reelingOverlay) reelingOverlay.classList.remove("active");
+      const bottomBar = document.getElementById("bottomBar");
+      if (bottomBar) bottomBar.style.display = "none";
+      const swipeHint = document.getElementById("swipeHint");
+      if (swipeHint) swipeHint.style.display = "none";
+
+      triggerHaptic("heavy");
+      if (sound && sound.playFailure) sound.playFailure();
+
+      const collapseModal = document.getElementById("collapseModal");
+      const collapseTitle = document.getElementById("collapseTitle");
+      const collapseText = document.getElementById("collapseText");
+      const collapseLossReport = document.getElementById("collapseLossReport");
+      const collapseWakeUpBtn = document.getElementById("collapseWakeUpBtn");
+
+      // Вероятность 40% быть ограбленным к утру
+      const wasRobbed = Math.random() < 0.40;
+      let stolenSummary = [];
+
+      if (wasRobbed) {
+        // 1. Кража монет
+        if (player.balance > 15) {
+          const stolenCoins = Math.min(player.balance, Math.max(10, Math.floor(player.balance * (0.25 + Math.random() * 0.25))));
+          player.balance = Math.max(0, player.balance - stolenCoins);
+          stolenSummary.push(`• Монеты: -${stolenCoins} C`);
+        }
+        // 2. Кража рыбы из садка
+        if (player.livewell.length > 0) {
+          const stealCount = Math.min(player.livewell.length, Math.floor(1 + Math.random() * 3));
+          player.livewell.splice(0, stealCount);
+          stolenSummary.push(`• Рыба из садка: -${stealCount} шт.`);
+        }
+        // 3. Кража приманок
+        if (player.baits && player.baits[currentBaitKey] && player.baits[currentBaitKey] > 8) {
+          const stolenBaitCount = Math.min(player.baits[currentBaitKey], Math.floor(4 + Math.random() * 5));
+          player.baits[currentBaitKey] -= stolenBaitCount;
+          const bName = BAITS[currentBaitKey] ? BAITS[currentBaitKey].name : "Приманка";
+          stolenSummary.push(`• Наживка «${bName}»: -${stolenBaitCount} шт.`);
+        }
+      }
+
+      if (collapseModal) {
+        if (wasRobbed && stolenSummary.length > 0) {
+          if (collapseTitle) {
+            collapseTitle.textContent = "⚠️ ВАС ОГРАБИЛИ НА РАССВЕТЕ!";
+            collapseTitle.style.color = "#f87171";
+          }
+          if (collapseText) {
+            collapseText.textContent = "Вы потеряли сознание от предельной усталости прямо на берегу. Пока вы лежали без чувств в темноте, недоброжелатели обчистили ваши карманы и садок!";
+          }
+          if (collapseLossReport) {
+            collapseLossReport.innerHTML = `<strong>Похищенное имущество:</strong><br>${stolenSummary.join('<br>')}`;
+            collapseLossReport.style.display = "block";
+          }
+        } else {
+          if (collapseTitle) {
+            collapseTitle.textContent = "🌅 СЧАСТЛИВОЕ СПАСЕНИЕ НА РАССВЕТЕ";
+            collapseTitle.style.color = "#38bdf8";
+          }
+          if (collapseText) {
+            collapseText.textContent = "Вы рухнули без сил на берегу озера. К счастью, старый таёжный егерь заметил вас на рассвете и доставил к теплому костру. Все ваши снасти и улов в полной сохранности!";
+          }
+          if (collapseLossReport) {
+            collapseLossReport.style.display = "none";
+          }
+        }
+        collapseModal.classList.add("active");
+      }
+
+      // Восстановление сил после пробуждения (15% - легкое недомогание)
+      player.fatigue = 15;
+      updatePlayerHUD();
+      savePlayerLocal();
+
+      if (collapseWakeUpBtn) {
+        collapseWakeUpBtn.onclick = () => {
+          if (collapseModal) collapseModal.classList.remove("active");
+          isCollapsing = false;
+          if (swipeHint) swipeHint.style.display = "flex";
+          if (bottomBar) bottomBar.style.display = "flex";
+          showToast("Вы пришли в себя. Отдохните в Хижине, чтобы полностью восстановить силы!");
+          triggerHaptic("medium");
+        };
+      }
+    }
+    window.triggerCollapseEvent = triggerCollapseEvent;
 
     // Рендеринг и логика способов ловли и приманок
     function renderBaitsUI() {
@@ -1048,53 +1655,108 @@ function failFishing(reason) {
       const method = FISHING_METHODS[currentFishingMethod] || FISHING_METHODS.float;
       const availableBaits = method.baits || [];
 
-      // Если текущая приманка не подходит для метода, выбираем первую доступную
-      if (!availableBaits.includes(currentBaitKey)) {
-        currentBaitKey = availableBaits[0] || "worm";
+      if (!Array.isArray(player.unlockedBaits)) player.unlockedBaits = ["worm"];
+      if (!player.baits || typeof player.baits !== 'object') player.baits = { worm: 20 };
+
+      // 1. Фильтруем ТОЛЬКО открытые наживки игрока (Requirement 1)
+      const unlockedMethodBaits = availableBaits.filter(baitKey => player.unlockedBaits.includes(baitKey));
+
+      // Если текущая приманка не подходит для метода или закрыта, выбираем первую открытую
+      if (!unlockedMethodBaits.includes(currentBaitKey)) {
+        const firstOwnedWithStock = unlockedMethodBaits.find(k => (player.baits[k] || 0) > 0);
+        currentBaitKey = firstOwnedWithStock || unlockedMethodBaits[0] || "";
       }
 
-      container.innerHTML = availableBaits.map(baitKey => {
+      // Если ни одной наживки для метода еще не открыто
+      if (unlockedMethodBaits.length === 0) {
+        container.innerHTML = `
+          <div style="font-size:12px;color:#94a3b8;padding:10px 14px;text-align:center;width:100%;">
+            🔒 Нет открытых приманок для этого способа. Откройте их в лавке торговца в Хижине.
+          </div>
+        `;
+        return;
+      }
+
+      container.innerHTML = unlockedMethodBaits.map(baitKey => {
         const bait = BAITS[baitKey];
         if (!bait) return '';
+        const count = player.baits[baitKey] || 0;
         const isActive = baitKey === currentBaitKey;
+        const isZero = count <= 0;
+
         return `
-          <button class="bait-btn ${isActive ? 'active' : ''}" data-bait="${baitKey}">
+          <button class="bait-btn ${isActive ? 'active' : ''} ${isZero ? 'empty' : ''}" data-bait="${baitKey}">
             <span class="bait-icon">${bait.iconSvg || ''}</span>
             <span class="bait-name">${bait.name}</span>
+            <span class="bait-count ${isZero ? 'zero' : ''}">x${count}</span>
           </button>
         `;
       }).join('');
 
       container.querySelectorAll(".bait-btn").forEach(btn => {
         btn.addEventListener("click", () => {
+          const baitKey = btn.dataset.bait;
+          const bait = BAITS[baitKey];
+          if (!bait) return;
+
+          const count = player.baits[baitKey] || 0;
+          if (count <= 0) {
+            triggerHaptic("warning");
+            // Requirement 5: Убрана возможность открывать торговца из панели снастей
+            showToast(`Наживка «${bait.name}» закончилась! Пополните запасы в Хижине.`);
+            return;
+          }
+
           container.querySelectorAll(".bait-btn").forEach(b => b.classList.remove("active"));
           btn.classList.add("active");
-          currentBaitKey = btn.dataset.bait;
+          currentBaitKey = baitKey;
           triggerHaptic("light");
           savePlayerLocal();
-          showToast(`Выбрана приманка: ${BAITS[currentBaitKey]?.name || ''}`);
+          showToast(`Выбрана приманка: ${bait.name} (${count} шт.)`);
         });
       });
     }
 
-    function initMethodAndBaitsUI() {
+    function updateMethodsUI() {
+      if (!Array.isArray(player.ownedMethods) || player.ownedMethods.length === 0) {
+        player.ownedMethods = ["float"];
+      }
+      if (!player.ownedMethods.includes(currentFishingMethod)) {
+        currentFishingMethod = player.ownedMethods[0] || "float";
+      }
+
       document.querySelectorAll(".method-btn").forEach(btn => {
         const methodKey = btn.dataset.method;
-        btn.classList.toggle("active", methodKey === currentFishingMethod);
-
-        btn.addEventListener("click", () => {
-          document.querySelectorAll(".method-btn").forEach(b => b.classList.remove("active"));
-          btn.classList.add("active");
-          currentFishingMethod = btn.dataset.method;
-          const method = FISHING_METHODS[currentFishingMethod];
-          renderBaitsUI();
-          triggerHaptic("medium");
-          savePlayerLocal();
-          showToast(`${method.icon} Способ: ${method.name}. ${method.desc}`);
-        });
+        const isOwned = player.ownedMethods.includes(methodKey);
+        btn.classList.toggle("locked", !isOwned);
+        btn.classList.toggle("active", isOwned && methodKey === currentFishingMethod);
       });
 
       renderBaitsUI();
+    }
+    window.updateMethodsUI = updateMethodsUI;
+
+    function initMethodAndBaitsUI() {
+      document.querySelectorAll(".method-btn").forEach(btn => {
+        btn.addEventListener("click", () => {
+          const methodKey = btn.dataset.method;
+          if (!player.ownedMethods.includes(methodKey)) {
+            const m = FISHING_METHODS[methodKey];
+            showToast(`Способ «${m ? m.name : methodKey}» закрыт! Требуется Ур. ${m ? m.levelReq : '?'} у торговца.`);
+            return;
+          }
+          currentFishingMethod = methodKey;
+          updateMethodsUI();
+          triggerHaptic("medium");
+          savePlayerLocal();
+          const method = FISHING_METHODS[currentFishingMethod];
+          if (method) {
+            showToast(`Способ: ${method.name}. ${method.desc}`);
+          }
+        });
+      });
+
+      updateMethodsUI();
 
       const twitchBtn = document.getElementById("twitchBtn");
       if (twitchBtn) {
@@ -1186,6 +1848,14 @@ function failFishing(reason) {
         player.totalEarned += loot.coins;
         player.xp += loot.xp;
         player.level = 1 + Math.floor(Math.sqrt(player.xp / 50));
+
+        if (loot.bait && loot.baitCount) {
+          if (!player.baits) player.baits = {};
+          player.baits[loot.bait] = (player.baits[loot.bait] || 0) + loot.baitCount;
+          if (!Array.isArray(player.unlockedBaits)) player.unlockedBaits = ["worm"];
+          if (!player.unlockedBaits.includes(loot.bait)) player.unlockedBaits.push(loot.bait);
+          renderBaitsUI();
+        }
 
         document.getElementById("catchModal").classList.remove("active");
         gameState = "IDLE";
@@ -1600,6 +2270,89 @@ function failFishing(reason) {
 
 
     /* ==========================================================
+       ДИНАМИЧЕСКИЙ РЫНОК РЫБЫ (ЗАКОН СПРОСА И ПРЕДЛОЖЕНИЯ)
+       ========================================================== */
+    let marketSales = {};
+    try {
+      const rawMarket = localStorage.getItem("lumibot_market_sales");
+      if (rawMarket) marketSales = JSON.parse(rawMarket);
+      if (!marketSales || typeof marketSales !== 'object') marketSales = {};
+    } catch (e) {
+      marketSales = {};
+    }
+
+    function recordFishSale(fishKey, count = 1) {
+      if (!fishKey) return;
+      marketSales[fishKey] = (marketSales[fishKey] || 0) + count;
+      try {
+        localStorage.setItem("lumibot_market_sales", JSON.stringify(marketSales));
+      } catch (e) {}
+
+      if (supabaseClient) {
+        supabaseClient.rpc('record_market_sale', { p_fish_id: String(fishKey), p_count: count })
+          .then(({ error }) => {
+            if (error) {
+              supabaseClient.from('market_sales').upsert({
+                fish_id: String(fishKey),
+                total_sold: marketSales[fishKey],
+                updated_at: new Date().toISOString()
+              }).catch(() => {});
+            }
+          }).catch(() => {});
+      }
+    }
+
+    function getFishDynamicPrice(fish) {
+      const basePrice = (fish && typeof fish.price === 'number') ? fish.price : 20;
+      const totalSales = Object.values(marketSales).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+      const MIN_DATA_THRESHOLD = 12; // Пока недостаточно данных, цена как сейчас (Requirement 4)
+
+      if (totalSales < MIN_DATA_THRESHOLD) {
+        return {
+          price: basePrice,
+          basePrice: basePrice,
+          multiplier: 1.0,
+          trend: 'initial',
+          diffPercent: 0,
+          label: 'Базовая'
+        };
+      }
+
+      const fishKey = fish.fishId || fish.id || "common_fish";
+      const speciesKeys = Object.keys(marketSales);
+      const avgSales = totalSales / Math.max(1, speciesKeys.length);
+      const currentFishSales = marketSales[fishKey] || 0;
+
+      // Относительное отклонение от среднего:
+      // Если рыбу сдают чаще среднего -> переизбыток -> цена падает (до 0.50x)
+      // Если рыбу сдают реже среднего -> дефицит -> цена растет (до 1.65x)
+      const diff = (avgSales - currentFishSales) / (avgSales + 6);
+      const multiplier = Math.max(0.50, Math.min(1.65, 1.0 + diff * 0.55));
+      const dynamicPrice = Math.max(1, Math.round(basePrice * multiplier));
+      const diffPercent = Math.round((multiplier - 1.0) * 100);
+
+      let trend = 'neutral';
+      let label = '⚖️ Норма';
+      if (diffPercent >= 6) {
+        trend = 'up';
+        label = `📈 +${diffPercent}%`;
+      } else if (diffPercent <= -6) {
+        trend = 'down';
+        label = `📉 ${diffPercent}%`;
+      }
+
+      return {
+        price: dynamicPrice,
+        basePrice: basePrice,
+        multiplier: multiplier,
+        trend: trend,
+        diffPercent: diffPercent,
+        label: label
+      };
+    }
+    window.getFishDynamicPrice = getFishDynamicPrice;
+
+    /* ==========================================================
        МОДУЛЬ МАГАЗИНА СНАСТЕЙ И УЛУЧШЕНИЙ
        ========================================================== */
     const shopModal = document.getElementById("shopModal");
@@ -1610,14 +2363,16 @@ function failFishing(reason) {
     function sellLivewellFish(idx) {
       if (idx < 0 || idx >= player.livewell.length) return;
       const fish = player.livewell.splice(idx, 1)[0];
-      player.balance += fish.price;
-      player.totalEarned += fish.price;
+      const dynamic = getFishDynamicPrice(fish);
+      player.balance += dynamic.price;
+      player.totalEarned += dynamic.price;
       player.fishSold++;
+      recordFishSale(fish.fishId || fish.id, 1);
       triggerHaptic("medium");
       updatePlayerHUD();
       savePlayerLocal();
       syncUserStatsToSupabase();
-      showToast(`Продано на скупке: ${fish.name} (+${fish.price} C)`);
+      showToast(`Продано на скупке: ${fish.name} (+${dynamic.price} C) [${dynamic.label}]`);
     }
 
     function renderShopTab(tabKey) {
@@ -1630,9 +2385,16 @@ function failFishing(reason) {
       if (!container) return;
 
       if (tabKey === "sell") {
-        const totalWorth = player.livewell.reduce((sum, item) => sum + item.price, 0);
+        const totalWorth = player.livewell.reduce((sum, item) => sum + getFishDynamicPrice(item).price, 0);
+        const totalGlobalSales = Object.values(marketSales).reduce((sum, v) => sum + (typeof v === 'number' ? v : 0), 0);
+        const isDataReady = totalGlobalSales >= 12;
+
         if (player.livewell.length === 0) {
           container.innerHTML = `
+            <div class="market-info-bar">
+              <span>${isDataReady ? 'Динамическая скупка активна (спрос и предложение)' : 'Сбор статистики цен: продано ' + totalGlobalSales + '/12 рыб'}</span>
+              <span>Всего сдано: <b>${totalGlobalSales} шт.</b></span>
+            </div>
             <div style="text-align:center;padding:30px 10px;color:#64748b;font-size:13px;">
               Торговец ждет улов! Ваш садок пуст.<br><br>
               Поймайте рыбу и принесите её на скупку.
@@ -1640,28 +2402,80 @@ function failFishing(reason) {
           `;
         } else {
           container.innerHTML = `
+            <div class="market-info-bar">
+              <span>${isDataReady ? 'Динамическая скупка: цены зависят от частоты продаж' : 'Сбор статистики цен: продано ' + totalGlobalSales + '/12 рыб (базовые цены)'}</span>
+              <span>Всего сдано: <b>${totalGlobalSales} шт.</b></span>
+            </div>
             <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;font-size:12px;color:#94a3b8;">
               <span>Рыб в садке: ${player.livewell.length} шт.</span>
               <span style="color:#fef08a;font-weight:700;">Итого: ${totalWorth} C</span>
             </div>
             <button class="action-btn" onclick="sellAllThroughMerchant()" style="margin-bottom:12px;padding:10px;">Продать всё оптом (+${totalWorth} C)</button>
             <div style="display:flex;flex-direction:column;gap:8px;">
-              ${player.livewell.map((item, idx) => `
+              ${player.livewell.map((item, idx) => {
+                const dynamic = getFishDynamicPrice(item);
+                return `
                 <div class="livewell-item">
                   <div class="livewell-item-meta">
-                    <div class="livewell-item-name">${item.name} <span class="rarity-pill rarity-${item.rarity}" style="font-size:9px;padding:1px 6px;">${item.rarity}</span></div>
-                    <div class="livewell-item-sub">Вес: ${item.weight} кг | Цена: ${item.price} C</div>
+                    <div class="livewell-item-name">
+                      ${item.name}
+                      <span class="rarity-pill rarity-${item.rarity}" style="font-size:9px;padding:1px 6px;">${item.rarity}</span>
+                      <span class="price-trend-tag trend-${dynamic.trend}">${dynamic.label}</span>
+                    </div>
+                    <div class="livewell-item-sub">Вес: ${item.weight} кг | Цена: <b style="color:#fde047;">${dynamic.price} C</b> <span style="opacity:0.6;">(база: ${item.price} C)</span></div>
                   </div>
-                  <button class="mini-sell-btn" onclick="sellLivewellFishFromShop(${idx})">Сдать +${item.price} C</button>
+                  <button class="mini-sell-btn" onclick="sellLivewellFishFromShop(${idx})">Сдать +${dynamic.price} C</button>
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
           `;
         }
+      } else if (tabKey === "methods") {
+        container.innerHTML = Object.values(FISHING_METHODS).map(m => {
+          const isEquipped = currentFishingMethod === m.id;
+          const isOwned = player.ownedMethods.includes(m.id);
+          const meetsLevel = player.level >= (m.levelReq || 1);
+          const canAfford = player.balance >= m.price;
+
+          let btnHtml = '';
+          if (isEquipped) {
+            btnHtml = `<button class="buy-btn equipped">Выбран</button>`;
+          } else if (isOwned) {
+            btnHtml = `<button class="buy-btn" onclick="equipMethod('${m.id}')">Выбрать</button>`;
+          } else if (!meetsLevel) {
+            btnHtml = `<button class="buy-btn locked" title="Требуется уровень ${m.levelReq}">🔒 Ур. ${m.levelReq}</button>`;
+          } else if (!canAfford) {
+            btnHtml = `<button class="buy-btn locked" title="Недостаточно монет">Купить ${m.price} C</button>`;
+          } else {
+            btnHtml = `<button class="buy-btn" onclick="buyMethod('${m.id}')">Купить ${m.price} C</button>`;
+          }
+
+          return `
+            <div class="shop-card">
+              <div class="shop-card-head">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span style="display:inline-flex;color:#38bdf8;">${m.iconSvg || ''}</span>
+                  <span class="shop-card-title">${m.name}</span>
+                </div>
+                <span class="shop-price">${m.price === 0 ? "Базовый" : m.price + " C"}</span>
+              </div>
+              <div class="shop-card-desc">${m.desc}</div>
+              <div class="shop-card-actions">
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="req-badge ${meetsLevel ? 'ok' : ''}">Ур. ${m.levelReq || 1}</span>
+                  <span style="font-size:11px;color:#38bdf8;">Клёв: x${m.biteSpeedMult}</span>
+                </div>
+                ${btnHtml}
+              </div>
+            </div>
+          `;
+        }).join('');
       } else if (tabKey === "rods") {
         container.innerHTML = Object.values(RODS).map(rod => {
           const isEquipped = player.rodId === rod.id;
           const isOwned = player.ownedRods.includes(rod.id);
+          const meetsLevel = player.level >= (rod.levelReq || 1);
           const canAfford = player.balance >= rod.price;
 
           let btnHtml = '';
@@ -1669,10 +2483,12 @@ function failFishing(reason) {
             btnHtml = `<button class="buy-btn equipped">Надето</button>`;
           } else if (isOwned) {
             btnHtml = `<button class="buy-btn" onclick="equipRod('${rod.id}')">Надеть</button>`;
+          } else if (!meetsLevel) {
+            btnHtml = `<button class="buy-btn locked" title="Требуется уровень ${rod.levelReq}">🔒 Ур. ${rod.levelReq}</button>`;
+          } else if (!canAfford) {
+            btnHtml = `<button class="buy-btn locked" title="Недостаточно монет">Купить ${rod.price} C</button>`;
           } else {
-            btnHtml = canAfford
-              ? `<button class="buy-btn" onclick="buyRod('${rod.id}')">Купить ${rod.price} C</button>`
-              : `<button class="buy-btn locked" title="Недостаточно монет">Купить ${rod.price} C</button>`;
+            btnHtml = `<button class="buy-btn" onclick="buyRod('${rod.id}')">Купить ${rod.price} C</button>`;
           }
 
           return `
@@ -1683,7 +2499,10 @@ function failFishing(reason) {
               </div>
               <div class="shop-card-desc">${rod.desc}</div>
               <div class="shop-card-actions">
-                <span style="font-size:11px;color:#38bdf8;">Зона: ${rod.safeZoneMin}%-${rod.safeZoneMax}%</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="req-badge ${meetsLevel ? 'ok' : ''}">Ур. ${rod.levelReq || 1}</span>
+                  <span style="font-size:11px;color:#38bdf8;">Зона: ${rod.safeZoneMin}%-${rod.safeZoneMax}%</span>
+                </div>
                 ${btnHtml}
               </div>
             </div>
@@ -1693,6 +2512,7 @@ function failFishing(reason) {
         container.innerHTML = Object.values(LINES).map(line => {
           const isEquipped = player.lineId === line.id;
           const isOwned = player.ownedLines.includes(line.id);
+          const meetsLevel = player.level >= (line.levelReq || 1);
           const canAfford = player.balance >= line.price;
 
           let btnHtml = '';
@@ -1700,10 +2520,12 @@ function failFishing(reason) {
             btnHtml = `<button class="buy-btn equipped">Надето</button>`;
           } else if (isOwned) {
             btnHtml = `<button class="buy-btn" onclick="equipLine('${line.id}')">Надеть</button>`;
+          } else if (!meetsLevel) {
+            btnHtml = `<button class="buy-btn locked" title="Требуется уровень ${line.levelReq}">🔒 Ур. ${line.levelReq}</button>`;
+          } else if (!canAfford) {
+            btnHtml = `<button class="buy-btn locked" title="Недостаточно монет">Купить ${line.price} C</button>`;
           } else {
-            btnHtml = canAfford
-              ? `<button class="buy-btn" onclick="buyLine('${line.id}')">Купить ${line.price} C</button>`
-              : `<button class="buy-btn locked" title="Недостаточно монет">Купить ${line.price} C</button>`;
+            btnHtml = `<button class="buy-btn" onclick="buyLine('${line.id}')">Купить ${line.price} C</button>`;
           }
 
           return `
@@ -1714,12 +2536,84 @@ function failFishing(reason) {
               </div>
               <div class="shop-card-desc">${line.desc}</div>
               <div class="shop-card-actions">
-                <span style="font-size:11px;color:#38bdf8;">Запас: ${line.dangerBuffer} сек</span>
+                <div style="display:flex;align-items:center;gap:6px;">
+                  <span class="req-badge ${meetsLevel ? 'ok' : ''}">Ур. ${line.levelReq || 1}</span>
+                  <span style="font-size:11px;color:#38bdf8;">Запас: ${line.dangerBuffer} сек</span>
+                </div>
                 ${btnHtml}
               </div>
             </div>
           `;
         }).join('');
+      } else if (tabKey === "baits") {
+        if (!Array.isArray(player.unlockedBaits)) player.unlockedBaits = ["worm"];
+        if (!player.baits || typeof player.baits !== 'object') player.baits = { worm: 20 };
+
+        const methodSections = [
+          { method: "float", title: "🪱 Поплавочные наживки", list: ["worm", "corn", "dough", "bloodworm"] },
+          { method: "spinning", title: "🎣 Спиннинговые приманки", list: ["lure_spoon", "lure_spinner", "lure_jig", "lure_wobbler"] },
+          { method: "feeder", title: "🔔 Фидерные смеси и насадки", list: ["maggot", "feeder_mix", "boilie", "live_bait"] },
+          { method: "fly", title: "🪰 Нахлыстовые мушки", list: ["mayfly", "dry_fly", "nymph", "streamer"] }
+        ];
+
+        let html = '';
+        methodSections.forEach(sec => {
+          html += `<div class="shop-category-header">${sec.title}</div>`;
+          sec.list.forEach(baitKey => {
+            const bait = BAITS[baitKey];
+            if (!bait) return;
+
+            const isUnlocked = player.unlockedBaits.includes(baitKey);
+            const count = player.baits[baitKey] || 0;
+            const meetsLevel = player.level >= (bait.levelReq || 1);
+            const canAffordUnlock = player.balance >= bait.unlockPrice;
+            const canAffordPack = player.balance >= bait.packPrice;
+
+            let btnHtml = '';
+            if (!isUnlocked) {
+              if (!meetsLevel) {
+                btnHtml = `<button class="buy-btn locked" title="Требуется уровень ${bait.levelReq}">🔒 Ур. ${bait.levelReq}</button>`;
+              } else if (!canAffordUnlock) {
+                btnHtml = `<button class="buy-btn locked" title="Недостаточно монет">Открыть ${bait.unlockPrice} C</button>`;
+              } else {
+                btnHtml = `<button class="buy-btn" onclick="unlockBait('${baitKey}')">Открыть ${bait.unlockPrice === 0 ? "Бесплатно" : bait.unlockPrice + " C"}</button>`;
+              }
+            } else {
+              if (!canAffordPack) {
+                btnHtml = `<button class="buy-btn locked" title="Недостаточно монет">Закупка +${bait.packCount} шт. (${bait.packPrice} C)</button>`;
+              } else {
+                btnHtml = `<button class="buy-btn" onclick="buyBaitPack('${baitKey}')">Закупка +${bait.packCount} шт. (${bait.packPrice} C)</button>`;
+              }
+            }
+
+            const methodName = (FISHING_METHODS[bait.method]?.name) || bait.method;
+            const priceTag = !isUnlocked
+              ? (bait.unlockPrice === 0 ? "Бесплатно" : bait.unlockPrice + " C")
+              : (bait.packPrice + " C / " + bait.packCount + " шт.");
+
+            html += `
+              <div class="shop-card">
+                <div class="shop-card-head">
+                  <div style="display:flex;align-items:center;gap:6px;">
+                    <span style="display:inline-flex;color:#38bdf8;">${bait.iconSvg || ''}</span>
+                    <span class="shop-card-title">${bait.name}</span>
+                    <span class="bait-method-badge">${methodName}</span>
+                  </div>
+                  <span class="shop-price">${priceTag}</span>
+                </div>
+                <div class="shop-card-desc">${bait.desc}</div>
+                <div class="shop-card-actions">
+                  <div style="display:flex;align-items:center;gap:8px;">
+                    <span class="req-badge ${meetsLevel ? 'ok' : ''}">Ур. ${bait.levelReq || 1}</span>
+                    <span class="bait-stock-tag ${count === 0 ? 'zero' : ''}">В наличии: <b>${count} шт.</b></span>
+                  </div>
+                  ${btnHtml}
+                </div>
+              </div>
+            `;
+          });
+        });
+        container.innerHTML = html;
       }
     }
 
@@ -1731,7 +2625,12 @@ function failFishing(reason) {
     window.sellAllThroughMerchant = function() {
       if (player.livewell.length === 0) return;
       const count = player.livewell.length;
-      const total = player.livewell.reduce((sum, f) => sum + f.price, 0);
+      let total = 0;
+      player.livewell.forEach(f => {
+        const dynamic = getFishDynamicPrice(f);
+        total += dynamic.price;
+        recordFishSale(f.fishId || f.id, 1);
+      });
       player.balance += total;
       player.totalEarned += total;
       player.fishSold += count;
@@ -1743,12 +2642,55 @@ function failFishing(reason) {
       savePlayerLocal();
       syncUserStatsToSupabase();
       renderShopTab("sell");
-      showToast(`Торговец выкупил ${count} рыб за +${total} C!`);
+      showToast(`Торговец выкупил ${count} рыб по рыночным ценам за +${total} C!`);
+    };
+
+    window.buyMethod = function(methodId) {
+      const method = FISHING_METHODS[methodId];
+      if (!method) return;
+      if (player.level < (method.levelReq || 1)) {
+        showToast(`Нужен Уровень ${method.levelReq} для открытия!`);
+        return;
+      }
+      if (player.balance < method.price) {
+        showToast(`Недостаточно монет: требуется ${method.price} C`);
+        return;
+      }
+      player.balance -= method.price;
+      if (!player.ownedMethods.includes(methodId)) {
+        player.ownedMethods.push(methodId);
+      }
+      currentFishingMethod = methodId;
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      updateMethodsUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("methods");
+      showToast(`Открыт способ ловли: ${method.name}!`);
+    };
+
+    window.equipMethod = function(methodId) {
+      if (!player.ownedMethods.includes(methodId)) return;
+      currentFishingMethod = methodId;
+      triggerHaptic("light");
+      updateMethodsUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("methods");
+      showToast(`Выбран способ ловли: ${FISHING_METHODS[methodId].name}`);
     };
 
     window.buyRod = function(rodId) {
       const rod = RODS[rodId];
-      if (!rod || player.balance < rod.price) return;
+      if (!rod) return;
+      if (player.level < (rod.levelReq || 1)) {
+        showToast(`Нужен Уровень ${rod.levelReq} для покупки этой удочки!`);
+        return;
+      }
+      if (player.balance < rod.price) return;
       player.balance -= rod.price;
       player.ownedRods.push(rodId);
       player.rodId = rodId;
@@ -1776,7 +2718,12 @@ function failFishing(reason) {
 
     window.buyLine = function(lineId) {
       const line = LINES[lineId];
-      if (!line || player.balance < line.price) return;
+      if (!line) return;
+      if (player.level < (line.levelReq || 1)) {
+        showToast(`Нужен Уровень ${line.levelReq} для покупки этой лески!`);
+        return;
+      }
+      if (player.balance < line.price) return;
       player.balance -= line.price;
       player.ownedLines.push(lineId);
       player.lineId = lineId;
@@ -1798,6 +2745,73 @@ function failFishing(reason) {
       syncUserStatsToSupabase();
       renderShopTab("lines");
       showToast(`Надета: ${LINES[lineId].name}`);
+    };
+
+    function openShopModalWithTab(tabKey) {
+      if (!shopModal) return;
+      renderShopTab(tabKey || "baits");
+      shopModal.classList.add("active");
+      triggerHaptic("light");
+    }
+    window.openShopModalWithTab = openShopModalWithTab;
+
+    window.unlockBait = function(baitKey) {
+      const bait = BAITS[baitKey];
+      if (!bait) return;
+      if (player.level < (bait.levelReq || 1)) {
+        showToast(`Нужен Уровень ${bait.levelReq} для открытия наживки «${bait.name}»!`);
+        return;
+      }
+      if (player.balance < bait.unlockPrice) {
+        showToast(`Недостаточно монет: требуется ${bait.unlockPrice} C`);
+        return;
+      }
+      player.balance -= bait.unlockPrice;
+      if (!Array.isArray(player.unlockedBaits)) player.unlockedBaits = ["worm"];
+      if (!player.unlockedBaits.includes(baitKey)) {
+        player.unlockedBaits.push(baitKey);
+      }
+      if (!player.baits) player.baits = {};
+      player.baits[baitKey] = (player.baits[baitKey] || 0) + (bait.packCount || 10);
+
+      // Если метод ловли совпадает, выбираем открытую наживку
+      if (bait.method === currentFishingMethod) {
+        currentBaitKey = baitKey;
+      }
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      renderBaitsUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("baits");
+      showToast(`Наживка «${bait.name}» открыта! (+${bait.packCount} шт.)`);
+    };
+
+    window.buyBaitPack = function(baitKey) {
+      const bait = BAITS[baitKey];
+      if (!bait) return;
+      if (!player.unlockedBaits || !player.unlockedBaits.includes(baitKey)) {
+        showToast(`Сначала необходимо открыть наживку «${bait.name}»!`);
+        return;
+      }
+      if (player.balance < bait.packPrice) {
+        showToast(`Недостаточно монет: требуется ${bait.packPrice} C`);
+        return;
+      }
+      player.balance -= bait.packPrice;
+      if (!player.baits) player.baits = {};
+      player.baits[baitKey] = (player.baits[baitKey] || 0) + (bait.packCount || 10);
+
+      triggerHaptic("success");
+      sound.playSuccess();
+      updatePlayerHUD();
+      renderBaitsUI();
+      savePlayerLocal();
+      syncUserStatsToSupabase();
+      renderShopTab("baits");
+      showToast(`Закуплено: «${bait.name}» +${bait.packCount} шт. (всего: ${player.baits[baitKey]} шт.)`);
     };
 
     document.querySelectorAll(".tab-bar .tab-btn").forEach(btn => {
@@ -1974,18 +2988,20 @@ function failFishing(reason) {
       if (sleepText) sleepText.textContent = "Рыбак сладко уснул под потрескивание дров в камине...";
       sleepOverlay.classList.add("active");
 
-      // Сохраняем состояние игры
+      // Сбрасываем усталость на 0% при полноценном сне в Хижине
+      player.fatigue = 0;
+      updatePlayerHUD();
       savePlayerLocal();
       syncUserStatsToSupabase();
 
       setTimeout(() => {
-        if (sleepText) sleepText.textContent = "Наступило бодрое утро! Силы полностью восстановлены.";
+        if (sleepText) sleepText.textContent = "Наступило бодрое утро! Усталость полностью снята, силы восстановлены.";
         triggerHaptic("success");
       }, 1200);
 
       setTimeout(() => {
         sleepOverlay.classList.remove("active");
-        showToast("Отличный сон! Вы полны сил для новых рекордов.");
+        showToast("Отличный сон! Усталость: 0%. Вы полны сил для новых рекордов.");
       }, 2300);
     }
 

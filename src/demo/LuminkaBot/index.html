@@ -56,8 +56,15 @@
           <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
           <span class="hud-btn-text">Хижина</span>
         </button>
+        <div class="hud-pill-btn fatigue-pill" id="fatigueHudPill" title="Усталость игрока">
+          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <span class="hud-btn-text" id="fatigueText">0%</span>
+        </div>
       </div>
     </div>
+
+    <!-- Оверлей потемнения в глазах при усталости >80% -->
+    <div class="fatigue-vignette-overlay" id="fatigueVignetteOverlay"></div>
 
     <!-- Всплывающий статус -->
     <div class="status-toast" id="statusToast">Готов к рыбалке</div>
@@ -109,14 +116,59 @@
 
     <!-- Оверлей вываживания (Мини-игра) -->
     <div class="reeling-overlay" id="reelingOverlay">
-      <!-- Шкала прогресса -->
-      <div class="catch-progress-wrapper">
-        <div class="progress-labels">
-          <span>Борьба с рыбой</span>
-          <span id="catchProgressText">0%</span>
+      <!-- Верхняя панель шкал прогресса и выносливости -->
+      <div class="reeling-top-bars">
+        <!-- Шкала прогресса вылова -->
+        <div class="catch-progress-wrapper">
+          <div class="progress-labels">
+            <span>Прогресс вылова</span>
+            <span id="catchProgressText">0%</span>
+          </div>
+          <div class="progress-bar-track">
+            <div class="progress-bar-fill" id="catchProgressBar"></div>
+          </div>
         </div>
-        <div class="progress-bar-track">
-          <div class="progress-bar-fill" id="catchProgressBar"></div>
+
+        <!-- Шкала выносливости рыбы (Утомление) -->
+        <div class="stamina-progress-wrapper" id="staminaWrapper">
+          <div class="progress-labels">
+            <span id="staminaLabel">⚡ Выносливость рыбы</span>
+            <span id="staminaProgressText">100%</span>
+          </div>
+          <div class="progress-bar-track stamina-track">
+            <div class="progress-bar-fill stamina-fill" id="staminaProgressBar" style="width: 100%;"></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Динамическая статусная плашка боя -->
+      <div class="fight-state-prompt" id="fightStatePrompt">
+        <span class="prompt-icon">⚠️</span>
+        <span class="prompt-text" id="fightPromptText">РЫВОК! УДЕРЖИВАЙ РЫБУ!</span>
+      </div>
+
+      <!-- Интерактивная боевая зона удержания рыбы кончиком удилища -->
+      <div class="fight-touch-zone" id="fightTouchZone">
+        <!-- Целевой маркер рывка рыбы -->
+        <div class="fish-fight-target" id="fishFightTarget">
+          <div class="target-ring-pulse"></div>
+          <div class="target-ring-core">
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 12c.5-2.5 2.5-4 5.5-4 4 0 7 3.5 9 4-2 .5-5 4-9 4-3 0-5-1.5-5.5-4z"/>
+              <path d="M2 10v4l4-2z"/>
+            </svg>
+          </div>
+          <span class="target-lock-label" id="targetLockLabel">РЫВОК</span>
+        </div>
+
+        <!-- Контрольный прицел удилища игрока -->
+        <div class="rod-control-reticle" id="rodControlReticle">
+          <div class="reticle-ring"></div>
+          <div class="reticle-dot"></div>
+          <div class="reticle-crosshair ch-top"></div>
+          <div class="reticle-crosshair ch-bottom"></div>
+          <div class="reticle-crosshair ch-left"></div>
+          <div class="reticle-crosshair ch-right"></div>
         </div>
       </div>
 
@@ -236,6 +288,8 @@
       <div class="fs-content">
         <div class="tab-bar">
           <button class="tab-btn active" data-shoptab="sell">Скупка рыбы</button>
+          <button class="tab-btn" data-shoptab="methods">Методы</button>
+          <button class="tab-btn" data-shoptab="baits">Наживки</button>
           <button class="tab-btn" data-shoptab="rods">Удочки</button>
           <button class="tab-btn" data-shoptab="lines">Лески</button>
         </div>
@@ -367,6 +421,17 @@
       <div class="sleep-box">
         <div class="sleep-title">Крепкий сон</div>
         <div class="sleep-text" id="sleepText">Рыбак сладко уснул под потрескивание дров в камине...</div>
+      </div>
+    </div>
+
+    <!-- Полноэкранный оверлей обморока и утреннего ограбления -->
+    <div class="fullscreen-overlay faint-overlay" id="collapseModal">
+      <div class="faint-box" id="collapseBox">
+        <div class="faint-icon" id="collapseIcon">💤</div>
+        <div class="faint-title" id="collapseTitle">Истощение сил</div>
+        <div class="faint-text" id="collapseText">Темнота окутала ваши глаза... Вы без сил рухнули на сырой песок берега.</div>
+        <div class="faint-loot-lost" id="collapseLossReport" style="display:none;"></div>
+        <button class="action-btn" id="collapseWakeUpBtn" style="margin-top:16px;">Прийти в себя на рассвете</button>
       </div>
     </div>
   </div>
