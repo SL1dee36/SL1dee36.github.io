@@ -1,8 +1,10 @@
 <!DOCTYPE html>
 <html lang="ru">
+
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+  <meta name="viewport"
+    content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Telegram Fishing - Таёжное Озеро</title>
 
   <link rel="icon" href="data:,">
@@ -12,6 +14,7 @@
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
+
 <body>
 
   <div id="game-container">
@@ -37,27 +40,53 @@
             <span id="playerBalance">0</span>
           </div>
           <button class="icon-btn" id="soundBtn" title="Звук">
-            <svg id="soundIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path></svg>
+            <svg id="soundIcon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon>
+              <path d="M19.07 4.93a10 10 0 0 1 0 14.14M15.54 8.46a5 5 0 0 1 0 7.07"></path>
+            </svg>
           </button>
         </div>
       </div>
 
       <div class="hud-actions">
         <button class="hud-pill-btn" id="openLivewellBtn" title="Садок">
-          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 3h12l2 6H4z"></path><path d="M4 9c0 7 3.5 12 8 12s8-5 8-12"></path><line x1="8" y1="9" x2="8" y2="18"></line><line x1="12" y1="9" x2="12" y2="21"></line><line x1="16" y1="9" x2="16" y2="18"></line></svg>
+          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M6 3h12l2 6H4z"></path>
+            <path d="M4 9c0 7 3.5 12 8 12s8-5 8-12"></path>
+            <line x1="8" y1="9" x2="8" y2="18"></line>
+            <line x1="12" y1="9" x2="12" y2="21"></line>
+            <line x1="16" y1="9" x2="16" y2="18"></line>
+          </svg>
           <span class="hud-btn-text">Садок</span>
           <span class="badge-count" id="livewellCountBadge">0</span>
         </button>
         <button class="hud-pill-btn" id="openAtlasBtn" title="Атлас">
-          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path></svg>
+          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"></path>
+            <path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"></path>
+          </svg>
           <span class="hud-btn-text">Атлас</span>
         </button>
         <button class="hud-pill-btn" id="openHomeBtn" title="Хижина">
-          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path><polyline points="9 22 9 12 15 12 15 22"></polyline></svg>
+          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="m3 9 9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"></path>
+            <polyline points="9 22 9 12 15 12 15 22"></polyline>
+          </svg>
           <span class="hud-btn-text">Хижина</span>
         </button>
+        <!-- <button class="hud-pill-btn casino-hud-btn" id="openCasinoBtn" title="Казино «Золотой Крючок»">
+          <span style="font-size:12px;line-height:1;margin-right:2px;">🎰</span>
+          <span class="hud-btn-text">Казино</span>
+        </button> -->
         <div class="hud-pill-btn fatigue-pill" id="fatigueHudPill" title="Усталость игрока">
-          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg>
+          <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg>
           <span class="hud-btn-text" id="fatigueText">0%</span>
         </div>
       </div>
@@ -72,7 +101,11 @@
     <!-- Подсказка свайпа -->
     <div class="swipe-hint" id="swipeHint">
       <div class="swipe-arrow">
-        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="12" y1="19" x2="12" y2="5"></line><polyline points="5 12 12 5 19 12"></polyline></svg>
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          stroke-linecap="round" stroke-linejoin="round">
+          <line x1="12" y1="19" x2="12" y2="5"></line>
+          <polyline points="5 12 12 5 19 12"></polyline>
+        </svg>
       </div>
       <div class="swipe-text">Смахните вверх для заброса</div>
     </div>
@@ -82,19 +115,36 @@
       <!-- Переключатель способов ловли -->
       <div class="method-bar" id="methodBar">
         <button class="method-btn active" data-method="float">
-          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="7"></circle><path d="M12 2v3M12 19v3"></path><path d="M5 12h14"></path></svg></span>
+          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="7"></circle>
+              <path d="M12 2v3M12 19v3"></path>
+              <path d="M5 12h14"></path>
+            </svg></span>
           <span class="method-title">Поплавок</span>
         </button>
         <button class="method-btn" data-method="spinning">
-          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+            </svg></span>
           <span class="method-title">Спиннинг</span>
         </button>
         <button class="method-btn" data-method="feeder">
-          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path><path d="M13.73 21a2 2 0 0 1-3.46 0"></path></svg></span>
+          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9"></path>
+              <path d="M13.73 21a2 2 0 0 1-3.46 0"></path>
+            </svg></span>
           <span class="method-title">Фидер</span>
         </button>
         <button class="method-btn" data-method="fly">
-          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path><line x1="16" y1="8" x2="2" y2="22"></line><line x1="17.5" y1="15" x2="9" y2="15"></line></svg></span>
+          <span class="method-icon"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+              <path d="M20.24 12.24a6 6 0 0 0-8.49-8.49L5 10.5V19h8.5z"></path>
+              <line x1="16" y1="8" x2="2" y2="22"></line>
+              <line x1="17.5" y1="15" x2="9" y2="15"></line>
+            </svg></span>
           <span class="method-title">Нахлыст</span>
         </button>
       </div>
@@ -109,7 +159,10 @@
     <div class="twitch-btn-wrapper" id="twitchBtnWrapper" style="display:none;">
       <button class="twitch-btn" id="twitchBtn">
         <span class="twitch-glow"></span>
-        <span class="twitch-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon></svg></span>
+        <span class="twitch-icon"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+            stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
+            <polygon points="13 2 3 14 12 14 11 22 21 10 12 10 13 2"></polygon>
+          </svg></span>
         <span class="twitch-label">ПРОВОДКА</span>
       </button>
     </div>
@@ -153,9 +206,10 @@
         <div class="fish-fight-target" id="fishFightTarget">
           <div class="target-ring-pulse"></div>
           <div class="target-ring-core">
-            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round">
-              <path d="M6 12c.5-2.5 2.5-4 5.5-4 4 0 7 3.5 9 4-2 .5-5 4-9 4-3 0-5-1.5-5.5-4z"/>
-              <path d="M2 10v4l4-2z"/>
+            <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <path d="M6 12c.5-2.5 2.5-4 5.5-4 4 0 7 3.5 9 4-2 .5-5 4-9 4-3 0-5-1.5-5.5-4z" />
+              <path d="M2 10v4l4-2z" />
             </svg>
           </div>
           <span class="target-lock-label" id="targetLockLabel">РЫВОК</span>
@@ -218,7 +272,8 @@
 
         <div style="display:flex;flex-direction:column;gap:8px;width:100%;max-width:320px;margin:0 auto;">
           <button class="action-btn" id="addToLivewellBtn">В садок (+Опыт)</button>
-          <button class="action-btn" id="openChestBtn" style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;">Открыть ларец</button>
+          <button class="action-btn" id="openChestBtn"
+            style="display:none;background:linear-gradient(135deg,#f59e0b,#d97706);color:#fff;">Открыть ларец</button>
           <button class="action-btn-secondary" id="releaseCatchBtn">Отпустить в озеро (+5 XP)</button>
         </div>
       </div>
@@ -229,18 +284,29 @@
       <div class="fs-header">
         <div class="fs-header-left">
           <div class="fs-title">Садок с уловом</div>
-          <div class="fs-subtitle">Занято <span id="livewellCellCount">0</span> / 48 ячеек • <span id="livewellSummaryCount">0 шт.</span></div>
+          <div class="fs-subtitle">Занято <span id="livewellCellCount">0</span> / 48 ячеек • <span
+              id="livewellSummaryCount">0 шт.</span></div>
         </div>
         <div class="fs-header-right">
           <button class="close-icon-btn" id="closeLivewellBtn" aria-label="Закрыть">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
       </div>
 
       <div class="fs-content">
         <div class="livewell-info-notice">
-          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:6px;flex-shrink:0;"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+          <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#f59e0b" stroke-width="2"
+            stroke-linecap="round" stroke-linejoin="round"
+            style="vertical-align:middle;margin-right:6px;flex-shrink:0;">
+            <circle cx="12" cy="12" r="10"></circle>
+            <line x1="12" y1="8" x2="12" y2="12"></line>
+            <line x1="12" y1="16" x2="12.01" y2="16"></line>
+          </svg>
           <span>Продажа улова доступна только в лавке торговца на скупке</span>
         </div>
 
@@ -259,11 +325,18 @@
           </div>
           <div class="selected-actions">
             <button class="action-btn-secondary" id="rotateGridItemBtn" disabled title="Повернуть на 90°">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;">
+                <path d="M21.5 2v6h-6M21.34 15.57a10 10 0 1 1-.57-8.38l5.67-5.67"></path>
+              </svg>
               Повернуть (R)
             </button>
             <button class="action-btn-secondary btn-danger" id="discardGridItemBtn" disabled title="Выпустить в озеро">
-              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
+              <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+                stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;">
+                <polyline points="3 6 5 6 21 6"></polyline>
+                <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path>
+              </svg>
               Выбросить
             </button>
           </div>
@@ -280,7 +353,11 @@
         </div>
         <div class="fs-header-right">
           <button class="close-icon-btn" id="closeShopBtn" aria-label="Закрыть">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
       </div>
@@ -309,11 +386,24 @@
         <div class="fs-header-right">
           <div class="atlas-badge-pill" id="atlasDiscoveredBadge">0 / 116</div>
           <button class="hud-pill-btn" id="atlasTocToggleBtn" style="margin-right:6px;">
-            <svg class="btn-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="vertical-align:middle;margin-right:4px;"><line x1="8" y1="6" x2="21" y2="6"></line><line x1="8" y1="12" x2="21" y2="12"></line><line x1="8" y1="18" x2="21" y2="18"></line><line x1="3" y1="6" x2="3.01" y2="6"></line><line x1="3" y1="12" x2="3.01" y2="12"></line><line x1="3" y1="18" x2="3.01" y2="18"></line></svg>
+            <svg class="btn-icon-svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor"
+              stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
+              style="vertical-align:middle;margin-right:4px;">
+              <line x1="8" y1="6" x2="21" y2="6"></line>
+              <line x1="8" y1="12" x2="21" y2="12"></line>
+              <line x1="8" y1="18" x2="21" y2="18"></line>
+              <line x1="3" y1="6" x2="3.01" y2="6"></line>
+              <line x1="3" y1="12" x2="3.01" y2="12"></line>
+              <line x1="3" y1="18" x2="3.01" y2="18"></line>
+            </svg>
             Оглавление
           </button>
           <button class="close-icon-btn" id="closeAtlasBtn" aria-label="Закрыть">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
       </div>
@@ -354,7 +444,11 @@
         </div>
         <div class="fs-header-right">
           <button class="close-icon-btn" id="closeHomeBtn" title="На рыбалку" aria-label="Закрыть">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round"><line x1="18" y1="6" x2="6" y2="18"></line><line x1="6" y1="6" x2="18" y2="18"></line></svg>
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
           </button>
         </div>
       </div>
@@ -382,13 +476,19 @@
             <span class="action-btn-title">Печь (<span id="homeFuelCount">0</span> дров)</span>
             <span class="action-btn-desc">Растопить очаг</span>
           </button>
+          <button class="home-action-btn casino-action" id="homeGoCasinoBtn">
+            <span class="action-btn-title">Казино «Золотой Крючок»</span>
+            <span class="action-btn-desc">Слоты, 21 Очко, Крэш, Колесо, Мины, Кости</span>
+          </button>
           <button class="home-action-btn sleep-action" id="homeGoSleepBtn">
             <span class="action-btn-title">Спать</span>
             <span class="action-btn-desc">Отдохнуть у очага</span>
           </button>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;margin:6px 0 8px 2px;text-transform:uppercase;letter-spacing:0.5px;">Личная статистика</div>
+        <div
+          style="font-size:11px;font-weight:700;color:#94a3b8;margin:6px 0 8px 2px;text-transform:uppercase;letter-spacing:0.5px;">
+          Личная статистика</div>
         <div class="stats-grid">
           <div class="stat-tile">
             <div class="stat-tile-val" id="statFishCaught">0</div>
@@ -408,10 +508,67 @@
           </div>
         </div>
 
-        <div style="font-size:11px;font-weight:700;color:#94a3b8;margin:12px 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;">Текущее снаряжение</div>
+        <div
+          style="font-size:11px;font-weight:700;color:#94a3b8;margin:12px 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;">
+          Текущее снаряжение</div>
         <div class="equip-box">
           <div><strong>Удочка:</strong> <span id="profileRodName">Бамбуковая удочка</span></div>
           <div><strong>Леска:</strong> <span id="profileLineName">Монофил 0.2мм</span></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Полноэкранная локация: Казино «Золотой Крючок» -->
+    <div class="fullscreen-overlay" id="casinoModal">
+      <div class="fs-header casino-header">
+        <div class="fs-header-left">
+          <div class="fs-title casino-title-gold">Казино «Золотой Крючок»</div>
+          <div class="fs-subtitle">Подпольный клуб таёжного азарта</div>
+        </div>
+        <div class="fs-header-right">
+          <div class="casino-balance-pill">
+            <span class="chip-icon">🪙</span>
+            <span id="casinoPlayerBalance">0</span> C
+          </div>
+          <button class="close-icon-btn" id="closeCasinoBtn" aria-label="Закрыть">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="fs-content casino-content">
+        <!-- Навигационные вкладки игр казино -->
+        <div class="casino-tab-bar">
+          <button class="casino-tab-btn active" data-casinotab="slots">
+            <span class="tab-emoji">🎰</span> Слоты
+          </button>
+          <button class="casino-tab-btn" data-casinotab="wheel">
+            <span class="tab-emoji">🎡</span> Колесо
+          </button>
+          <button class="casino-tab-btn" data-casinotab="mines">
+            <span class="tab-emoji">💣</span> Мины
+          </button>
+          <button class="casino-tab-btn" data-casinotab="blackjack">
+            <span class="tab-emoji">🃏</span> 21 Очко
+          </button>
+          <button class="casino-tab-btn" data-casinotab="crash">
+            <span class="tab-emoji">🚀</span> Крэш
+          </button>
+          <button class="casino-tab-btn" data-casinotab="dice">
+            <span class="tab-emoji">🎲</span> Кости
+          </button>
+          <!-- <button class="casino-tab-btn" data-casinotab="bot">
+            <span class="tab-emoji">🤖</span> Бот
+          </button> -->
+        </div>
+
+        <!-- Контейнер выбранной игры -->
+        <div class="casino-body fs-scrollable" id="casinoTabContent">
+          <!-- Рендерится скриптом casino.js -->
         </div>
       </div>
     </div>
@@ -429,7 +586,8 @@
       <div class="faint-box" id="collapseBox">
         <div class="faint-icon" id="collapseIcon">💤</div>
         <div class="faint-title" id="collapseTitle">Истощение сил</div>
-        <div class="faint-text" id="collapseText">Темнота окутала ваши глаза... Вы без сил рухнули на сырой песок берега.</div>
+        <div class="faint-text" id="collapseText">Темнота окутала ваши глаза... Вы без сил рухнули на сырой песок
+          берега.</div>
         <div class="faint-loot-lost" id="collapseLossReport" style="display:none;"></div>
         <button class="action-btn" id="collapseWakeUpBtn" style="margin-top:16px;">Прийти в себя на рассвете</button>
       </div>
@@ -448,7 +606,10 @@
   <script src="atlasBook.js"></script>
   <!-- Логика интерфейса, данных, профиля и Supabase -->
   <script src="scripts.js"></script>
+  <!-- Локация Казино, Слоты, Колесо Фортуны и Минное поле -->
+  <script src="casino.js"></script>
   <!-- Игровой движок, физика заброса и Canvas-рендеринг -->
   <script src="fisher.js"></script>
 </body>
+
 </html>

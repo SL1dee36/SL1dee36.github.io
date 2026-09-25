@@ -8,20 +8,58 @@
    ========================================================== */
 const canvas = document.getElementById("fishCanvas");
 const ctx = canvas.getContext("2d");
-let dpr = window.devicePixelRatio || 1;
+let dpr = Math.min(window.devicePixelRatio || 1, 1.75);
 let width = 0;
 let height = 0;
 
+// Оптимизация: Offscreen Canvas для статического пейзажа (горы, лес, небо, луна)
+let bgCanvas = null;
+let bgCtx = null;
+let bgNeedsRedraw = true;
+let canvasLeft = 0;
+let canvasTop = 0;
+let cachedWaterGrad = null;
+
+function updateCanvasBounds() {
+  if (canvas) {
+    const rect = canvas.getBoundingClientRect();
+    canvasLeft = rect.left;
+    canvasTop = rect.top;
+  }
+}
+
 function resizeCanvas() {
-  dpr = window.devicePixelRatio || 1, 2.0;
+  dpr = Math.min(window.devicePixelRatio || 1, 1.75);
   width = window.innerWidth;
   height = window.innerHeight;
-  canvas.width = width * dpr;
-  canvas.height = height * dpr;
+  canvas.width = Math.round(width * dpr);
+  canvas.height = Math.round(height * dpr);
   ctx.resetTransform?.();
   ctx.scale(dpr, dpr);
+
+  // Подготовка оффскрин-холста статического фона
+  if (!bgCanvas) {
+    bgCanvas = document.createElement("canvas");
+    bgCtx = bgCanvas.getContext("2d");
+  }
+  const waterTop = height * 0.44;
+  bgCanvas.width = Math.round(width * dpr);
+  bgCanvas.height = Math.round((waterTop + 4) * dpr);
+  bgCtx.resetTransform?.();
+  bgCtx.scale(dpr, dpr);
+  bgNeedsRedraw = true;
+
+  // Кешируем градиент толщи воды, избегая аллокаций каждый кадр
+  cachedWaterGrad = ctx.createLinearGradient(0, waterTop, 0, height);
+  cachedWaterGrad.addColorStop(0, '#0a3250');
+  cachedWaterGrad.addColorStop(0.35, '#062038');
+  cachedWaterGrad.addColorStop(0.7, '#041424');
+  cachedWaterGrad.addColorStop(1, '#020a14');
+
+  updateCanvasBounds();
 }
 window.addEventListener("resize", resizeCanvas);
+window.addEventListener("scroll", updateCanvasBounds, { passive: true });
 resizeCanvas();
 
 // Состояния игры: IDLE, CASTING, WAITING, NIBBLE, REELING, CAUGHT
@@ -206,11 +244,9 @@ function updateAndDrawAmbientFishes(dt) {
     }
 
     if (f.type === 2) {
-      ctx.shadowColor = "#fbbf24";
-      ctx.shadowBlur = 16;
-    } else if (f.type === 1) {
-      ctx.shadowColor = "#0f172a";
-      ctx.shadowBlur = 6;
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
     }
 
     ctx.globalAlpha = f.alpha;
@@ -408,6 +444,16 @@ const fightPromptTextEl = document.getElementById("fightPromptText");
 const targetLockLabelEl = document.getElementById("targetLockLabel");
 const staminaProgressBarEl = document.getElementById("staminaProgressBar");
 const staminaProgressTextEl = document.getElementById("staminaProgressText");
+const tensionBarEl = document.getElementById("tensionBar");
+const tensionNeedleEl = document.getElementById("tensionNeedle");
+const catchProgressBarEl = document.getElementById("catchProgressBar");
+const catchProgressTextEl = document.getElementById("catchProgressText");
+
+let lastTensionInt = -1;
+let lastProgressInt = -1;
+let lastStaminaInt = -1;
+let lastTargetTransform = "";
+let lastReticleTransform = "";
 
 function setReelHold(holding) {
   if (gameState !== "REELING") return;
@@ -447,9 +493,8 @@ let fightHapticTimer = 0;
 
 function updatePlayerControlPos(clientX, clientY) {
   if (gameState !== "REELING") return;
-  const rect = canvas.getBoundingClientRect();
-  playerControlX = Math.max(30, Math.min(width - 30, clientX - rect.left));
-  playerControlY = Math.max(height * 0.35, Math.min(height * 0.82, clientY - rect.top));
+  playerControlX = Math.max(30, Math.min(width - 30, clientX - canvasLeft));
+  playerControlY = Math.max(height * 0.35, Math.min(height * 0.82, clientY - canvasTop));
 }
 
 if (fightTouchZone) {
@@ -460,34 +505,16 @@ if (fightTouchZone) {
     updatePlayerControlPos(e.clientX, e.clientY);
   });
   fightTouchZone.addEventListener("pointermove", (e) => {
-    if (e.buttons > 0 || e.pointerType === "touch" || e.pointerType === "mouse") {
+    if (e.buttons > 0 || e.pointerType === "touch" || e.pointerType === "pen") {
       updatePlayerControlPos(e.clientX, e.clientY);
     }
-  });
-  fightTouchZone.addEventListener("touchstart", (e) => {
-    if (e.touches && e.touches[0]) {
-      updatePlayerControlPos(e.touches[0].clientX, e.touches[0].clientY);
-    }
   }, { passive: true });
-  fightTouchZone.addEventListener("touchmove", (e) => {
-    if (e.touches && e.touches[0]) {
-      updatePlayerControlPos(e.touches[0].clientX, e.touches[0].clientY);
-    }
-  }, { passive: false });
 }
 
 window.addEventListener("pointermove", (e) => {
   if (gameState === "REELING") {
     if (e.target !== reelBtn && !reelBtn.contains(e.target)) {
       updatePlayerControlPos(e.clientX, e.clientY);
-    }
-  }
-});
-window.addEventListener("touchmove", (e) => {
-  if (gameState === "REELING" && e.touches && e.touches[0]) {
-    const t = e.touches[0];
-    if (e.target !== reelBtn && !reelBtn.contains(e.target)) {
-      updatePlayerControlPos(t.clientX, t.clientY);
     }
   }
 }, { passive: true });
@@ -519,6 +546,11 @@ function startReelingPhase() {
   tiredTimer = 0;
   isTargetLocked = false;
   fightHapticTimer = 0;
+  lastTensionInt = -1;
+  lastProgressInt = -1;
+  lastStaminaInt = -1;
+  lastTargetTransform = "";
+  lastReticleTransform = "";
 
   targetRingX = width * 0.5;
   targetRingY = height * 0.56;
@@ -770,26 +802,44 @@ function updateReeling(dt) {
     slackTimer = Math.max(0, slackTimer - dt * 3);
   }
 
-  // Обновление UI
-  document.getElementById("tensionBar").style.height = `${tension}%`;
-  document.getElementById("tensionNeedle").style.bottom = `${tension}%`;
-  document.getElementById("catchProgressBar").style.width = `${catchProgress}%`;
-  document.getElementById("catchProgressText").textContent = `${Math.round(catchProgress)}%`;
-
-  if (staminaProgressBarEl) {
-    staminaProgressBarEl.style.width = `${Math.max(0, Math.min(100, fishStamina))}%`;
+  // Обновление UI (с мемоизацией для устранения мутаций DOM вхолостую)
+  const tensionInt = Math.round(tension);
+  if (tensionInt !== lastTensionInt) {
+    lastTensionInt = tensionInt;
+    if (tensionBarEl) tensionBarEl.style.height = `${tensionInt}%`;
+    if (tensionNeedleEl) tensionNeedleEl.style.bottom = `${tensionInt}%`;
   }
-  if (staminaProgressTextEl) {
-    staminaProgressTextEl.textContent = `${Math.round(fishStamina)}%`;
+
+  const progressInt = Math.round(catchProgress);
+  if (progressInt !== lastProgressInt) {
+    lastProgressInt = progressInt;
+    if (catchProgressBarEl) catchProgressBarEl.style.width = `${progressInt}%`;
+    if (catchProgressTextEl) catchProgressTextEl.textContent = `${progressInt}%`;
+  }
+
+  const staminaInt = Math.round(Math.max(0, Math.min(100, fishStamina)));
+  if (staminaInt !== lastStaminaInt) {
+    lastStaminaInt = staminaInt;
+    if (staminaProgressBarEl) staminaProgressBarEl.style.width = `${staminaInt}%`;
+    if (staminaProgressTextEl) staminaProgressTextEl.textContent = `${staminaInt}%`;
+  }
+
+  const targetTrans = `translate3d(${targetRingX.toFixed(1)}px, ${targetRingY.toFixed(1)}px, 0)`;
+  if (targetTrans !== lastTargetTransform && fishFightTargetEl) {
+    lastTargetTransform = targetTrans;
+    fishFightTargetEl.style.transform = targetTrans;
+  }
+  const reticleTrans = `translate3d(${playerControlX.toFixed(1)}px, ${playerControlY.toFixed(1)}px, 0)`;
+  if (reticleTrans !== lastReticleTransform && rodControlReticleEl) {
+    lastReticleTransform = reticleTrans;
+    rodControlReticleEl.style.transform = reticleTrans;
   }
 
   if (fishFightTargetEl) {
-    fishFightTargetEl.style.transform = `translate3d(${targetRingX}px, ${targetRingY}px, 0)`;
     fishFightTargetEl.classList.toggle("locked-on", isTargetLocked && fishFightPhase === "FIGHTING");
     fishFightTargetEl.classList.toggle("tired", fishFightPhase === "TIRED");
   }
   if (rodControlReticleEl) {
-    rodControlReticleEl.style.transform = `translate3d(${playerControlX}px, ${playerControlY}px, 0)`;
     rodControlReticleEl.classList.toggle("locked-on", isTargetLocked && fishFightPhase === "FIGHTING");
   }
 
@@ -1651,9 +1701,11 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
     ctx.lineWidth = 1;
     ctx.stroke();
 
-    // Неоновый светлячок на кончике (ночная подсветка)
-    ctx.shadowColor = isNibbling ? '#ef4444' : '#22c55e';
-    ctx.shadowBlur = isNibbling ? 22 : 10;
+    // Неоновый светлячок на кончике (ночная подсветка без тяжелого shadowBlur)
+    ctx.fillStyle = isNibbling ? 'rgba(239, 68, 68, 0.28)' : 'rgba(34, 197, 94, 0.28)';
+    ctx.beginPath();
+    ctx.arc(vibration * 0.5, 0, 6.5, 0, Math.PI * 2);
+    ctx.fill();
     ctx.fillStyle = isNibbling ? '#fca5a5' : '#86efac';
     ctx.beginPath();
     ctx.arc(vibration * 0.5, 0, 3.5, 0, Math.PI * 2);
@@ -1670,12 +1722,111 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
   };
 }
 
+// Отрисовка статического пейзажа на оффскрин-холсте (вызывается только при ресайзе/смене геометрии)
+function renderStaticBackground(w, waterTop) {
+  if (!bgCtx) return;
+  bgCtx.clearRect(0, 0, w, waterTop + 4);
+
+  // 1. Небо
+  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, waterTop);
+  skyGrad.addColorStop(0, '#030712');
+  skyGrad.addColorStop(0.35, '#0b192c');
+  skyGrad.addColorStop(0.75, '#122c48');
+  skyGrad.addColorStop(1, '#1b4164');
+  bgCtx.fillStyle = skyGrad;
+  bgCtx.fillRect(0, 0, w, waterTop + 2);
+
+  // Звезды
+  if (lakeStars.length === 0) initLakeStars();
+  lakeStars.forEach(s => {
+    bgCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
+    bgCtx.beginPath();
+    bgCtx.arc(s.relX * w, s.relY * waterTop, s.size, 0, Math.PI * 2);
+    bgCtx.fill();
+  });
+
+  // Луна с ореолом
+  const moonX = w * 0.75;
+  const moonY = height * 0.14;
+  const moonR = 17;
+
+  const moonGlow = bgCtx.createRadialGradient(moonX, moonY, moonR * 0.8, moonX, moonY, moonR * 3.6);
+  moonGlow.addColorStop(0, 'rgba(254, 240, 138, 0.28)');
+  moonGlow.addColorStop(0.5, 'rgba(254, 240, 138, 0.08)');
+  moonGlow.addColorStop(1, 'rgba(254, 240, 138, 0)');
+  bgCtx.fillStyle = moonGlow;
+  bgCtx.beginPath();
+  bgCtx.arc(moonX, moonY, moonR * 3.6, 0, Math.PI * 2);
+  bgCtx.fill();
+
+  // Диск луны
+  bgCtx.fillStyle = '#fef08a';
+  bgCtx.beginPath();
+  bgCtx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  bgCtx.fill();
+
+  // Лунные моря
+  bgCtx.fillStyle = '#e2d87e';
+  bgCtx.beginPath();
+  bgCtx.arc(moonX - 4, moonY - 3, 5, 0, Math.PI * 2);
+  bgCtx.arc(moonX + 3, moonY + 4, 4.5, 0, Math.PI * 2);
+  bgCtx.arc(moonX - 3, moonY + 6, 3, 0, Math.PI * 2);
+  bgCtx.fill();
+
+  // Слой 1: Дальние величественные заснеженные альпийские пики
+  drawAlpineMountains(bgCtx, w, waterTop);
+
+  // Слой 2: Средний хребет с силуэтом тайги и елей
+  drawMidForestRidge(bgCtx, w, waterTop);
+
+  // Слой 3: Ближние скалистые лесные мысы по бокам озера
+  drawLakeCapes(bgCtx, w, waterTop);
+
+  bgNeedsRedraw = false;
+}
+
+// Атмосферный фон для локации Казино
+function renderCasinoAtmosphere(ctx, w, h, dt) {
+  const now = performance.now();
+  const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+  bgGrad.addColorStop(0, '#0a0518');
+  bgGrad.addColorStop(0.4, '#0f0826');
+  bgGrad.addColorStop(0.8, '#0b1622');
+  bgGrad.addColorStop(1, '#050a12');
+  ctx.fillStyle = bgGrad;
+  ctx.fillRect(0, 0, w, h);
+
+  const pulse = Math.sin(now * 0.0018);
+  const glowGold = ctx.createRadialGradient(w * 0.2, h * 0.25, 10, w * 0.2, h * 0.25, w * 0.45);
+  glowGold.addColorStop(0, `rgba(245, 158, 11, ${0.12 + pulse * 0.03})`);
+  glowGold.addColorStop(1, 'rgba(245, 158, 11, 0)');
+  ctx.fillStyle = glowGold;
+  ctx.beginPath();
+  ctx.arc(w * 0.2, h * 0.25, w * 0.45, 0, Math.PI * 2);
+  ctx.fill();
+
+  const glowPurple = ctx.createRadialGradient(w * 0.8, h * 0.4, 10, w * 0.8, h * 0.4, w * 0.5);
+  glowPurple.addColorStop(0, `rgba(168, 85, 247, ${0.14 - pulse * 0.03})`);
+  glowPurple.addColorStop(1, 'rgba(168, 85, 247, 0)');
+  ctx.fillStyle = glowPurple;
+  ctx.beginPath();
+  ctx.arc(w * 0.8, h * 0.4, w * 0.5, 0, Math.PI * 2);
+  ctx.fill();
+}
+
 function render() {
   const now = performance.now();
   const dt = Math.min(0.05, (now - lastFrameTime) / 1000);
   lastFrameTime = now;
 
   ctx.clearRect(0, 0, width, height);
+
+  // Если открыто Казино - рендерим атмосферу казино и пропускаем физику озера
+  if (typeof isCasinoScene !== 'undefined' && isCasinoScene) {
+    renderCasinoAtmosphere(ctx, width, height, dt);
+    requestAnimationFrame(render);
+    return;
+  }
 
   // Плавный переход между сценой Озера и Хижиной
   if (isHomeScene) {
@@ -1697,26 +1848,13 @@ function render() {
   waveOffset += 0.012; // Спокойный, плавный темп волн озера
   const waterTop = height * 0.44;
 
-  // 1. Небо и фон гор
-  const skyGrad = ctx.createLinearGradient(0, 0, 0, waterTop);
-  skyGrad.addColorStop(0, '#030712');
-  skyGrad.addColorStop(0.35, '#0b192c');
-  skyGrad.addColorStop(0.75, '#122c48');
-  skyGrad.addColorStop(1, '#1b4164');
-  ctx.fillStyle = skyGrad;
-  ctx.fillRect(0, 0, width, waterTop);
+  // 1. Статический фон гор, неба и луны (из оффскрин-буфера за один вызов drawImage)
+  if (bgNeedsRedraw || !bgCanvas) {
+    renderStaticBackground(width, waterTop);
+  }
+  ctx.drawImage(bgCanvas, 0, 0, width, waterTop + 4);
 
-  // Звезды
-  if (lakeStars.length === 0) initLakeStars();
-  lakeStars.forEach(s => {
-    const starAlpha = 0.25 + 0.75 * (0.5 + 0.5 * Math.sin(now * 0.002 * s.twinkleSpeed + s.phase));
-    ctx.fillStyle = `rgba(255, 255, 255, ${starAlpha})`;
-    ctx.beginPath();
-    ctx.arc(s.relX * width, s.relY * waterTop, s.size, 0, Math.PI * 2);
-    ctx.fill();
-  });
-
-  // Падающая звезда (метеор)
+  // Падающая звезда (метеор) поверх статического фона
   meteorTimer -= dt;
   if (meteorTimer <= 0 && !meteor) {
     meteor = {
@@ -1744,55 +1882,11 @@ function render() {
     }
   }
 
-  // Луна с мягким ореолом
-  const moonX = width * 0.75;
-  const moonY = height * 0.14;
-  const moonR = 17;
-
-  // Мягкий ореол луны
-  const moonGlow = ctx.createRadialGradient(moonX, moonY, moonR * 0.8, moonX, moonY, moonR * 3.6);
-  moonGlow.addColorStop(0, 'rgba(254, 240, 138, 0.28)');
-  moonGlow.addColorStop(0.5, 'rgba(254, 240, 138, 0.08)');
-  moonGlow.addColorStop(1, 'rgba(254, 240, 138, 0)');
-  ctx.fillStyle = moonGlow;
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR * 3.6, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Диск луны
-  ctx.fillStyle = '#fef08a';
-  ctx.beginPath();
-  ctx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Лунные моря и кратеры
-  ctx.fillStyle = '#e2d87e';
-  ctx.beginPath();
-  ctx.arc(moonX - 4, moonY - 3, 5, 0, Math.PI * 2);
-  ctx.arc(moonX + 3, moonY + 4, 4.5, 0, Math.PI * 2);
-  ctx.arc(moonX - 3, moonY + 6, 3, 0, Math.PI * 2);
-  ctx.fill();
-
-  // Слой 1: Дальние величественные заснеженные альпийские пики
-  drawAlpineMountains(ctx, width, waterTop);
-
-  // Слой 2: Средний хребет с силуэтом тайги и елей
-  drawMidForestRidge(ctx, width, waterTop);
-
-  // Слой 3: Ближние скалистые лесные мысы по бокам озера
-  drawLakeCapes(ctx, width, waterTop);
-
-  // 2. Вода (Многослойная шелковистая гладь без дефектов среза)
-  const deepGrad = ctx.createLinearGradient(0, waterTop, 0, height);
-  deepGrad.addColorStop(0, '#0a3250');
-  deepGrad.addColorStop(0.35, '#062038');
-  deepGrad.addColorStop(0.7, '#041424');
-  deepGrad.addColorStop(1, '#020a14');
-
-  const waveStep = 6;
+  // 2. Вода (Многослойная шелковистая гладь с оптимизированным шагом сетки)
+  const deepGrad = cachedWaterGrad || ctx.createLinearGradient(0, waterTop, 0, height);
+  const waveStep = 12; // Оптимизация шага сетки волн
   const waveStepCount = Math.ceil(width / waveStep);
 
-  // Монолитная толща воды от кромки волн до дна холста
   ctx.fillStyle = deepGrad;
   ctx.beginPath();
   ctx.moveTo(0, height);
@@ -1805,35 +1899,30 @@ function render() {
   ctx.closePath();
   ctx.fill();
 
-  // Световая шахта удалена для естественного вида водной толщи
-
   // Живые рыбки под водой (включая редких и глубоководных)
   updateAndDrawAmbientFishes(dt);
 
   // Подводные пузырьки и микроволны лопания
   updateAndDrawBubbles(dt, waterTop);
 
-  // Вторичные полупрозрачные слои волн
-  for (let w = 1; w <= 2; w++) {
-    ctx.beginPath();
-    ctx.moveTo(0, height);
-    const wScale = 1.0 - w * 0.25;
-    const wOffset = w * 1.8;
-    for (let i = 0; i <= waveStepCount; i++) {
-      const curX = Math.min(width, i * waveStep);
-      const curY = getWaterSurfaceY(curX, wOffset, wScale) + w * 14;
-      ctx.lineTo(curX, curY);
-    }
-    ctx.lineTo(width, height);
-    ctx.closePath();
-    ctx.fillStyle = `rgba(14, 116, 144, ${0.15 - w * 0.04})`;
-    ctx.fill();
+  // Вторичный полупрозрачный слой волн
+  ctx.beginPath();
+  ctx.moveTo(0, height);
+  for (let i = 0; i <= waveStepCount; i++) {
+    const curX = Math.min(width, i * waveStep);
+    const curY = getWaterSurfaceY(curX, 1.8, 0.75) + 14;
+    ctx.lineTo(curX, curY);
   }
+  ctx.lineTo(width, height);
+  ctx.closePath();
+  ctx.fillStyle = 'rgba(14, 116, 144, 0.11)';
+  ctx.fill();
 
-  // Живая лунная дорожка под диском луны
-  const trackCount = 14;
+  // Живая лунная дорожка под диском луны (оптимизирована до 8 сегментов)
+  const moonX = width * 0.75;
+  const trackCount = 8;
   for (let j = 0; j < trackCount; j++) {
-    const trackY = waterTop + 10 + j * 16;
+    const trackY = waterTop + 10 + j * 24;
     if (trackY > height * 0.88) break;
     const progress = j / trackCount;
     const trackWidth = 24 + progress * 65;
@@ -1846,6 +1935,7 @@ function render() {
     ctx.ellipse(curX, trackY, trackWidth * 0.5, 2.2 + progress * 1.2, 0, 0, Math.PI * 2);
     ctx.fill();
   }
+
 
   // Тонкая светлая кромка гребня водной поверхности
   ctx.strokeStyle = 'rgba(186, 230, 253, 0.42)';
@@ -1953,7 +2043,8 @@ function render() {
     pt.vy += 0.18; // Гравитация
     pt.life -= 0.025;
     if (pt.life <= 0) {
-      particles.splice(i, 1);
+      particles[i] = particles[particles.length - 1];
+      particles.pop();
       continue;
     }
     ctx.fillStyle = pt.color;

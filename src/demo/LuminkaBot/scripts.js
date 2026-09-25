@@ -852,8 +852,218 @@ var isHomeScene = false;
           osc.stop(time + 0.85);
         });
       }
+      playChipBet() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(1200, now);
+        osc.frequency.exponentialRampToValueAtTime(700, now + 0.06);
+        gain.gain.setValueAtTime(0.18, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+      playSlotSpin() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(320, now);
+        osc.frequency.linearRampToValueAtTime(540, now + 0.12);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+      playSlotReelStop() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'square';
+        osc.frequency.setValueAtTime(180, now);
+        osc.frequency.exponentialRampToValueAtTime(60, now + 0.08);
+        gain.gain.setValueAtTime(0.15, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.09);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.1);
+      }
+      playSlotWin() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [523.25, 659.25, 783.99, 1046.50];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = this.ctx.currentTime + idx * 0.08;
+          osc.type = 'triangle';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.22, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.28);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.3);
+        });
+      }
+      playJackpot() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const notes = [440, 554, 659, 880, 1108, 1318];
+        notes.forEach((freq, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          const time = this.ctx.currentTime + idx * 0.09;
+          osc.type = 'sawtooth';
+          osc.frequency.setValueAtTime(freq, time);
+          gain.gain.setValueAtTime(0.25, time);
+          gain.gain.exponentialRampToValueAtTime(0.001, time + 0.45);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(time);
+          osc.stop(time + 0.5);
+        });
+      }
+      playWheelTick() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(800, now);
+        osc.frequency.exponentialRampToValueAtTime(200, now + 0.03);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.035);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.04);
+      }
+      playMineReveal() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(580, now);
+        osc.frequency.exponentialRampToValueAtTime(1160, now + 0.12);
+        gain.gain.setValueAtTime(0.2, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.15);
+      }
+      playMineExplosion() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sawtooth';
+        osc.frequency.setValueAtTime(140, now);
+        osc.frequency.linearRampToValueAtTime(30, now + 0.4);
+        gain.gain.setValueAtTime(0.35, now);
+        gain.gain.exponentialRampToValueAtTime(0.01, now + 0.45);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.5);
+      }
+      playCardDeal() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(450, now);
+        osc.frequency.exponentialRampToValueAtTime(150, now + 0.05);
+        gain.gain.setValueAtTime(0.12, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.05);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.06);
+      }
+      playCardFlip() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'sine';
+        osc.frequency.setValueAtTime(300, now);
+        osc.frequency.linearRampToValueAtTime(600, now + 0.07);
+        gain.gain.setValueAtTime(0.14, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.07);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.08);
+      }
+      playDiceRoll() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        [0, 0.04, 0.09, 0.15].forEach((offset, idx) => {
+          const osc = this.ctx.createOscillator();
+          const gain = this.ctx.createGain();
+          osc.type = 'square';
+          osc.frequency.setValueAtTime(220 + idx * 80, now + offset);
+          gain.gain.setValueAtTime(0.08, now + offset);
+          gain.gain.exponentialRampToValueAtTime(0.001, now + offset + 0.035);
+          osc.connect(gain);
+          gain.connect(this.ctx.destination);
+          osc.start(now + offset);
+          osc.stop(now + offset + 0.04);
+        });
+      }
+      playRocketLaunch() {
+        if (!player.soundEnabled) return;
+        this.init();
+        if (!this.ctx) return;
+        const now = this.ctx.currentTime;
+        const osc = this.ctx.createOscillator();
+        const gain = this.ctx.createGain();
+        osc.type = 'triangle';
+        osc.frequency.setValueAtTime(100, now);
+        osc.frequency.linearRampToValueAtTime(350, now + 0.25);
+        gain.gain.setValueAtTime(0.08, now);
+        gain.gain.exponentialRampToValueAtTime(0.001, now + 0.3);
+        osc.connect(gain);
+        gain.connect(this.ctx.destination);
+        osc.start(now);
+        osc.stop(now + 0.32);
+      }
     }
     const sound = new SoundEngine();
+    window.sound = sound;
 
     // Виброотклик Haptic Feedback
     function triggerHaptic(type) {
@@ -3114,6 +3324,64 @@ function failFishing(reason) {
       });
     });
 
+    /* ==========================================================
+       ЛОКАЦИЯ КАЗИНО «ЗОЛОТОЙ КРЮЧОК»
+       ========================================================== */
+    const casinoModal = document.getElementById("casinoModal");
+    const openCasinoBtn = document.getElementById("openCasinoBtn");
+    const closeCasinoBtn = document.getElementById("closeCasinoBtn");
+    const homeGoCasinoBtn = document.getElementById("homeGoCasinoBtn");
+
+    function openCasinoScene() {
+      if (typeof isCasinoScene !== 'undefined') isCasinoScene = true;
+      if (isHomeScene) {
+        homeModal.classList.remove("active");
+      }
+      document.getElementById("bottomBar").style.display = "none";
+      document.getElementById("swipeHint").style.display = "none";
+      if (casinoModal) casinoModal.classList.add("active");
+      if (window.CasinoManager && typeof window.CasinoManager.open === 'function') {
+        window.CasinoManager.open();
+      }
+      triggerHaptic("light");
+    }
+
+    function closeCasinoScene() {
+      if (window.CasinoManager && window.CasinoManager.cleanup) {
+        window.CasinoManager.cleanup();
+      }
+      if (typeof isCasinoScene !== 'undefined') isCasinoScene = false;
+      if (casinoModal) casinoModal.classList.remove("active");
+      if (gameState === "IDLE" && !isHomeScene) {
+        document.getElementById("bottomBar").style.display = "flex";
+        document.getElementById("swipeHint").style.display = "flex";
+      } else if (isHomeScene) {
+        renderHome();
+        homeModal.classList.add("active");
+      }
+      triggerHaptic("light");
+      showToast("Вы на озере");
+    }
+
+    if (openCasinoBtn) openCasinoBtn.addEventListener("click", openCasinoScene);
+    if (closeCasinoBtn) closeCasinoBtn.addEventListener("click", closeCasinoScene);
+    if (homeGoCasinoBtn) homeGoCasinoBtn.addEventListener("click", openCasinoScene);
+
+    if (casinoModal) {
+      casinoModal.addEventListener("click", (e) => {
+        if (e.target === casinoModal) closeCasinoScene();
+      });
+    }
+
+    // Экспорт глобальных функций для модулей игры
+    window.openCasinoScene = openCasinoScene;
+    window.closeCasinoScene = closeCasinoScene;
+    window.updatePlayerHUD = updatePlayerHUD;
+    window.savePlayerLocal = savePlayerLocal;
+    window.syncUserStatsToSupabase = syncUserStatsToSupabase;
+    window.showToast = showToast;
+    window.triggerHaptic = triggerHaptic;
+
     // Тосты статуса
     let toastTimeout;
     function showToast(text) {
@@ -3125,8 +3393,6 @@ function failFishing(reason) {
         toast.classList.remove("visible");
       }, 2500);
     }
-
-    // Инициализация при загрузке
 
     // Инициализация интерфейса и загрузка данных игрока
     updateTensionSafeZoneUI();
