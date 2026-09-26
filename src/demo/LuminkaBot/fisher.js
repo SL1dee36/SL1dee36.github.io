@@ -12,13 +12,34 @@ let dpr = Math.min(window.devicePixelRatio || 1, 1.75);
 let width = 0;
 let height = 0;
 
-// Оптимизация: Offscreen Canvas для статического пейзажа (горы, лес, небо, луна)
-let bgCanvas = null;
-let bgCtx = null;
+// Оптимизация: Offscreen Canvases для статического пейзажа
+let bgSkyCanvas = null;
+let bgSkyCtx = null;
+let bgLandscapeCanvas = null;
+let bgLandscapeCtx = null;
 let bgNeedsRedraw = true;
 let canvasLeft = 0;
 let canvasTop = 0;
 let cachedWaterGrad = null;
+
+// Геометрия центрированной вертикальной игровой зоны (макс. 1280px в длину)
+let gameArea = {
+  left: 0,
+  top: 0,
+  width: 0,
+  height: 0
+};
+
+function updateGameArea() {
+  const maxUIWidth = 500;
+  const maxUIHeight = 1280;
+  const uiW = Math.min(width, maxUIWidth);
+  const uiH = Math.min(height, maxUIHeight);
+  gameArea.width = uiW;
+  gameArea.height = uiH;
+  gameArea.left = (width - uiW) / 2;
+  gameArea.top = (height - uiH) / 2;
+}
 
 function updateCanvasBounds() {
   if (canvas) {
@@ -37,16 +58,32 @@ function resizeCanvas() {
   ctx.resetTransform?.();
   ctx.scale(dpr, dpr);
 
-  // Подготовка оффскрин-холста статического фона
-  if (!bgCanvas) {
-    bgCanvas = document.createElement("canvas");
-    bgCtx = bgCanvas.getContext("2d");
+  updateGameArea();
+
+  // Подготовка оффскрин-холстов: 1. Небо и луна, 2. Нерастянутые горы и лес
+  if (!bgSkyCanvas) {
+    bgSkyCanvas = document.createElement("canvas");
+    bgSkyCtx = bgSkyCanvas.getContext("2d");
   }
+  if (!bgLandscapeCanvas) {
+    bgLandscapeCanvas = document.createElement("canvas");
+    bgLandscapeCtx = bgLandscapeCanvas.getContext("2d");
+  }
+
   const waterTop = height * 0.44;
-  bgCanvas.width = Math.round(width * dpr);
-  bgCanvas.height = Math.round((waterTop + 4) * dpr);
-  bgCtx.resetTransform?.();
-  bgCtx.scale(dpr, dpr);
+  const bw = Math.round(width * dpr);
+  const bh = Math.round((waterTop + 4) * dpr);
+
+  bgSkyCanvas.width = bw;
+  bgSkyCanvas.height = bh;
+  bgSkyCtx.resetTransform?.();
+  bgSkyCtx.scale(dpr, dpr);
+
+  bgLandscapeCanvas.width = bw;
+  bgLandscapeCanvas.height = bh;
+  bgLandscapeCtx.resetTransform?.();
+  bgLandscapeCtx.scale(dpr, dpr);
+
   bgNeedsRedraw = true;
 
   // Кешируем градиент толщи воды, избегая аллокаций каждый кадр
@@ -243,12 +280,6 @@ function updateAndDrawAmbientFishes(dt) {
       ctx.scale(-1, 1);
     }
 
-    if (f.type === 2) {
-      ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
-      ctx.lineWidth = 2;
-      ctx.stroke();
-    }
-
     ctx.globalAlpha = f.alpha;
 
     // Тело
@@ -256,6 +287,12 @@ function updateAndDrawAmbientFishes(dt) {
     ctx.beginPath();
     ctx.ellipse(0, 0, f.length * 0.5, f.bodyWidth * 0.5, 0, 0, Math.PI * 2);
     ctx.fill();
+
+    if (f.type === 2) {
+      ctx.strokeStyle = "rgba(251, 191, 36, 0.4)";
+      ctx.lineWidth = 2;
+      ctx.stroke();
+    }
 
     // Спинной плавник
     ctx.fillStyle = f.color;
@@ -355,19 +392,20 @@ function executeCast(velocity, dx) {
   triggerHaptic("light");
 
   const power = Math.min(Math.max(velocity, 0.3), 2.0);
-  bobber.startX = width * 0.78;
-  bobber.startY = height * 0.76;
+  bobber.startX = gameArea.left + gameArea.width * 0.78;
+  bobber.startY = gameArea.top + gameArea.height * 0.76;
 
   // Нормализуем силу от 0 до 1
   const normPower = Math.min(1, Math.max(0, (power - 0.3) / 1.5));
 
-  // Водная гладь строго от 50% до 72% высоты экрана
-  const waterNear = height * 0.70;
-  const waterFar = height * 0.50;
+  // Водная гладь строго в пределах игровой зоны по вертикали
+  const waterNear = gameArea.top + gameArea.height * 0.70;
+  const waterFar = gameArea.top + gameArea.height * 0.50;
   bobber.targetY = waterNear - normPower * (waterNear - waterFar);
 
-  // Горизонталь в пределах 25% .. 75% ширины экрана
-  bobber.targetX = Math.min(Math.max(width * 0.5 + dx * 0.4, width * 0.25), width * 0.75);
+  // Горизонталь в пределах 25% .. 75% ширины игровой зоны
+  const centerX = gameArea.left + gameArea.width * 0.5;
+  bobber.targetX = Math.min(Math.max(centerX + dx * 0.4, gameArea.left + gameArea.width * 0.25), gameArea.left + gameArea.width * 0.75);
 
   bobber.arcHeight = 70 + normPower * 80;
   bobber.progress = 0;
@@ -493,8 +531,10 @@ let fightHapticTimer = 0;
 
 function updatePlayerControlPos(clientX, clientY) {
   if (gameState !== "REELING") return;
-  playerControlX = Math.max(30, Math.min(width - 30, clientX - canvasLeft));
-  playerControlY = Math.max(height * 0.35, Math.min(height * 0.82, clientY - canvasTop));
+  const localX = clientX - (canvasLeft + gameArea.left);
+  const localY = clientY - (canvasTop + gameArea.top);
+  playerControlX = Math.max(25, Math.min(gameArea.width - 25, localX));
+  playerControlY = Math.max(gameArea.height * 0.35, Math.min(gameArea.height * 0.82, localY));
 }
 
 if (fightTouchZone) {
@@ -552,14 +592,14 @@ function startReelingPhase() {
   lastTargetTransform = "";
   lastReticleTransform = "";
 
-  targetRingX = width * 0.5;
-  targetRingY = height * 0.56;
+  targetRingX = gameArea.width * 0.5;
+  targetRingY = gameArea.height * 0.56;
   targetVelocityX = (Math.random() > 0.5 ? 1 : -1) * 70;
   targetVelocityY = (Math.random() - 0.5) * 35;
   targetWaypointTimer = 0;
 
-  playerControlX = width * 0.5;
-  playerControlY = height * 0.56;
+  playerControlX = gameArea.width * 0.5;
+  playerControlY = gameArea.height * 0.56;
 
   fishVisual.x = bobber.x;
   fishVisual.y = bobber.y + 50;
@@ -650,11 +690,11 @@ function updateReeling(dt) {
     targetRingX += targetVelocityX * dt;
     targetRingY += targetVelocityY * dt;
 
-    // Границы маневрирования по озеру
-    const minX = width * 0.18;
-    const maxX = width * 0.82;
-    const minY = height * 0.46;
-    const maxY = height * 0.68;
+    // Границы маневрирования по озеру внутри игровой зоны
+    const minX = gameArea.width * 0.18;
+    const maxX = gameArea.width * 0.82;
+    const minY = gameArea.height * 0.46;
+    const maxY = gameArea.height * 0.68;
 
     if (targetRingX < minX) { targetRingX = minX; targetVelocityX = Math.abs(targetVelocityX); }
     if (targetRingX > maxX) { targetRingX = maxX; targetVelocityX = -Math.abs(targetVelocityX); }
@@ -843,10 +883,12 @@ function updateReeling(dt) {
     rodControlReticleEl.classList.toggle("locked-on", isTargetLocked && fishFightPhase === "FIGHTING");
   }
 
-  // Физика процедурной рыбы в воде
+  // Физика процедурной рыбы в воде внутри игровой зоны
   fishVisual.tailOsc += 8 * dt * fishFightIntensity;
-  fishVisual.x += (targetRingX - fishVisual.x) * 0.12;
-  fishVisual.y = targetRingY + Math.sin(fishVisual.tailOsc) * 8;
+  const worldTargetX = gameArea.left + targetRingX;
+  const worldTargetY = gameArea.top + targetRingY;
+  fishVisual.x += (worldTargetX - fishVisual.x) * 0.12;
+  fishVisual.y = worldTargetY + Math.sin(fishVisual.tailOsc) * 8;
   fishVisual.angle = (fishFightDir * 0.35) + Math.sin(fishVisual.tailOsc) * 0.15;
   bobber.x = fishVisual.x;
   bobber.y = fishVisual.y;
@@ -1125,18 +1167,52 @@ function renderHomeAtmosphere(ctx, w, h, dt) {
 /* ==========================================================
    ПЕЙЗАЖ ОЗЕРА, ГОРЫ, ПУЗЫРЬКИ И УДОЧКА
    ========================================================== */
-// Звезды ночного неба над озером
+// Звезды ночного неба над озером с органическим мерцанием
 let lakeStars = [];
-function initLakeStars() {
+function initLakeStars(w = width, waterTop = (height || 800) * 0.44) {
   lakeStars = [];
-  for (let i = 0; i < 52; i++) {
+  const starCount = Math.max(50, Math.min(95, Math.round((w || 400) / 7.5)));
+  for (let i = 0; i < starCount; i++) {
     lakeStars.push({
       relX: Math.random(),
       relY: Math.random() * 0.38,
-      size: 0.8 + Math.random() * 1.5,
-      twinkleSpeed: 1.2 + Math.random() * 2.8,
-      phase: Math.random() * Math.PI * 2
+      size: 0.7 + Math.random() * 1.5,
+      twinkleSpeed: 1.5 + Math.random() * 3.2,
+      phase: Math.random() * Math.PI * 2,
+      baseAlpha: 0.35 + Math.random() * 0.5
     });
+  }
+}
+
+// Отрисовка динамически мерцающих звезд
+function drawTwinklingStars(ctx, w, waterTop, nowSec) {
+  if (lakeStars.length === 0) initLakeStars(w, waterTop);
+
+  for (let i = 0; i < lakeStars.length; i++) {
+    const s = lakeStars[i];
+    const sx = s.relX * w;
+    const sy = s.relY * waterTop;
+
+    // Двухчастотное органическое мерцание
+    const wave1 = Math.sin(nowSec * s.twinkleSpeed + s.phase);
+    const wave2 = Math.cos(nowSec * (s.twinkleSpeed * 0.65) + s.phase * 1.7);
+    const pulse = 0.5 + 0.35 * wave1 + 0.15 * wave2;
+
+    const alpha = Math.max(0.12, Math.min(1.0, s.baseAlpha * (0.35 + 1.25 * pulse)));
+    const currentSize = s.size * (0.8 + 0.4 * pulse);
+
+    ctx.fillStyle = `rgba(255, 255, 255, ${alpha.toFixed(3)})`;
+    ctx.beginPath();
+    ctx.arc(sx, sy, currentSize, 0, Math.PI * 2);
+    ctx.fill();
+
+    // Мягкий деликатный ореол для крупных звезд
+    if (s.size > 1.4 && pulse > 0.6) {
+      ctx.fillStyle = `rgba(224, 242, 254, ${(alpha * 0.35).toFixed(3)})`;
+      ctx.beginPath();
+      ctx.arc(sx, sy, currentSize * 2.4, 0, Math.PI * 2);
+      ctx.fill();
+    }
   }
 }
 
@@ -1153,84 +1229,129 @@ function getWaterSurfaceY(x, offset = 0, scale = 1.0) {
   return baseWaterY + w1 + w2 + w3;
 }
 
-// Дальние заснеженные альпийские пики
+// Вспомогательная функция отрисовки отдельного крутого альпийского пика
+function drawSingleAlpinePeak(ctx, summitX, summitY, leftBaseX, rightBaseX, ridgeX, waterTop, snowDepth = 0.4) {
+  // Теневая грань пика
+  ctx.fillStyle = '#091524';
+  ctx.beginPath();
+  ctx.moveTo(summitX, summitY);
+  ctx.lineTo(leftBaseX, waterTop);
+  ctx.lineTo(ridgeX, waterTop);
+  ctx.closePath();
+  ctx.fill();
+
+  // Освещенная луной грань пика
+  ctx.fillStyle = '#172f4a';
+  ctx.beginPath();
+  ctx.moveTo(summitX, summitY);
+  ctx.lineTo(ridgeX, waterTop);
+  ctx.lineTo(rightBaseX, waterTop);
+  ctx.closePath();
+  ctx.fill();
+
+  // Снежные шапки на вершинах
+  const snowY = summitY + (waterTop - summitY) * snowDepth;
+  const snowLeftX = summitX + (leftBaseX - summitX) * snowDepth;
+  const snowRightX = summitX + (rightBaseX - summitX) * snowDepth;
+  const snowRidgeX = summitX + (ridgeX - summitX) * snowDepth;
+
+  // Теневой снег
+  ctx.fillStyle = '#64748b';
+  ctx.beginPath();
+  ctx.moveTo(summitX, summitY);
+  ctx.lineTo(snowLeftX, snowY);
+  ctx.lineTo(snowRidgeX, snowY + 6);
+  ctx.closePath();
+  ctx.fill();
+
+  // Освещенный луной снег
+  ctx.fillStyle = '#cbd5e1';
+  ctx.beginPath();
+  ctx.moveTo(summitX, summitY);
+  ctx.lineTo(snowRidgeX, snowY + 6);
+  ctx.lineTo(snowRightX, snowY);
+  ctx.closePath();
+  ctx.fill();
+
+  // Дополнительные кулуары снега
+  ctx.strokeStyle = 'rgba(226, 232, 240, 0.4)';
+  ctx.lineWidth = 1.0;
+  ctx.lineCap = 'round';
+  ctx.beginPath();
+  ctx.moveTo(summitX, summitY + 6);
+  ctx.lineTo(snowRidgeX + 1, snowY + 2);
+  ctx.stroke();
+}
+
+// Дальние заснеженные альпийские пики (НЕ РАСТЯГИВАЮТСЯ по горизонтали)
 function drawAlpineMountains(ctx, w, waterTop) {
   ctx.save();
 
-  const peaks = [
+  // Базовая ширина кластера главных пиков (ориентир мобильного вертикального формата)
+  const refW = Math.min(w, 460);
+  const centerX = w * 0.5;
+  const originX = centerX - refW * 0.5;
+
+  // Центральные три величественных пика с крутыми альпийскими склонами
+  const mainPeaks = [
     {
-      summit: { x: w * 0.18, y: waterTop * 0.36 },
-      leftBase: { x: -w * 0.08, y: waterTop },
-      rightBase: { x: w * 0.44, y: waterTop },
-      ridge: { x: w * 0.16, y: waterTop },
+      summit: { x: originX + refW * 0.18, y: waterTop * 0.36 },
+      leftBase: originX - refW * 0.08,
+      rightBase: originX + refW * 0.44,
+      ridge: originX + refW * 0.16,
       snowDepth: 0.38
     },
     {
-      summit: { x: w * 0.50, y: waterTop * 0.26 },
-      leftBase: { x: w * 0.22, y: waterTop },
-      rightBase: { x: w * 0.78, y: waterTop },
-      ridge: { x: w * 0.47, y: waterTop },
+      summit: { x: originX + refW * 0.50, y: waterTop * 0.26 },
+      leftBase: originX + refW * 0.22,
+      rightBase: originX + refW * 0.78,
+      ridge: originX + refW * 0.47,
       snowDepth: 0.44
     },
     {
-      summit: { x: w * 0.82, y: waterTop * 0.34 },
-      leftBase: { x: w * 0.58, y: waterTop },
-      rightBase: { x: w * 1.10, y: waterTop },
-      ridge: { x: w * 0.80, y: waterTop },
+      summit: { x: originX + refW * 0.82, y: waterTop * 0.34 },
+      leftBase: originX + refW * 0.58,
+      rightBase: originX + refW * 1.10,
+      ridge: originX + refW * 0.80,
       snowDepth: 0.36
     }
   ];
 
-  peaks.forEach(p => {
-    // Теневая грань пика
-    ctx.fillStyle = '#091524';
-    ctx.beginPath();
-    ctx.moveTo(p.summit.x, p.summit.y);
-    ctx.lineTo(p.leftBase.x, p.leftBase.y);
-    ctx.lineTo(p.ridge.x, p.ridge.y);
-    ctx.closePath();
-    ctx.fill();
+  // Рисуем фланговые пики слева, если холст шире базового
+  if (originX > 0) {
+    let curRight = originX + refW * 0.15;
+    const peakWidth = refW * 0.52;
+    let stepIdx = 0;
+    while (curRight > -100) {
+      const curLeft = curRight - peakWidth;
+      const summitX = curLeft + peakWidth * 0.52;
+      const summitY = waterTop * (0.33 + (stepIdx % 2) * 0.06);
+      const ridgeX = summitX - peakWidth * 0.04;
+      drawSingleAlpinePeak(ctx, summitX, summitY, curLeft, curRight, ridgeX, waterTop, 0.36);
+      curRight -= peakWidth * 0.68;
+      stepIdx++;
+    }
+  }
 
-    // Освещенная луной грань пика
-    ctx.fillStyle = '#172f4a';
-    ctx.beginPath();
-    ctx.moveTo(p.summit.x, p.summit.y);
-    ctx.lineTo(p.ridge.x, p.ridge.y);
-    ctx.lineTo(p.rightBase.x, p.rightBase.y);
-    ctx.closePath();
-    ctx.fill();
+  // Рисуем фланговые пики справа, если холст шире базового
+  if (originX + refW < w) {
+    let curLeft = originX + refW * 0.85;
+    const peakWidth = refW * 0.52;
+    let stepIdx = 0;
+    while (curLeft < w + 100) {
+      const curRight = curLeft + peakWidth;
+      const summitX = curLeft + peakWidth * 0.48;
+      const summitY = waterTop * (0.35 + (stepIdx % 2) * 0.05);
+      const ridgeX = summitX + peakWidth * 0.03;
+      drawSingleAlpinePeak(ctx, summitX, summitY, curLeft, curRight, ridgeX, waterTop, 0.37);
+      curLeft += peakWidth * 0.68;
+      stepIdx++;
+    }
+  }
 
-    // Снежные шапки на вершинах
-    const snowY = p.summit.y + (waterTop - p.summit.y) * p.snowDepth;
-    const snowLeftX = p.summit.x + (p.leftBase.x - p.summit.x) * p.snowDepth;
-    const snowRightX = p.summit.x + (p.rightBase.x - p.summit.x) * p.snowDepth;
-    const snowRidgeX = p.summit.x + (p.ridge.x - p.summit.x) * p.snowDepth;
-
-    // Теневой снег
-    ctx.fillStyle = '#64748b';
-    ctx.beginPath();
-    ctx.moveTo(p.summit.x, p.summit.y);
-    ctx.lineTo(snowLeftX, snowY);
-    ctx.lineTo(snowRidgeX, snowY + 6);
-    ctx.closePath();
-    ctx.fill();
-
-    // Освещенный луной снег
-    ctx.fillStyle = '#cbd5e1';
-    ctx.beginPath();
-    ctx.moveTo(p.summit.x, p.summit.y);
-    ctx.lineTo(snowRidgeX, snowY + 6);
-    ctx.lineTo(snowRightX, snowY);
-    ctx.closePath();
-    ctx.fill();
-
-    // Дополнительные кулуары снега
-    ctx.strokeStyle = '#e2e8f0';
-    ctx.lineWidth = 1.2;
-    ctx.beginPath();
-    ctx.moveTo(p.summit.x, p.summit.y + 4);
-    ctx.lineTo(snowRidgeX + 4, snowY + 14);
-    ctx.stroke();
+  // Рисуем три центральных главных пика
+  mainPeaks.forEach(p => {
+    drawSingleAlpinePeak(ctx, p.summit.x, p.summit.y, p.leftBase, p.rightBase, p.ridge, waterTop, p.snowDepth);
   });
 
   // Мягкая дымка долины у подножия гор
@@ -1269,22 +1390,25 @@ function drawMidForestRidge(ctx, w, waterTop) {
   ctx.restore();
 }
 
-// Ближние скалистые лесные мысы по бокам озера
+// Ближние скалистые лесные мысы по бокам озера (с ограничением ширины)
 function drawLakeCapes(ctx, w, waterTop) {
   ctx.save();
   ctx.fillStyle = '#040d16';
 
+  const capeW = Math.min(w * 0.22, 110);
+  const leftMid = capeW * 0.55;
+
   // Левый мыс
   ctx.beginPath();
   ctx.moveTo(0, waterTop - 15);
-  ctx.quadraticCurveTo(w * 0.12, waterTop - 6, w * 0.22, waterTop + 8);
-  ctx.lineTo(w * 0.20, waterTop + 14);
-  ctx.quadraticCurveTo(w * 0.08, waterTop + 12, 0, waterTop + 16);
+  ctx.quadraticCurveTo(leftMid, waterTop - 6, capeW, waterTop + 8);
+  ctx.lineTo(capeW - 8, waterTop + 14);
+  ctx.quadraticCurveTo(leftMid * 0.65, waterTop + 12, 0, waterTop + 16);
   ctx.closePath();
   ctx.fill();
 
   // Силуэты сосен на левом мысу
-  const leftPines = [w * 0.06, w * 0.12, w * 0.17];
+  const leftPines = [capeW * 0.28, capeW * 0.55, capeW * 0.78];
   leftPines.forEach((px, idx) => {
     const py = waterTop - 2 + idx * 3;
     const ph = 18 + idx * 4;
@@ -1298,11 +1422,13 @@ function drawLakeCapes(ctx, w, waterTop) {
   });
 
   // Правый мыс
+  const rightStart = w - capeW;
+  const rightMid = w - capeW * 0.45;
   ctx.beginPath();
   ctx.moveTo(w, waterTop - 12);
-  ctx.quadraticCurveTo(w * 0.90, waterTop - 4, w * 0.82, waterTop + 10);
-  ctx.lineTo(w * 0.84, waterTop + 16);
-  ctx.quadraticCurveTo(w * 0.92, waterTop + 14, w, waterTop + 18);
+  ctx.quadraticCurveTo(rightMid, waterTop - 4, rightStart + 10, waterTop + 10);
+  ctx.lineTo(rightStart + 18, waterTop + 16);
+  ctx.quadraticCurveTo(rightMid + 8, waterTop + 14, w, waterTop + 18);
   ctx.closePath();
   ctx.fill();
 
@@ -1722,65 +1848,58 @@ function drawDetailedRod(ctx, w, h, dt, gameState, tension) {
   };
 }
 
-// Отрисовка статического пейзажа на оффскрин-холсте (вызывается только при ресайзе/смене геометрии)
+// Отрисовка статического пейзажа на оффскрин-холстах (вызывается только при ресайзе/смене геометрии)
 function renderStaticBackground(w, waterTop) {
-  if (!bgCtx) return;
-  bgCtx.clearRect(0, 0, w, waterTop + 4);
+  if (!bgSkyCtx || !bgLandscapeCtx) return;
+  bgSkyCtx.clearRect(0, 0, w, waterTop + 4);
+  bgLandscapeCtx.clearRect(0, 0, w, waterTop + 4);
 
-  // 1. Небо
-  const skyGrad = bgCtx.createLinearGradient(0, 0, 0, waterTop);
+  // 1. Небо (на оффскрин-холст неба)
+  const skyGrad = bgSkyCtx.createLinearGradient(0, 0, 0, waterTop);
   skyGrad.addColorStop(0, '#030712');
   skyGrad.addColorStop(0.35, '#0b192c');
   skyGrad.addColorStop(0.75, '#122c48');
   skyGrad.addColorStop(1, '#1b4164');
-  bgCtx.fillStyle = skyGrad;
-  bgCtx.fillRect(0, 0, w, waterTop + 2);
-
-  // Звезды
-  if (lakeStars.length === 0) initLakeStars();
-  lakeStars.forEach(s => {
-    bgCtx.fillStyle = 'rgba(255, 255, 255, 0.75)';
-    bgCtx.beginPath();
-    bgCtx.arc(s.relX * w, s.relY * waterTop, s.size, 0, Math.PI * 2);
-    bgCtx.fill();
-  });
+  bgSkyCtx.fillStyle = skyGrad;
+  bgSkyCtx.fillRect(0, 0, w, waterTop + 2);
 
   // Луна с ореолом
   const moonX = w * 0.75;
   const moonY = height * 0.14;
   const moonR = 17;
 
-  const moonGlow = bgCtx.createRadialGradient(moonX, moonY, moonR * 0.8, moonX, moonY, moonR * 3.6);
+  const moonGlow = bgSkyCtx.createRadialGradient(moonX, moonY, moonR * 0.8, moonX, moonY, moonR * 3.6);
   moonGlow.addColorStop(0, 'rgba(254, 240, 138, 0.28)');
   moonGlow.addColorStop(0.5, 'rgba(254, 240, 138, 0.08)');
   moonGlow.addColorStop(1, 'rgba(254, 240, 138, 0)');
-  bgCtx.fillStyle = moonGlow;
-  bgCtx.beginPath();
-  bgCtx.arc(moonX, moonY, moonR * 3.6, 0, Math.PI * 2);
-  bgCtx.fill();
+  bgSkyCtx.fillStyle = moonGlow;
+  bgSkyCtx.beginPath();
+  bgSkyCtx.arc(moonX, moonY, moonR * 3.6, 0, Math.PI * 2);
+  bgSkyCtx.fill();
 
   // Диск луны
-  bgCtx.fillStyle = '#fef08a';
-  bgCtx.beginPath();
-  bgCtx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
-  bgCtx.fill();
+  bgSkyCtx.fillStyle = '#fef08a';
+  bgSkyCtx.beginPath();
+  bgSkyCtx.arc(moonX, moonY, moonR, 0, Math.PI * 2);
+  bgSkyCtx.fill();
 
   // Лунные моря
-  bgCtx.fillStyle = '#e2d87e';
-  bgCtx.beginPath();
-  bgCtx.arc(moonX - 4, moonY - 3, 5, 0, Math.PI * 2);
-  bgCtx.arc(moonX + 3, moonY + 4, 4.5, 0, Math.PI * 2);
-  bgCtx.arc(moonX - 3, moonY + 6, 3, 0, Math.PI * 2);
-  bgCtx.fill();
+  bgSkyCtx.fillStyle = '#e2d87e';
+  bgSkyCtx.beginPath();
+  bgSkyCtx.arc(moonX - 4, moonY - 3, 5, 0, Math.PI * 2);
+  bgSkyCtx.arc(moonX + 3, moonY + 4, 4.5, 0, Math.PI * 2);
+  bgSkyCtx.arc(moonX - 3, moonY + 6, 3, 0, Math.PI * 2);
+  bgSkyCtx.fill();
 
-  // Слой 1: Дальние величественные заснеженные альпийские пики
-  drawAlpineMountains(bgCtx, w, waterTop);
+  // 2. Ландшафт (на оффскрин-холст ландшафта, перекрывающий звёзды)
+  // Слой 1: Дальние заснеженные альпийские пики (не растягиваются по горизонтали)
+  drawAlpineMountains(bgLandscapeCtx, w, waterTop);
 
   // Слой 2: Средний хребет с силуэтом тайги и елей
-  drawMidForestRidge(bgCtx, w, waterTop);
+  drawMidForestRidge(bgLandscapeCtx, w, waterTop);
 
   // Слой 3: Ближние скалистые лесные мысы по бокам озера
-  drawLakeCapes(bgCtx, w, waterTop);
+  drawLakeCapes(bgLandscapeCtx, w, waterTop);
 
   bgNeedsRedraw = false;
 }
@@ -1848,11 +1967,18 @@ function render() {
   waveOffset += 0.012; // Спокойный, плавный темп волн озера
   const waterTop = height * 0.44;
 
-  // 1. Статический фон гор, неба и луны (из оффскрин-буфера за один вызов drawImage)
-  if (bgNeedsRedraw || !bgCanvas) {
+  // 1. Статический фон неба и луны
+  if (bgNeedsRedraw || !bgSkyCanvas || !bgLandscapeCanvas) {
     renderStaticBackground(width, waterTop);
   }
-  ctx.drawImage(bgCanvas, 0, 0, width, waterTop + 4);
+  ctx.drawImage(bgSkyCanvas, 0, 0, width, waterTop + 4);
+
+  // 2. Живое мерцание звёзд
+  const nowSec = performance.now() * 0.001;
+  drawTwinklingStars(ctx, width, waterTop, nowSec);
+
+  // 3. Статический фон гор, тайги и мысов (натуральные пропорции, перекрывают звёзды)
+  ctx.drawImage(bgLandscapeCanvas, 0, 0, width, waterTop + 4);
 
   // Падающая звезда (метеор) поверх статического фона
   meteorTimer -= dt;
@@ -1938,8 +2064,8 @@ function render() {
 
 
   // Тонкая светлая кромка гребня водной поверхности
-  ctx.strokeStyle = 'rgba(186, 230, 253, 0.42)';
-  ctx.lineWidth = 1.4;
+  ctx.strokeStyle = 'rgb(202, 237, 255)';
+  ctx.lineWidth = 1;
   ctx.beginPath();
   for (let i = 0; i <= waveStepCount; i++) {
     const curX = Math.min(width, i * waveStep);
@@ -2001,7 +2127,12 @@ function render() {
   }
 
   // 4. Отрисовка детализированной удочки
-  const rodInfo = drawDetailedRod(ctx, width, height, dt, gameState, tension);
+  ctx.save();
+  ctx.translate(gameArea.left, gameArea.top);
+  const rodInfo = drawDetailedRod(ctx, gameArea.width, gameArea.height, dt, gameState, tension);
+  ctx.restore();
+  rodInfo.tipX += gameArea.left;
+  rodInfo.tipY += gameArea.top;
 
   // Леска от тюльпана до поплавка
   if (gameState !== "IDLE") {
@@ -2066,9 +2197,6 @@ function render() {
 
 /* ==========================================================
    ВСПОМОГАТЕЛЬНАЯ ОТРИСОВКА (ПОПЛАВОК И РЫБЫ)
-   ========================================================== */
-/* ==========================================================
-   ВСПОМОГАТЕЛЬНАЯ ОТРИСОВКА СНАСТЕЙ И РЫБЫ
    ========================================================== */
 function drawBobber(x, y, angle = 0) {
   ctx.save();

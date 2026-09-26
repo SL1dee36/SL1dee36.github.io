@@ -21,6 +21,9 @@
     <!-- Игровой холст -->
     <canvas id="fishCanvas"></canvas>
 
+    <!-- Основной вертикальный слой интерфейса (макс. 1280px, строго вертикальный) -->
+    <div id="game-ui-layer" class="game-ui-layer">
+
     <!-- Верхний HUD -->
     <div class="hud-top">
       <div class="hud-top-row">
@@ -244,6 +247,7 @@
         </button>
       </div>
     </div>
+  </div> <!-- /#game-ui-layer -->
 
     <!-- Полноэкранный оверлей успешного вылова -->
     <div class="fullscreen-overlay" id="catchModal">
