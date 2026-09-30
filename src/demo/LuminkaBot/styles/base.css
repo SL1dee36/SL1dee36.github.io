@@ -1,0 +1,1125 @@
+:root {
+  --bg-dark: #07131e;
+  --accent-gold: #f59e0b;
+  --accent-cyan: #06b6d4;
+  --accent-green: #10b981;
+  --accent-red: #ef4444;
+  --card-bg: rgba(13, 27, 42, 0.94);
+  --card-border: rgba(255, 255, 255, 0.12);
+  --safe-zone-color: rgba(16, 185, 129, 0.4);
+  --safe-border: #10b981;
+}
+
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+  user-select: none;
+  -webkit-user-select: none;
+  -webkit-touch-callout: none;
+}
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: var(--bg-dark);
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  color: #fff;
+  overscroll-behavior: none;
+  position: fixed;
+}
+
+#game-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+#fishCanvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  display: block;
+  z-index: 1;
+  touch-action: none;
+  opacity: 1;
+  transition: opacity 0.32s cubic-bezier(0.16, 1, 0.3, 1);
+  will-change: opacity;
+}
+
+#fishCanvas.canvas-hidden {
+  opacity: 0;
+  pointer-events: none;
+}
+
+#previewFishCanvas {
+  position: relative !important;
+  width: 220px;
+  height: 130px;
+  display: block;
+}
+
+/* Основной вертикальный слой интерфейса (строго вертикальный, макс. 1280px в длину) */
+.game-ui-layer {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  max-width: 500px;
+  height: 100%;
+  max-height: 1280px;
+  pointer-events: none;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  transition: opacity 0.22s ease;
+}
+
+.game-ui-layer.ui-hidden {
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+/* Верхний HUD */
+.hud-top {
+  position: absolute;
+  top: calc(env(safe-area-inset-top, 0px) + 8px);
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  pointer-events: none;
+}
+
+.hud-top-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  width: 100%;
+  pointer-events: none;
+}
+
+.hud-top-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+.player-card {
+  /* padding: 4px 10px; */
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  pointer-events: auto;
+  /* background: var(--card-bg); */
+  /* backdrop-filter: blur(12px); */
+  /* -webkit-backdrop-filter: blur(12px); */
+  /* border: 1px solid var(--card-border); */
+  /* border-radius: 20px; */
+  flex-shrink: 0;
+}
+
+.level-badge {
+  background: #0a3b57;
+  width: 26px;
+  height: 26px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 12px;
+  color: #ffffff;
+  flex-shrink: 0;
+}
+
+.player-meta {
+  display: flex;
+  flex-direction: column;
+  min-width: 0;
+}
+
+.player-name {
+  font-weight: 700;
+  font-size: 11px;
+  color: #f1f5f9;
+  max-width: 100px;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.xp-bar-container {
+  width: 65px;
+  height: 4px;
+  background: rgba(255, 255, 255, 0.15);
+  /* border-radius: 2px; */
+  margin-top: 2px;
+  overflow: hidden;
+}
+
+.xp-bar-fill {
+  height: 100%;
+  background: #38bdf8;
+  width: 0%;
+  transition: width 0.3s ease;
+}
+
+.balance-card {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 18px;
+  padding: 5px 10px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 800;
+  font-size: 13px;
+  color: #fbbf24;
+  pointer-events: auto;
+  flex-shrink: 0;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.25);
+}
+
+.quality-hud-btn {
+  background: rgba(13, 27, 42, 0.94);
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  border-radius: 18px;
+  height: 30px;
+  padding: 0 8px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  cursor: pointer;
+  pointer-events: auto;
+  flex-shrink: 0;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+  transition: transform 0.15s, background 0.2s, border-color 0.2s;
+  user-select: none;
+}
+
+.quality-hud-btn:active {
+  transform: scale(0.93);
+  background: rgba(18, 38, 58, 0.98);
+}
+
+.fps-badge {
+  font-size: 11px;
+  font-weight: 800;
+  color: #38bdf8;
+  letter-spacing: 0.2px;
+}
+
+.quality-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #f1f5f9;
+  background: rgba(56, 189, 248, 0.2);
+  padding: 2px 6px;
+  border-radius: 8px;
+  border: 1px solid rgba(56, 189, 248, 0.35);
+  white-space: nowrap;
+}
+
+.coin-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  background: #f59e0b;
+  color: #000;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.hud-actions {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 6px;
+  pointer-events: auto;
+}
+
+/* Кнопки-пилюли в верхнем HUD и модальных окнах */
+.hud-pill-btn {
+  background: var(--card-bg);
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  border-radius: 16px;
+  padding: 5px 8px;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  color: #e2e8f0;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: all 0.18s cubic-bezier(0.4, 0, 0.2, 1);
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.hud-pill-btn:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(56, 189, 248, 0.4);
+  color: #fff;
+}
+
+.hud-pill-btn:active {
+  transform: scale(0.94);
+  background: rgba(14, 165, 233, 0.2);
+}
+
+.btn-icon-svg {
+  display: inline-block;
+  vertical-align: middle;
+  flex-shrink: 0;
+}
+
+.badge-count {
+  background: linear-gradient(135deg, #0284c7, #0369a1);
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 8px;
+  min-width: 14px;
+  text-align: center;
+  line-height: 1.2;
+}
+
+.icon-btn {
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  width: 30px;
+  height: 30px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 0.15s, background 0.2s;
+  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
+}
+
+.icon-btn:active {
+  transform: scale(0.92);
+  background: rgba(255, 255, 255, 0.15);
+}
+
+/* Подсказка заброса (Свайп) */
+.swipe-hint {
+  position: absolute;
+  bottom: 136px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  pointer-events: none;
+  opacity: 0.9;
+  animation: floatPrompt 2s infinite ease-in-out;
+  text-align: center;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
+}
+
+@keyframes floatPrompt {
+
+  0%,
+  100% {
+    transform: translate(-50%, 0);
+  }
+
+  50% {
+    transform: translate(-50%, -10px);
+  }
+}
+
+.swipe-arrow {
+  width: 44px;
+  height: 44px;
+  background: rgba(255, 255, 255, 0.12);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 22px;
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.swipe-text {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+  background: rgba(0, 0, 0, 0.5);
+  padding: 4px 12px;
+  border-radius: 12px;
+  letter-spacing: 0.3px;
+}
+
+/* Нижняя панель выбора способа ловли и наживки */
+.bottom-bar {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  left: 10px;
+  right: 10px;
+  z-index: 10;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 6px;
+  pointer-events: none;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), transform 0.25s ease;
+}
+
+.method-bar {
+  pointer-events: auto;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  background: rgba(10, 20, 32, 0.96);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 20px;
+  padding: 3px 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.method-bar::-webkit-scrollbar {
+  display: none;
+}
+
+.method-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 16px;
+  padding: 5px 9px;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 700;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.method-btn:active {
+  transform: scale(0.95);
+}
+
+.method-btn.active {
+  background: linear-gradient(135deg, #0284c7 0%, #0369a1 100%);
+  border-color: rgba(56, 189, 248, 0.45);
+  color: #fff;
+  box-shadow: 0 2px 8px rgba(2, 132, 199, 0.35);
+}
+
+.method-btn.locked {
+  display: none !important;
+}
+
+.method-btn .method-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+}
+
+.method-btn .method-icon svg {
+  display: block;
+}
+
+.baits-container {
+  pointer-events: auto;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 20px;
+  padding: 3px 5px;
+  display: flex;
+  gap: 4px;
+  max-width: 100%;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+.baits-container::-webkit-scrollbar {
+  display: none;
+}
+
+.bait-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 14px;
+  padding: 5px 10px;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 11px;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 5px;
+  cursor: pointer;
+  white-space: nowrap;
+  flex-shrink: 0;
+  transition: all 0.15s ease;
+}
+
+.bait-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.bait-icon svg {
+  display: block;
+}
+
+.bait-btn:active {
+  transform: scale(0.95);
+}
+
+.bait-btn.active {
+  background: rgba(56, 189, 248, 0.22);
+  border-color: #38bdf8;
+  color: #f0f9ff;
+  font-weight: 700;
+}
+
+.bait-count {
+  font-size: 10px;
+  font-weight: 800;
+  padding: 1px 5px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  color: #94a3b8;
+  margin-left: 2px;
+}
+
+.bait-btn.active .bait-count {
+  background: rgba(56, 189, 248, 0.28);
+  color: #e0f2fe;
+}
+
+.bait-count.zero {
+  background: rgba(239, 68, 68, 0.22);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.bait-btn.locked {
+  opacity: 0.55;
+  filter: grayscale(0.5);
+  border-style: dashed;
+}
+
+.bait-btn.locked .bait-name {
+  color: #64748b;
+}
+
+.bait-btn.empty {
+  border-color: rgba(239, 68, 68, 0.35);
+}
+
+/* Кнопка активной проводки для спиннинга */
+.twitch-btn-wrapper {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 85px);
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 12;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  animation: twitchPopIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+
+@keyframes twitchPopIn {
+  0% {
+    transform: translate(-50%, 20px) scale(0.85);
+    opacity: 0;
+  }
+
+  100% {
+    transform: translate(-50%, 0) scale(1);
+    opacity: 1;
+  }
+}
+
+.twitch-btn {
+  position: relative;
+  background: linear-gradient(135deg, #f59e0b 0%, #ea580c 100%);
+  border: 1.5px solid #fef08a;
+  color: #fff;
+  font-family: inherit;
+  font-weight: 900;
+  font-size: 13px;
+  letter-spacing: 0.5px;
+  padding: 10px 22px;
+  border-radius: 28px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  transition: transform 0.1s ease;
+  user-select: none;
+  touch-action: manipulation;
+}
+
+.twitch-btn:active {
+  transform: scale(0.92);
+}
+
+.twitch-btn .twitch-icon {
+  font-size: 16px;
+  animation: pulseTwitch 1s infinite alternate ease-in-out;
+}
+
+@keyframes pulseTwitch {
+  0% {
+    transform: scale(1);
+  }
+
+  100% {
+    transform: scale(1.3);
+  }
+}
+
+/* Игровой оверлей вываживания */
+
+/* Игровой оверлей вываживания с плавным появлением */
+.reeling-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 15;
+  display: flex;
+  opacity: 0;
+  visibility: hidden;
+  pointer-events: none;
+  flex-direction: column;
+  justify-content: space-between;
+  padding: calc(env(safe-area-inset-top, 16px) + 82px) 24px calc(env(safe-area-inset-bottom, 16px) + 20px) 24px;
+  transition: opacity 0.25s cubic-bezier(0.16, 1, 0.3, 1), visibility 0.25s;
+  contain: layout style;
+  will-change: opacity;
+}
+
+.reeling-overlay.active {
+  opacity: 1;
+  visibility: visible;
+}
+
+/* Верхняя панель шкал вываживания */
+.reeling-top-bars {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  width: 100%;
+  z-index: 12;
+  pointer-events: none;
+}
+
+/* Шкала прогресса вылова */
+.catch-progress-wrapper {
+  width: 100%;
+  background: var(--card-bg);
+  /* backdrop-filter: blur(12px); */
+  border: 1px solid var(--card-border);
+  border-radius: 16px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+}
+
+.progress-labels {
+  display: flex;
+  justify-content: space-between;
+  font-size: 11px;
+  font-weight: 700;
+  color: #cbd5e1;
+}
+
+.progress-bar-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 5px;
+  overflow: hidden;
+  position: relative;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: #10b981;
+  border-radius: 5px;
+  transition: width 0.08s linear;
+}
+
+/* Шкала выносливости рыбы */
+.stamina-progress-wrapper {
+  width: 100%;
+  background: rgba(15, 23, 42, 0.75);
+  /* backdrop-filter: blur(12px); */
+  border: 1px solid rgba(245, 158, 11, 0.3);
+  border-radius: 14px;
+  padding: 8px 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.3);
+}
+
+.stamina-track {
+  height: 10px;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 5px;
+  overflow: hidden;
+}
+
+.stamina-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #ef4444 0%, #f59e0b 45%, #10b981 100%);
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  border-radius: 5px;
+  transition: width 0.08s linear;
+}
+
+/* Динамическая статусная плашка боя */
+.fight-state-prompt {
+  align-self: center;
+  margin-top: 4px;
+  padding: 6px 18px;
+  border-radius: 20px;
+  background: rgba(239, 68, 68, 0.25);
+  border: 1px solid rgba(239, 68, 68, 0.6);
+  color: #fecaca;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  /* backdrop-filter: blur(8px); */
+  box-shadow: 0 0 16px rgba(239, 68, 68, 0.4);
+  animation: promptPulse 1.2s ease-in-out infinite alternate;
+  z-index: 12;
+  pointer-events: none;
+  transition: all 0.25s ease;
+}
+
+.fight-state-prompt.tired {
+  background: rgba(16, 185, 129, 0.28);
+  border-color: rgba(16, 185, 129, 0.85);
+  color: #a7f3d0;
+  box-shadow: 0 0 24px rgba(16, 185, 129, 0.7);
+  animation: promptTiredPulse 0.75s ease-in-out infinite alternate;
+}
+
+@keyframes promptPulse {
+  0% {
+    transform: scale(0.97);
+    opacity: 0.88;
+  }
+
+  100% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+@keyframes promptTiredPulse {
+  0% {
+    transform: scale(0.98);
+    box-shadow: 0 0 14px rgba(16, 185, 129, 0.5);
+  }
+
+  100% {
+    transform: scale(1.06);
+    box-shadow: 0 0 28px rgba(16, 185, 129, 0.95);
+  }
+}
+
+/* Интерактивная боевая зона удержания кончиком удилища */
+.fight-touch-zone {
+  position: absolute;
+  inset: 0;
+  z-index: 8;
+  pointer-events: auto;
+  touch-action: none;
+  overflow: hidden;
+}
+
+/* Целевой маркер рывка рыбы */
+.fish-fight-target {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 76px;
+  height: 76px;
+  margin-left: -38px;
+  margin-top: -38px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.25s;
+  will-change: transform;
+}
+
+.target-ring-pulse {
+  position: absolute;
+  inset: 0;
+  border-radius: 50%;
+  border: 2px solid rgba(245, 158, 11, 0.7);
+  animation: targetWave 1.4s cubic-bezier(0, 0.2, 0.8, 1) infinite;
+}
+
+.target-ring-core {
+  width: 46px;
+  height: 46px;
+  border-radius: 50%;
+  background: radial-gradient(circle, rgba(245, 158, 11, 0.4) 0%, rgba(245, 158, 11, 0.08) 70%);
+  border: 2px solid #f59e0b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fef08a;
+  box-shadow: 0 0 10px rgba(245, 158, 11, 0.5);
+  transition: transform 0.12s ease;
+}
+
+.target-lock-label {
+  position: absolute;
+  bottom: -18px;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.5px;
+  color: #fef08a;
+  text-shadow: 0 2px 4px rgba(0, 0, 0, 0.8);
+  white-space: nowrap;
+}
+
+.fish-fight-target.locked-on .target-ring-core {
+  background: radial-gradient(circle, rgba(16, 185, 129, 0.5) 0%, rgba(16, 185, 129, 0.12) 70%);
+  border-color: #10b981;
+  color: #a7f3d0;
+  box-shadow: 0 0 14px rgba(16, 185, 129, 0.7);
+  transform: scale(1.12);
+}
+
+.fish-fight-target.locked-on .target-ring-pulse {
+  border-color: rgba(16, 185, 129, 0.85);
+}
+
+.fish-fight-target.locked-on .target-lock-label {
+  color: #6ee7b7;
+}
+
+.fish-fight-target.tired {
+  opacity: 0.35;
+}
+
+@keyframes targetWave {
+  0% {
+    transform: scale(0.6);
+    opacity: 1;
+  }
+
+  100% {
+    transform: scale(1.4);
+    opacity: 0;
+  }
+}
+
+/* Контрольный прицел удилища игрока */
+.rod-control-reticle {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 68px;
+  height: 68px;
+  margin-left: -34px;
+  margin-top: -34px;
+  pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  will-change: transform;
+  transition: opacity 0.2s;
+}
+
+.reticle-ring {
+  position: absolute;
+  inset: 4px;
+  border-radius: 50%;
+  border: 2px dashed rgba(56, 189, 248, 0.75);
+  animation: reticleSpin 8s linear infinite;
+}
+
+.reticle-dot {
+  width: 8px;
+  height: 8px;
+  background: #38bdf8;
+  border-radius: 50%;
+  box-shadow: 0 0 10px #38bdf8;
+}
+
+.reticle-crosshair {
+  position: absolute;
+  background: rgba(56, 189, 248, 0.8);
+}
+
+.ch-top {
+  width: 2px;
+  height: 8px;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ch-bottom {
+  width: 2px;
+  height: 8px;
+  bottom: 0;
+  left: 50%;
+  transform: translateX(-50%);
+}
+
+.ch-left {
+  height: 2px;
+  width: 8px;
+  left: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.ch-right {
+  height: 2px;
+  width: 8px;
+  right: 0;
+  top: 50%;
+  transform: translateY(-50%);
+}
+
+.rod-control-reticle.locked-on .reticle-ring {
+  border-color: #10b981;
+  border-style: solid;
+  box-shadow: 0 0 16px rgba(16, 185, 129, 0.8);
+}
+
+.rod-control-reticle.locked-on .reticle-dot {
+  background: #10b981;
+  box-shadow: 0 0 14px #10b981;
+}
+
+.rod-control-reticle.locked-on .reticle-crosshair {
+  background: #10b981;
+}
+
+@keyframes reticleSpin {
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Индикатор натяжения лески */
+.tension-meter-wrapper {
+  position: absolute;
+  right: 20px;
+  top: 50%;
+  transform: translateY(-50%);
+  width: 44px;
+  height: 240px;
+  background: var(--card-bg);
+  border: 1px solid var(--card-border);
+  border-radius: 22px;
+  padding: 6px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.tension-track {
+  width: 100%;
+  height: 100%;
+  background: rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  position: relative;
+  overflow: hidden;
+}
+
+.tension-safe-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 25%;
+  height: 50%;
+  background: var(--safe-zone-color);
+  border-top: 2px dashed var(--safe-border);
+  border-bottom: 2px dashed var(--safe-border);
+  z-index: 1;
+}
+
+.tension-danger-zone {
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 0;
+  height: 15%;
+  background: rgba(239, 68, 68, 0.35);
+}
+
+.tension-bar {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(to top, #38bdf8, #f59e0b, #ef4444);
+  border-radius: 0 0 16px 16px;
+  transition: height 0.05s linear;
+  z-index: 2;
+}
+
+.tension-needle {
+  position: absolute;
+  left: -6px;
+  right: -6px;
+  bottom: 50%;
+  height: 4px;
+  background: #fff;
+  border-radius: 2px;
+  z-index: 3;
+  transition: bottom 0.05s linear;
+}
+
+.tension-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: #94a3b8;
+  margin-top: 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Большая кнопка вываживания */
+.reel-btn-container {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  pointer-events: auto;
+}
+
+.reel-button {
+  width: 130px;
+  height: 130px;
+  border-radius: 50%;
+  background: #0284c7;
+  border: 3px solid rgba(255, 255, 255, 0.4);
+  color: #fff;
+  font-family: 'Outfit', sans-serif;
+  font-size: 20px;
+  font-weight: 800;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  cursor: pointer;
+  outline: none;
+  transition: transform 0.08s ease, background 0.08s ease;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.reel-button:active,
+.reel-button.holding {
+  transform: scale(0.92);
+  background: #0369a1;
+  border-color: #38bdf8;
+}
+
+.reel-button.highlight-pull {
+  background: linear-gradient(135deg, #10b981 0%, #059669 100%);
+  border-color: #6ee7b7;
+  box-shadow: 0 0 28px rgba(16, 185, 129, 0.85);
+  animation: reelGlowPulse 0.7s ease-in-out infinite alternate;
+}
+
+@keyframes reelGlowPulse {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 16px rgba(16, 185, 129, 0.6);
+  }
+
+  100% {
+    transform: scale(1.08);
+    box-shadow: 0 0 32px rgba(16, 185, 129, 0.95);
+  }
+}
+
+.reel-icon {
+  font-size: 28px;
+}
+
+
+/* ==========================================================
+
+/* ==========================================================
+   ВСПЛЫВАЮЩИЕ УВЕДОМЛЕНИЯ (STATUS TOASTS)
+   ========================================================== */
+.status-toast {
+  position: fixed;
+  bottom: 84px;
+  left: 50%;
+  transform: translateX(-50%) translateY(20px);
+  background: rgba(15, 23, 42, 0.96);
+  color: #f8fafc;
+  padding: 10px 18px;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1px solid rgba(255, 255, 255, 0.15);
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.25s ease, transform 0.25s cubic-bezier(0.16, 1, 0.3, 1);
+  z-index: 1000;
+  white-space: nowrap;
+}
+
+.status-toast.visible {
+  opacity: 1;
+  transform: translateX(-50%) translateY(0);
+}
+
+#statusToast {
+  display: none !important;
+}

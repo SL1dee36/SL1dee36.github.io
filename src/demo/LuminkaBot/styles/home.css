@@ -1,0 +1,571 @@
+/* ==========================================================
+   LUMIBOT FISHING - HOME.CSS
+   Минималистичный строгий интерфейс Хижины рыбака (без теней, подсветок и эмодзи)
+   ========================================================== */
+
+.cabin-overlay {
+  background: #090e17 !important;
+}
+
+.cabin-header {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.08) !important;
+  background: #0d1522 !important;
+}
+
+.cabin-title {
+  font-size: 15px !important;
+  font-weight: 700 !important;
+  color: #f1f5f9 !important;
+}
+
+.cabin-subtitle {
+  font-size: 11px !important;
+  color: #64748b !important;
+}
+
+.cabin-content {
+  padding: 14px 12px;
+}
+
+/* Блок очага / печи */
+.cabin-hearth-row {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 12px;
+  margin-bottom: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.cabin-hearth-status {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.hearth-stat-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+}
+
+.hearth-stat-label {
+  color: #64748b;
+}
+
+.hearth-stat-value {
+  color: #f1f5f9;
+  font-weight: 700;
+}
+
+.hearth-stat-divider {
+  width: 1px;
+  height: 12px;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.cabin-hearth-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+}
+
+.cabin-btn {
+  padding: 8px 12px;
+  border-radius: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: inherit;
+  cursor: pointer;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  background: rgba(255, 255, 255, 0.04);
+  color: #cbd5e1;
+  transition: background 0.15s ease, border-color 0.15s ease, color 0.15s ease;
+  text-align: center;
+}
+
+.cabin-btn:hover {
+  background: rgba(255, 255, 255, 0.08);
+  border-color: rgba(255, 255, 255, 0.2);
+  color: #f8fafc;
+}
+
+.cabin-btn:active {
+  transform: translateY(1px);
+}
+
+.cabin-btn.primary {
+  background: #1e293b;
+  border-color: #334155;
+  color: #f1f5f9;
+}
+
+.cabin-btn.primary:hover {
+  background: #334155;
+  border-color: #475569;
+}
+
+.cabin-btn.secondary {
+  background: rgba(255, 255, 255, 0.03);
+}
+
+/* Заголовки секций */
+.cabin-section-title {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin: 0 0 8px 2px;
+}
+
+/* Сетка навигации */
+.cabin-nav-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cabin-nav-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+  cursor: pointer;
+  color: #cbd5e1;
+  font-family: inherit;
+  transition: background 0.15s ease, border-color 0.15s ease;
+  text-align: left;
+}
+
+.cabin-nav-card:hover {
+  background: #131c2e;
+  border-color: rgba(255, 255, 255, 0.18);
+  color: #f8fafc;
+}
+
+.cabin-nav-card:active {
+  transform: translateY(1px);
+}
+
+.cabin-nav-card.full-card {
+  grid-column: span 2;
+}
+
+.cabin-nav-left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  color: #94a3b8;
+}
+
+.cabin-nav-card:hover .cabin-nav-left {
+  color: #f1f5f9;
+}
+
+.cabin-nav-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #e2e8f0;
+}
+
+.cabin-nav-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 6px;
+  border-radius: 6px;
+  background: rgba(255, 255, 255, 0.06);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+}
+
+.cabin-nav-badge.badge-blue {
+  color: #38bdf8;
+  background: rgba(56, 189, 248, 0.08);
+  border-color: rgba(56, 189, 248, 0.2);
+}
+
+.cabin-nav-badge.badge-gold {
+  color: #fbbf24;
+  background: rgba(251, 191, 36, 0.08);
+  border-color: rgba(251, 191, 36, 0.2);
+}
+
+/* Снаряжение и рекорд */
+.cabin-info-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cabin-info-card {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+.cabin-info-label {
+  font-size: 10px;
+  font-weight: 600;
+  text-transform: uppercase;
+  color: #64748b;
+  margin-bottom: 4px;
+}
+
+.cabin-info-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e2e8f0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.cabin-info-value.highlight {
+  color: #fef08a;
+}
+
+.cabin-equip-details {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.cabin-equip-line {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.equip-lbl {
+  color: #64748b;
+  font-size: 10px;
+}
+
+.equip-val {
+  color: #cbd5e1;
+  font-weight: 600;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Статистика */
+.cabin-stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 16px;
+}
+
+.cabin-stat-item {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 10px;
+  text-align: center;
+}
+
+.cabin-stat-val {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.cabin-stat-lbl {
+  font-size: 10px;
+  color: #64748b;
+  margin-top: 2px;
+}
+
+/* ==========================================================
+   СТИЛИ ТОРГОВЦА И САДКА (СОХРАНЕНЫ ДЛЯ СОВМЕСТИМОСТИ)
+   ========================================================== */
+.tab-bar {
+  display: flex;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.35);
+  padding: 3px;
+  border-radius: 12px;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+  margin-bottom: 12px;
+  flex-shrink: 0;
+}
+
+.tab-btn {
+  flex: 1;
+  padding: 7px 10px;
+  border-radius: 9px;
+  background: transparent;
+  border: none;
+  color: #94a3b8;
+  font-family: inherit;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.tab-btn.active {
+  background: rgba(255, 255, 255, 0.1);
+  color: #ffffff;
+}
+
+.shop-card {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.07);
+  border-radius: 10px;
+  padding: 10px 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  margin-bottom: 8px;
+}
+
+.shop-card-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.shop-card-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.shop-card-desc {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.shop-card-actions {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 4px;
+}
+
+.shop-price {
+  font-size: 12px;
+  font-weight: 700;
+  color: #fef08a;
+}
+
+.shop-category-header {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  color: #64748b;
+  margin: 12px 0 6px 2px;
+}
+
+.shop-category-header:first-child {
+  margin-top: 0;
+}
+
+/* Оверлей сна */
+.sleep-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(3, 7, 18, 0.95);
+  z-index: 100;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.4s ease;
+}
+
+.sleep-overlay.active {
+  opacity: 1;
+  pointer-events: auto;
+}
+
+.sleep-box {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 14px;
+  padding: 24px 20px;
+  text-align: center;
+  max-width: 300px;
+  width: 90%;
+  transform: scale(0.95);
+  transition: transform 0.4s ease;
+}
+
+.sleep-overlay.active .sleep-box {
+  transform: scale(1);
+}
+
+.sleep-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #f1f5f9;
+  margin-bottom: 8px;
+}
+
+.sleep-text {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.4;
+}
+
+
+/* ==========================================================
+   КНОПКА-ШЕСТЕРЕНКА НАСТРОЕК В ХИЖИНЕ И ФРЕЙМ НАСТРОЕК
+   ========================================================== */
+.cabin-gear-btn {
+  position: absolute;
+  bottom: calc(env(safe-area-inset-bottom, 0px) + 20px);
+  right: calc(env(safe-area-inset-right, 0px) + 20px);
+  z-index: 10;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  background: rgba(13, 21, 34, 0.94);
+  border: 1px solid rgba(56, 189, 248, 0.4);
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.55), 0 0 12px rgba(56, 189, 248, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #38bdf8;
+  cursor: pointer;
+  transition: transform 0.2s cubic-bezier(0.16, 1, 0.3, 1), background 0.2s, border-color 0.2s, color 0.2s;
+  user-select: none;
+}
+
+.cabin-gear-btn:hover {
+  background: rgba(18, 32, 54, 0.98);
+  border-color: rgba(56, 189, 248, 0.7);
+  color: #7dd3fc;
+  transform: rotate(30deg) scale(1.06);
+}
+
+.cabin-gear-btn:active {
+  transform: rotate(60deg) scale(0.92);
+}
+
+/* Фрейм настроек графики и производительности */
+.settings-content {
+  padding: 16px 14px;
+  gap: 12px;
+}
+
+.settings-fps-card {
+  background: #0d1522;
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  border-radius: 14px;
+  padding: 14px 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+}
+
+.settings-fps-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.settings-fps-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.settings-fps-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.settings-fps-val {
+  font-size: 20px;
+  font-weight: 800;
+  color: #38bdf8;
+  font-variant-numeric: tabular-nums;
+  background: rgba(56, 189, 248, 0.1);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  padding: 4px 12px;
+  border-radius: 10px;
+}
+
+.settings-modes-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-top: 8px;
+}
+
+.settings-mode-card {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  padding: 14px;
+  cursor: pointer;
+  transition: border-color 0.2s, background 0.2s, transform 0.15s;
+  user-select: none;
+}
+
+.settings-mode-card:hover {
+  background: #101c2e;
+  border-color: rgba(56, 189, 248, 0.4);
+}
+
+.settings-mode-card:active {
+  transform: scale(0.98);
+}
+
+.settings-mode-card.active {
+  background: rgba(14, 165, 233, 0.08);
+  border: 1px solid #38bdf8;
+  box-shadow: 0 0 14px rgba(56, 189, 248, 0.18);
+}
+
+.mode-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 6px;
+}
+
+.mode-card-title {
+  font-size: 14px;
+  font-weight: 700;
+  color: #f1f5f9;
+}
+
+.mode-badge {
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.08);
+  color: #94a3b8;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.settings-mode-card.active .mode-badge {
+  background: rgba(56, 189, 248, 0.25);
+  color: #38bdf8;
+  border-color: rgba(56, 189, 248, 0.5);
+}
+
+.mode-card-desc {
+  font-size: 11px;
+  color: #94a3b8;
+  line-height: 1.45;
+}

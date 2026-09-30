@@ -1,0 +1,237 @@
+/* ==========================================================
+СИСТЕМА УСТАЛОСТИ И ЭФФЕКТЫ (HUD, ВИНЬЕТКА, ОБМОРОК)
+   ========================================================== */
+.fatigue-pill {
+  cursor: default;
+  transition: all 0.25s ease;
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.fatigue-pill.fatigue-good {
+  border-color: rgba(34, 197, 94, 0.4);
+  color: #86efac;
+}
+
+.fatigue-pill.fatigue-warn {
+  border-color: rgba(234, 179, 8, 0.5);
+  color: #fde047;
+}
+
+.fatigue-pill.fatigue-tired {
+  border-color: rgba(249, 115, 22, 0.6);
+  color: #fb923c;
+}
+
+.fatigue-pill.fatigue-critical {
+  border-color: rgba(239, 68, 68, 0.8);
+  color: #f87171;
+  background: rgba(239, 68, 68, 0.2);
+  animation: pulseCritical 1s infinite alternate;
+}
+
+@keyframes pulseCritical {
+  0% {
+    transform: scale(1);
+    box-shadow: 0 0 4px rgba(239, 68, 68, 0.3);
+  }
+
+  100% {
+    transform: scale(1.05);
+    box-shadow: 0 0 12px rgba(239, 68, 68, 0.7);
+  }
+}
+
+/* Виньетка потемнения в глазах (>80% усталости) */
+.fatigue-vignette-overlay {
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 65;
+  opacity: 0;
+  background: radial-gradient(circle at center, transparent 25%, rgba(0, 0, 0, 0.65) 65%, rgba(0, 0, 0, 0.96) 98%);
+  transition: opacity 0.4s ease-out;
+}
+
+.fatigue-vignette-overlay.active {
+  animation: vignetteBreathing 3.5s ease-in-out infinite alternate;
+}
+
+@keyframes vignetteBreathing {
+  0% {
+    transform: scale(1);
+    opacity: 0.85;
+  }
+
+  100% {
+    transform: scale(1.03);
+    opacity: 1;
+  }
+}
+
+/* Оверлей обморока и ограбления */
+.faint-overlay {
+  z-index: 300 !important;
+  background: #090e17 !important;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+}
+
+.faint-box {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: none;
+  border-radius: 12px;
+  max-width: 360px;
+  width: 100%;
+  padding: 24px 20px;
+  text-align: center;
+  color: #f1f5f9;
+  position: relative;
+  z-index: 2;
+}
+
+.faint-icon {
+  font-size: 36px;
+  margin-bottom: 10px;
+}
+
+.faint-title {
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: -0.2px;
+  margin-bottom: 8px;
+  color: #f1f5f9;
+}
+
+.faint-text {
+  font-size: 12px;
+  line-height: 1.5;
+  color: #94a3b8;
+  margin-bottom: 14px;
+}
+
+.faint-loot-lost {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.25);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin: 10px 0 16px;
+  font-size: 12px;
+  line-height: 1.6;
+  text-align: left;
+  color: #fca5a5;
+}
+
+/* Оверлей сна в Хижине */
+.sleep-overlay {
+  position: absolute;
+  inset: 0;
+  z-index: 250;
+  background: rgba(2, 6, 23, 0.95);
+  display: none;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  opacity: 0;
+  transition: opacity 0.4s ease;
+}
+
+.sleep-overlay.active {
+  display: flex;
+  opacity: 1;
+}
+
+.sleep-box {
+  background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%);
+  border: 1px solid rgba(56, 189, 248, 0.3);
+  box-shadow: 0 0 30px rgba(56, 189, 248, 0.2);
+  border-radius: 18px;
+  max-width: 340px;
+  width: 100%;
+  padding: 22px 18px;
+  text-align: center;
+}
+
+.sleep-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #38bdf8;
+  margin-bottom: 8px;
+}
+
+.sleep-text {
+  font-size: 13px;
+  color: #94a3b8;
+  line-height: 1.45;
+}
+
+/* ==========================================================
+   ДИНАМИЧЕСКИЙ РЫНОК И БЕЙДЖИ ТРЕНДОВ В СКУПКЕ
+   ========================================================== */
+.market-info-bar {
+  background: rgba(30, 41, 59, 0.6);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  margin-bottom: 10px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.price-trend-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 2px 6px;
+  border-radius: 6px;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.trend-up {
+  background: rgba(34, 197, 94, 0.16);
+  color: #4ade80;
+  border: 1px solid rgba(34, 197, 94, 0.35);
+}
+
+.trend-down {
+  background: rgba(239, 68, 68, 0.16);
+  color: #f87171;
+  border: 1px solid rgba(239, 68, 68, 0.35);
+}
+
+.trend-neutral {
+  background: rgba(148, 163, 184, 0.12);
+  color: #cbd5e1;
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+/* ==========================================================
+/* Виджет времени суток и погоды в HUD */
+.env-hud-pill {
+  background: rgba(15, 23, 42, 0.72);
+  border: 1px solid rgba(56, 189, 248, 0.25);
+  color: #f1f5f9;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.env-hud-pill:hover {
+  background: rgba(30, 41, 59, 0.9);
+  border-color: rgba(56, 189, 248, 0.45);
+}
+
+.env-hud-pill:active {
+  transform: scale(0.96);
+}
+
+.env-hud-pill svg {
+  display: block;
+}

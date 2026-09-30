@@ -8,9 +8,18 @@
   <title>Telegram Fishing - Таёжное Озеро</title>
 
   <link rel="icon" href="data:,">
-  <link rel="stylesheet" href="style.css">
+    <!-- Модульные стили компонентов -->
+  <link rel="stylesheet" href="styles/base.css">
+  <link rel="stylesheet" href="styles/hud.css">
+  <link rel="stylesheet" href="styles/lake.css">
+  <link rel="stylesheet" href="styles/modals.css">
+  <link rel="stylesheet" href="styles/inventory.css">
+  <link rel="stylesheet" href="styles/atlas.css">
+  <link rel="stylesheet" href="styles/home.css">
+  <link rel="stylesheet" href="styles/casino.css">
+  <link rel="stylesheet" href="styles/shop.css">
   <!-- Telegram WebApp SDK -->
-  <script src="telegram-web-app.js"></script>
+  <script src="vendor/telegram-web-app.js"></script>
   <!-- Supabase JS Client -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
@@ -85,6 +94,12 @@
           <span style="font-size:12px;line-height:1;margin-right:2px;">🎰</span>
           <span class="hud-btn-text">Казино</span>
         </button> -->
+        <button class="hud-pill-btn env-hud-pill" id="envHudPill" title="Время суток и погода">
+          <span class="btn-icon-svg" id="envWeatherIcon" style="display:inline-flex;align-items:center;">
+            <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line></svg>
+          </span>
+          <span class="hud-btn-text" id="envTimeText">06:30</span>
+        </button>
         <div class="hud-pill-btn fatigue-pill" id="fatigueHudPill" title="Усталость игрока">
           <svg class="btn-icon-svg" width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor"
             stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
@@ -249,8 +264,12 @@
     </div>
   </div> <!-- /#game-ui-layer -->
 
+    <!-- Фоновый защитный бэкдроп под всеми фреймами -->
+    <div id="frameNavBackdrop" class="frame-nav-backdrop"></div>
+
     <!-- Полноэкранный оверлей успешного вылова -->
     <div class="fullscreen-overlay" id="catchModal">
+      <div class="frame-theme-bg" id="catchThemeBg"></div>
       <div class="fs-container catch-fs-container">
         <div style="display:flex;align-items:center;justify-content:center;gap:6px;flex-wrap:wrap;margin-bottom:8px;">
           <div class="rarity-pill rarity-Common" id="modalRarity">Обычная</div>
@@ -285,6 +304,7 @@
 
     <!-- Полноэкранный Садок: Сеточный тетрис-инвентарь (1-5 ячеек, угловые) -->
     <div class="fullscreen-overlay" id="livewellModal">
+      <div class="frame-theme-bg" id="livewellThemeBg"></div>
       <div class="fs-header">
         <div class="fs-header-left">
           <div class="fs-title">Садок с уловом</div>
@@ -350,6 +370,7 @@
 
     <!-- Полноэкранный Торговец снастями -->
     <div class="fullscreen-overlay" id="shopModal">
+      <div class="frame-theme-bg" id="shopThemeBg"></div>
       <div class="fs-header">
         <div class="fs-header-left">
           <div class="fs-title">Торговец снастями</div>
@@ -367,6 +388,51 @@
       </div>
 
       <div class="fs-content">
+        <!-- Интерактивный Торговец (NPC) -->
+        <div class="merchant-booth" id="merchantBooth">
+          <div class="merchant-avatar-wrap">
+            <svg class="merchant-svg" viewBox="0 0 100 100" aria-label="Торговец Прохор">
+              <circle cx="50" cy="50" r="46" fill="#1e293b" stroke="#334155" stroke-width="2" />
+              <!-- Одеяние -->
+              <path d="M16 92 Q32 68 50 68 Q68 68 84 92 Z" fill="#334155" />
+              <path d="M42 68 L50 80 L58 68 Z" fill="#475569" />
+              <!-- Лицо -->
+              <ellipse cx="50" cy="46" rx="20" ry="21" fill="#d4a373" />
+              <!-- Уши -->
+              <circle cx="29" cy="46" r="4" fill="#c58e5a" />
+              <circle cx="71" cy="46" r="4" fill="#c58e5a" />
+              <!-- Шапка рыбака с меховым отворотом -->
+              <path d="M26 38 C26 22, 74 22, 74 38 Z" fill="#1e293b" stroke="#0f172a" stroke-width="1.5" />
+              <path d="M24 38 Q50 34 76 38 Q50 42 24 38 Z" fill="#64748b" />
+              <rect x="25" y="38" width="6" height="13" rx="3" fill="#475569" />
+              <rect x="69" y="38" width="6" height="13" rx="3" fill="#475569" />
+              <!-- Брови -->
+              <path d="M38 37 Q42 35 46 37" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round" />
+              <path d="M54 37 Q58 35 62 37" stroke="#334155" stroke-width="2" fill="none" stroke-linecap="round" />
+              <!-- Глаза -->
+              <circle cx="42" cy="42" r="2.2" fill="#0f172a" />
+              <circle cx="58" cy="42" r="2.2" fill="#0f172a" />
+              <circle cx="43" cy="41" r="0.7" fill="#ffffff" />
+              <circle cx="59" cy="41" r="0.7" fill="#ffffff" />
+              <!-- Нос -->
+              <path d="M49 42 Q47 48 50 50 Q53 48 51 42" fill="#c58e5a" />
+              <!-- Седая борода и усы -->
+              <path d="M32 53 Q50 55 68 53 Q65 74 50 78 Q35 74 32 53 Z" fill="#94a3b8" />
+              <path d="M40 51 Q50 55 60 51 Q50 58 40 51 Z" fill="#cbd5e1" />
+              <!-- Анимированный рот -->
+              <g id="merchantMouthGroup">
+                <path id="merchantMouth" class="mouth-idle" d="M46 59 Q50 59 54 59" stroke="#334155" stroke-width="2" stroke-linecap="round" fill="none" />
+              </g>
+            </svg>
+          </div>
+          <div class="merchant-dialogue-wrap">
+            <div class="merchant-name-tag">Прохор Семеныч • Торговец</div>
+            <div class="merchant-bubble" id="merchantSpeech">
+              Выбирай снасти с умом. На хорошую снасть и трофей идет смелее.
+            </div>
+          </div>
+        </div>
+
         <div class="tab-bar">
           <button class="tab-btn active" data-shoptab="sell">Скупка рыбы</button>
           <button class="tab-btn" data-shoptab="methods">Методы</button>
@@ -382,6 +448,7 @@
 
     <!-- Полноэкранный Полевой Атлас видов (Книга исследователя) -->
     <div class="fullscreen-overlay" id="atlasModal">
+      <div class="frame-theme-bg" id="atlasThemeBg"></div>
       <div class="fs-header">
         <div class="fs-header-left">
           <div class="fs-title">Полевой Атлас Озера</div>
@@ -440,15 +507,18 @@
     </div>
 
     <!-- Полноэкранная Хижина рыбака (Меню дома) -->
-    <div class="fullscreen-overlay" id="homeModal">
-      <div class="fs-header">
+        <!-- Полноэкранная Хижина рыбака (Меню дома) -->
+        <!-- Полноэкранная Хижина рыбака (Меню дома) -->
+    <div class="fullscreen-overlay cabin-overlay" id="homeModal">
+      <div class="frame-theme-bg" id="homeThemeBg"></div>
+      <div class="fs-header cabin-header">
         <div class="fs-header-left">
-          <div class="fs-title">Хижина рыбака</div>
-          <div class="fs-subtitle">Уютный очаг и снасти</div>
+          <div class="fs-title cabin-title">Хижина рыбака</div>
+          <div class="fs-subtitle cabin-subtitle">Базовый лагерь</div>
         </div>
         <div class="fs-header-right">
-          <button class="close-icon-btn" id="closeHomeBtn" title="На рыбалку" aria-label="Закрыть">
-            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"
+          <button class="close-icon-btn" id="closeHomeBtn" title="Закрыть" aria-label="Закрыть">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
               stroke-linecap="round" stroke-linejoin="round">
               <line x1="18" y1="6" x2="6" y2="18"></line>
               <line x1="6" y1="6" x2="18" y2="18"></line>
@@ -457,73 +527,198 @@
         </div>
       </div>
 
-      <div class="fs-content fs-scrollable">
-        <!-- Кнопки выбора действия в доме -->
-        <div class="home-actions-panel">
-          <button class="home-action-btn primary-action" id="homeGoFishingBtn">
-            <span class="action-btn-title">На рыбалку</span>
-            <span class="action-btn-desc">Вернуться к озеру</span>
-          </button>
-          <button class="home-action-btn merchant-action" id="homeGoMerchantBtn">
-            <span class="action-btn-title">К торговцу</span>
-            <span class="action-btn-desc">Скупка и снасти</span>
-          </button>
-          <button class="home-action-btn livewell-action" id="homeGoLivewellBtn">
-            <span class="action-btn-title">Садок (<span id="homeLivewellCount">0</span>)</span>
-            <span class="action-btn-desc">Сетка инвентаря</span>
-          </button>
-          <button class="home-action-btn atlas-action" id="homeGoAtlasBtn">
-            <span class="action-btn-title">Полевой Атлас</span>
-            <span class="action-btn-desc">Книга видов и мутаций</span>
-          </button>
-          <button class="home-action-btn stove-action" id="homeGoStoveBtn">
-            <span class="action-btn-title">Печь (<span id="homeFuelCount">0</span> дров)</span>
-            <span class="action-btn-desc">Растопить очаг</span>
-          </button>
-          <button class="home-action-btn casino-action" id="homeGoCasinoBtn">
-            <span class="action-btn-title">Казино «Золотой Крючок»</span>
-            <span class="action-btn-desc">Слоты, 21 Очко, Крэш, Колесо, Мины, Кости</span>
-          </button>
-          <button class="home-action-btn sleep-action" id="homeGoSleepBtn">
-            <span class="action-btn-title">Спать</span>
-            <span class="action-btn-desc">Отдохнуть у очага</span>
-          </button>
-        </div>
-
-        <div
-          style="font-size:11px;font-weight:700;color:#94a3b8;margin:6px 0 8px 2px;text-transform:uppercase;letter-spacing:0.5px;">
-          Личная статистика</div>
-        <div class="stats-grid">
-          <div class="stat-tile">
-            <div class="stat-tile-val" id="statFishCaught">0</div>
-            <div class="stat-tile-lbl">Поймано рыб</div>
+      <div class="fs-content fs-scrollable cabin-content">
+        <!-- Блок печи и отдыха -->
+        <div class="cabin-hearth-row">
+          <div class="cabin-hearth-status">
+            <div class="hearth-stat-item">
+              <span class="hearth-stat-label">Дрова в садке:</span>
+              <span class="hearth-stat-value" id="homeFuelCount">0</span>
+            </div>
+            <div class="hearth-stat-divider"></div>
+            <div class="hearth-stat-item">
+              <span class="hearth-stat-label">Усталость:</span>
+              <span class="hearth-stat-value" id="cabinFatigueDisplay">0%</span>
+            </div>
           </div>
-          <div class="stat-tile">
-            <div class="stat-tile-val" id="statFishSold">0</div>
-            <div class="stat-tile-lbl">Продано рыб</div>
-          </div>
-          <div class="stat-tile">
-            <div class="stat-tile-val" id="statTotalEarned">0 C</div>
-            <div class="stat-tile-lbl">Заработано</div>
-          </div>
-          <div class="stat-tile">
-            <div class="stat-tile-val" id="statBestTrophy">-</div>
-            <div class="stat-tile-lbl">Главный трофей</div>
+          <div class="cabin-hearth-actions">
+            <button class="cabin-btn secondary" id="homeGoStoveBtn">Растопить печь</button>
+            <button class="cabin-btn primary" id="homeGoSleepBtn">Крепкий сон</button>
           </div>
         </div>
 
-        <div
-          style="font-size:11px;font-weight:700;color:#94a3b8;margin:12px 0 6px 2px;text-transform:uppercase;letter-spacing:0.5px;">
-          Текущее снаряжение</div>
-        <div class="equip-box">
-          <div><strong>Удочка:</strong> <span id="profileRodName">Бамбуковая удочка</span></div>
-          <div><strong>Леска:</strong> <span id="profileLineName">Монофил 0.2мм</span></div>
+        <!-- Навигация -->
+        <div class="cabin-section-title">Навигация</div>
+        <div class="cabin-nav-grid">
+          <button class="cabin-nav-card" id="homeGoFishingBtn">
+            <div class="cabin-nav-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M12 2v20M17 5H9.5a3.5 3.5 0 0 0 0 7h5a3.5 3.5 0 0 1 0 7H6"></path>
+              </svg>
+              <span class="cabin-nav-name">На рыбалку</span>
+            </div>
+            <span class="cabin-nav-badge badge-blue">К озеру</span>
+          </button>
+
+          <button class="cabin-nav-card" id="homeGoMerchantBtn">
+            <div class="cabin-nav-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <circle cx="9" cy="21" r="1"></circle>
+                <circle cx="20" cy="21" r="1"></circle>
+                <path d="M1 1h4l2.68 13.39a2 2 0 0 0 2 1.61h9.72a2 2 0 0 0 2-1.61L23 6H6"></path>
+              </svg>
+              <span class="cabin-nav-name">Торговец</span>
+            </div>
+            <span class="cabin-nav-badge">Снасти</span>
+          </button>
+
+          <button class="cabin-nav-card" id="homeGoLivewellBtn">
+            <div class="cabin-nav-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <rect x="3" y="3" width="18" height="18" rx="2"></rect>
+                <path d="M3 9h18M9 21V9"></path>
+              </svg>
+              <span class="cabin-nav-name">Садок</span>
+            </div>
+            <span class="cabin-nav-badge"><span id="homeLivewellCount">0</span> шт.</span>
+          </button>
+
+          <button class="cabin-nav-card" id="homeGoAtlasBtn">
+            <div class="cabin-nav-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <path d="M4 19.5A2.5 2.5 0 0 1 6.5 17H20"></path>
+                <path d="M6.5 2H20v20H6.5A2.5 2.5 0 0 1 4 19.5v-15A2.5 2.5 0 0 1 6.5 2z"></path>
+              </svg>
+              <span class="cabin-nav-name">Полевой Атлас</span>
+            </div>
+            <span class="cabin-nav-badge" id="fishdexProgressBadge">0 / 116</span>
+          </button>
+
+          <button class="cabin-nav-card full-card" id="homeGoCasinoBtn">
+            <div class="cabin-nav-left">
+              <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                <polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"></polygon>
+              </svg>
+              <span class="cabin-nav-name">Казино «Золотой Крючок»</span>
+            </div>
+            <span class="cabin-nav-badge badge-gold">Игры</span>
+          </button>
+        </div>
+
+        <!-- Снаряжение и рекорд -->
+        <div class="cabin-section-title">Снаряжение и рекорд</div>
+        <div class="cabin-info-grid">
+          <div class="cabin-info-card">
+            <div class="cabin-info-label">Главный трофей</div>
+            <div class="cabin-info-value" id="statBestTrophy">Пока нет</div>
+          </div>
+
+          <div class="cabin-info-card">
+            <div class="cabin-info-label">Экипировка</div>
+            <div class="cabin-equip-details">
+              <div class="cabin-equip-line">
+                <span class="equip-lbl">Удочка:</span>
+                <span class="equip-val" id="profileRodName">Бамбуковая удочка</span>
+              </div>
+              <div class="cabin-equip-line">
+                <span class="equip-lbl">Леска:</span>
+                <span class="equip-val" id="profileLineName">Монофил 0.2мм</span>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Статистика -->
+        <div class="cabin-section-title">Статистика</div>
+        <div class="cabin-stats-row">
+          <div class="cabin-stat-item">
+            <div class="cabin-stat-val" id="statFishCaught">0</div>
+            <div class="cabin-stat-lbl">Поймано</div>
+          </div>
+
+          <div class="cabin-stat-item">
+            <div class="cabin-stat-val" id="statFishSold">0</div>
+            <div class="cabin-stat-lbl">Продано</div>
+          </div>
+
+          <div class="cabin-stat-item">
+            <div class="cabin-stat-val" id="statTotalEarned">0 C</div>
+            <div class="cabin-stat-lbl">Заработано</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Плавающая кнопка настроек графики в правом нижнем углу хижины -->
+      <button class="cabin-gear-btn" id="cabinSettingsBtn" title="Настройки графики и производительности" aria-label="Настройки">
+        <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <circle cx="12" cy="12" r="3"></circle>
+          <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+        </svg>
+      </button>
+    </div>
+
+    <!-- Полноэкранный фрейм: Настройки графики и производительности -->
+    <div class="fullscreen-overlay" id="settingsModal">
+      <div class="frame-theme-bg" id="settingsThemeBg"></div>
+      <div class="fs-header">
+        <div class="fs-header-left">
+          <div class="fs-title">Настройки</div>
+          <div class="fs-subtitle">Графика и производительность</div>
+        </div>
+        <div class="fs-header-right">
+          <button class="close-icon-btn" id="closeSettingsBtn" title="Закрыть" aria-label="Закрыть">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"
+              stroke-linecap="round" stroke-linejoin="round">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+
+      <div class="fs-content fs-scrollable settings-content">
+        <!-- Блок живого монитора FPS -->
+        <div class="settings-fps-card">
+          <div class="settings-fps-info">
+            <span class="settings-fps-title">Частота кадров</span>
+            <span class="settings-fps-sub">Синхронизация VSync</span>
+          </div>
+          <div class="settings-fps-val" id="settingsFpsDisplay">-- FPS</div>
+        </div>
+
+        <!-- Блок выбора качества -->
+        <div class="cabin-section-title" style="margin-top:16px;">Разрешение и физика озера</div>
+        <div class="settings-modes-list">
+          <div class="settings-mode-card" id="optPerfCard" onclick="window.setQualityMode('perf')">
+            <div class="mode-card-header">
+              <div class="mode-card-title">⚡ Быстро (Рекомендуется для VM)</div>
+              <span class="mode-badge" id="optPerfBadge">Активно</span>
+            </div>
+            <div class="mode-card-desc">Буфер 960px, оптимизированная физика волн. Снижает нагрузку на CPU на 85%, гарантирует высокий FPS.</div>
+          </div>
+
+          <div class="settings-mode-card" id="optBalancedCard" onclick="window.setQualityMode('balanced')">
+            <div class="mode-card-header">
+              <div class="mode-card-title">⚖️ Баланс (HD 720p)</div>
+              <span class="mode-badge" id="optBalancedBadge">Выбрать</span>
+            </div>
+            <div class="mode-card-desc">Буфер 1280px, стандартные эффекты озера. Отличный баланс четкости и плавной анимации.</div>
+          </div>
+
+          <div class="settings-mode-card" id="optMaxCard" onclick="window.setQualityMode('max')">
+            <div class="mode-card-header">
+              <div class="mode-card-title">💎 Максимум (1:1 нативно)</div>
+              <span class="mode-badge" id="optMaxBadge">Выбрать</span>
+            </div>
+            <div class="mode-card-desc">Отрисовка в полном разрешении экрана (до 2.5K/4K). Требует мощный видеоадаптер.</div>
+          </div>
         </div>
       </div>
     </div>
 
     <!-- Полноэкранная локация: Казино «Золотой Крючок» -->
     <div class="fullscreen-overlay" id="casinoModal">
+      <div class="frame-theme-bg" id="casinoThemeBg"></div>
       <div class="fs-header casino-header">
         <div class="fs-header-left">
           <div class="fs-title casino-title-gold">Казино «Золотой Крючок»</div>
@@ -587,6 +782,7 @@
 
     <!-- Полноэкранный оверлей обморока и утреннего ограбления -->
     <div class="fullscreen-overlay faint-overlay" id="collapseModal">
+      <div class="frame-theme-bg" id="collapseThemeBg"></div>
       <div class="faint-box" id="collapseBox">
         <div class="faint-icon" id="collapseIcon">💤</div>
         <div class="faint-title" id="collapseTitle">Истощение сил</div>
@@ -598,22 +794,56 @@
     </div>
   </div>
 
-  <!-- База данных 100 рыб, зверей, хлама и матриц модификаций -->
-  <script src="entityData.js"></script>
-  <!-- Анатомический процедурный рендерер кривых Безье и текстур -->
-  <script src="proceduralRenderer.js"></script>
-  <!-- Модульный генератор сущностей и комбинаций -->
-  <script src="entityGenerator.js"></script>
-  <!-- Сеточный тетрис-инвентарь садка (Resident Evil style) -->
-  <script src="gridInventory.js"></script>
-  <!-- Полевой Атлас видов (Книга натуралиста) -->
-  <script src="atlasBook.js"></script>
-  <!-- Логика интерфейса, данных, профиля и Supabase -->
-  <script src="scripts.js"></script>
-  <!-- Локация Казино, Слоты, Колесо Фортуны и Минное поле -->
-  <script src="casino.js"></script>
-  <!-- Игровой движок, физика заброса и Canvas-рендеринг -->
-  <script src="fisher.js"></script>
+  <!-- Ядро и сервисы -->
+  <script src="src/core/config.js"></script>
+  <script src="src/core/telegram.js"></script>
+  <script src="src/core/audio.js"></script>
+  <script src="src/core/state.js"></script>
+  <script src="src/core/storage.js"></script>
+  <script src="src/core/supabase.js"></script>
+
+  <!-- Базы данных снастей и фауны -->
+  <script src="src/data/gear.js"></script>
+  <script src="src/data/species.js"></script>
+
+  <!-- Процедурная генерация и физический движок -->
+  <script src="src/engine/procedural.js"></script>
+  <script src="src/engine/generator.js"></script>
+  <script src="src/engine/canvas.js"></script>
+  <script src="src/engine/environment.js"></script>
+  <script src="src/engine/ambient.js"></script>
+  <script src="src/engine/physics.js"></script>
+  <script src="src/engine/fight.js"></script>
+  <script src="src/engine/renderer.js"></script>
+
+  <!-- Менеджер фреймов и модальных окон -->
+  <script src="src/ui/modals.js"></script>
+
+  <!-- Инвентарь и Садок -->
+  <script src="src/inventory/grid.js"></script>
+  <script src="src/inventory/livewellUI.js"></script>
+
+  <!-- Игровые фичи и экраны -->
+  <script src="src/features/market/market.js"></script>
+  <script src="src/features/shop/shop.js"></script>
+  <script src="src/features/home/home.js"></script>
+  <script src="src/features/atlas/atlas.js"></script>
+  <script src="src/features/atlas/atlasUI.js"></script>
+
+  <!-- Казино «Золотой Крючок» -->
+  <script src="src/features/casino/casinoCore.js"></script>
+  <script src="src/features/casino/slots.js"></script>
+  <script src="src/features/casino/wheel.js"></script>
+  <script src="src/features/casino/mines.js"></script>
+  <script src="src/features/casino/blackjack.js"></script>
+  <script src="src/features/casino/crash.js"></script>
+  <script src="src/features/casino/dice.js"></script>
+
+  <!-- Интерфейс и запуск -->
+  <script src="src/ui/hud.js"></script>
+  <script src="src/ui/catchModal.js"></script>
+  <script src="src/ui/fatigue.js"></script>
+  <script src="src/main.js"></script>
 </body>
 
 </html>

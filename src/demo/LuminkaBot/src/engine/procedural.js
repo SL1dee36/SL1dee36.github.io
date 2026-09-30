@@ -93,13 +93,13 @@
       const now = Date.now() * 0.003;
       const pulse = 0.85 + Math.sin(now) * 0.15;
 
-      if (mutation && mutation.glowColor) {
+      if (isPreview && mutation && mutation.glowColor) {
         ctx.shadowColor = mutation.glowColor;
         ctx.shadowBlur = (mutation.id === 'radioactive' ? 26 : 18) * pulse;
-      } else if (isLegendary) {
+      } else if (isPreview && isLegendary) {
         ctx.shadowColor = baseColor;
         ctx.shadowBlur = 20 * pulse;
-      } else if (entity.rarity === 'Epic') {
+      } else if (isPreview && entity.rarity === 'Epic') {
         ctx.shadowColor = baseColor;
         ctx.shadowBlur = 10;
       } else {
@@ -125,7 +125,7 @@
         this.drawWaterBeast(ctx, entity, tailOsc);
       } else {
         // Рыбы (bodyType: 0, 1, 2, 3, 4)
-        this.drawFishAnatomy(ctx, entity, bodyType, baseColor, finColor, tailOsc);
+        this.drawFishAnatomy(ctx, entity, bodyType, baseColor, finColor, tailOsc, isPreview);
       }
 
       ctx.restore();
@@ -134,7 +134,7 @@
     /* ==========================================================
        АНАТОМИЧЕСКИЙ РЕНДЕРИНГ РЫБ (Безье-контуры 0, 1, 2, 3)
        ========================================================== */
-    drawFishAnatomy(ctx, entity, bodyType, baseColor, finColor, tailOsc) {
+    drawFishAnatomy(ctx, entity, bodyType, baseColor, finColor, tailOsc, isPreview = false) {
       const darkBack = this.adjustColor(baseColor, 0.45);
       const lightBelly = this.adjustColor(baseColor, 1.45);
       const tailSway = Math.sin(tailOsc || 0) * (bodyType === 3 ? 9 : 6);
@@ -221,7 +221,7 @@
       ctx.clip();
 
       // 3. ПРОЦЕДУРНЫЕ ТЕКСТУРЫ (ЧЕШУЯ, ПОЛОСЫ, ПЯТНА)
-      this.drawFishTextures(ctx, entity, bodyType);
+      this.drawFishTextures(ctx, entity, bodyType, isPreview);
 
       ctx.restore(); // Снятие clip()
 
@@ -321,7 +321,8 @@
     /**
      * Процедурная чешуя, полосы и пятна внутри тела
      */
-    drawFishTextures(ctx, entity, bodyType) {
+    drawFishTextures(ctx, entity, bodyType, isPreview = false) {
+      if (!isPreview) return; // Под водой чешуйки и полосы пропускаются для экономии ~80 draw calls/кадр
       const pattern = entity.pattern || 'scales';
 
       if (pattern === 'stripes' || bodyType === 1) {

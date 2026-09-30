@@ -1,0 +1,139 @@
+/* ==========================================================
+СЕТОЧНЫЙ ТЕТРИС-ИНВЕНТАРЬ САДКА (RESIDENT EVIL STYLE)
+   ========================================================== */
+.livewell-info-notice {
+  font-size: 11px;
+  color: #94a3b8;
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 10px;
+  padding: 8px 12px;
+  text-align: center;
+  margin-bottom: 10px;
+}
+
+.inventory-grid-wrapper {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 6px 0 10px 0;
+  width: 100%;
+}
+
+.inventory-grid {
+  display: grid;
+  grid-template-columns: repeat(8, 1fr);
+  grid-template-rows: repeat(6, 1fr);
+  /* gap: 3px; */
+  width: 100%;
+  /* max-width: 360px; */
+  aspect-ratio: 8 / 6;
+  background: #0d1522;
+  /* border-radius: 12px; */
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  position: relative;
+  touch-action: none;
+}
+
+.inv-cell {
+  background: rgba(255, 255, 255, 0.03);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  /* border-radius: 6px; */
+  position: relative;
+  transition: background 0.12s, border-color 0.12s;
+  cursor: pointer;
+}
+
+.inv-cell.drag-valid {
+  background: rgba(16, 185, 129, 0.3) !important;
+  border-color: #10b981 !important;
+}
+
+.inv-cell.drag-invalid {
+  background: rgba(239, 68, 68, 0.3) !important;
+  border-color: #ef4444 !important;
+}
+
+/* Отображение занятых ячеек предмета */
+.inv-cell.occupied {
+  cursor: grab;
+}
+
+.inv-cell.occupied.selected {
+  outline: 2px solid #38bdf8;
+  outline-offset: -1px;
+}
+
+.inv-cell.occupied.hover-item {
+  border-color: rgba(56, 189, 248, 0.7);
+  background-color: rgba(56, 189, 248, 0.22) !important;
+}
+
+.inv-cell.occupied.dragging {
+  opacity: 0.35;
+}
+
+.inv-cell-connector {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.2);
+  pointer-events: none;
+}
+
+.inv-cell-content {
+  position: absolute;
+  inset: 1px;
+  border-radius: 5px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  font-size: 9px;
+  font-weight: 700;
+  color: #fff;
+  overflow: hidden;
+  user-select: none;
+}
+
+/* Панель управления выбранным предметом в садке */
+.inventory-controls-bar {
+  background: #0d1522;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 12px;
+  padding: 10px 14px;
+  margin-top: auto;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.selected-item-meta {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+
+.selected-name {
+  font-size: 13px;
+  font-weight: 800;
+  color: #f1f5f9;
+}
+
+.selected-sub {
+  font-size: 11px;
+  color: #94a3b8;
+}
+
+.selected-actions {
+  display: flex;
+  gap: 6px;
+}
+
+/* ==========================================================

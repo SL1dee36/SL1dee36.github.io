@@ -175,6 +175,12 @@
       // 1. Базовый расчет веса (нормальное распределение)
       const rNorm = (Math.random() + Math.random()) / 2;
       let finalWeight = +(baseEntity.min_weight + rNorm * (baseEntity.max_weight - baseEntity.min_weight)).toFixed(2);
+      const envMods = (window.EnvironmentManager && window.EnvironmentManager.getFishingModifiers)
+        ? window.EnvironmentManager.getFishingModifiers()
+        : null;
+      if (envMods && envMods.weightBonus && envMods.weightBonus > 1.0) {
+        finalWeight = +(finalWeight * envMods.weightBonus).toFixed(2);
+      }
       let finalPrice = baseEntity.base_price;
       let finalName = baseEntity.name;
       let renderColor = baseEntity.color;
@@ -295,6 +301,20 @@
         dry_fly: { Common: 35, Rare: 45, Epic: 17, Legendary: 3.0 },
         nymph: { Common: 25, Rare: 48, Epic: 22, Legendary: 5.0 }
       }[baitKey] || { Common: 65, Rare: 26, Epic: 8, Legendary: 1 };
+
+      const envMods = (window.EnvironmentManager && window.EnvironmentManager.getFishingModifiers)
+        ? window.EnvironmentManager.getFishingModifiers()
+        : null;
+
+      if (envMods && envMods.rareBonus > 0) {
+        const shift = Math.min(weights.Common - 15, envMods.rareBonus);
+        if (shift > 0) {
+          weights.Common -= shift;
+          weights.Rare += shift * 0.6;
+          weights.Epic += shift * 0.35;
+          weights.Legendary += shift * 0.05;
+        }
+      }
 
       const rand = Math.random() * 100;
       let accum = 0;
