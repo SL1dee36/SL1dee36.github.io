@@ -36,7 +36,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const viewAbout = document.getElementById('view-about');
     const allViews = [viewProjects, viewBlog, viewAbout];
 
-    const projectsContainer = document.querySelector('.projects-list-container') || viewProjects;
+    const projectsContainer = document.querySelector('.projects-list') || document.getElementById('projects-grid') || document.querySelector('.projects-list-container') || viewProjects;
     const projectsCounter = document.getElementById('projects-counter');
     const blogContainer = document.getElementById('blog-posts-container');
     const skillsContainer = document.querySelector('.skills-grid');
@@ -203,6 +203,113 @@ document.addEventListener('DOMContentLoaded', () => {
         return card;
     }
 
+    function renderProjectList(projects) {
+        if (!projects || !projectsContainer) return;
+        projectsContainer.innerHTML = projects.map(p => `
+            <article class="project-item" id="${p.id || ''}" data-featured="${p.featured ? 'true' : 'false'}">
+                <div class="project-thumb">${renderThumbContent(p.icon)}</div>
+                <div class="project-content">
+                    <div class="project-top-bar">
+                        <div class="project-heading">
+                            <!-- <span class="project-category">${p.category || 'Project'}</span> -->
+                            <h3 class="project-title">${p.title || 'Untitled'}</h3>
+                        </div>
+                    </div>
+                    <p class="project-desc">${p.desc || ''}</p>
+                    <div class="project-tags">
+                            ${(p.tags || []).map(t => `<span class="blog-tag" data-search="${t}">${t}</span>`).join('')}
+                    </div>
+                    <div class="project-actions">
+                        ${(p.links || []).map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer" class="action-btn">${l.label}</a>`).join('')}
+                    </div>
+                </div>
+            </article>
+        `).join('');
+    }
+
+    function sortProjectsByRecent(projects) {
+        if (!Array.isArray(projects)) return projects;
+        return [...projects].sort((a, b) => {
+            const timeA = a.pushed_at ? new Date(a.pushed_at).getTime() : 0;
+            const timeB = b.pushed_at ? new Date(b.pushed_at).getTime() : 0;
+            return timeB - timeA;
+        });
+    }
+
+    async function syncGitHubRepoUpdates(data) {
+        if (!data || !data.projects) return;
+
+        const CACHE_KEY = 'gh_repos_cache_v1';
+        const CACHE_TIME_KEY = 'gh_repos_cached_at_v1';
+        const CACHE_TTL_MS = 10 * 60 * 1000; // 10 minutes cache
+
+        let reposData = null;
+        try {
+            const cachedTime = localStorage.getItem(CACHE_TIME_KEY);
+            const cachedRepos = localStorage.getItem(CACHE_KEY);
+            if (cachedTime && cachedRepos && (Date.now() - Number(cachedTime) < CACHE_TTL_MS)) {
+                reposData = JSON.parse(cachedRepos);
+            }
+        } catch (e) {
+            reposData = null;
+        }
+
+        if (!reposData) {
+            try {
+                const resp = await fetch('https://api.github.com/users/SL1dee36/repos?sort=pushed&direction=desc&per_page=100');
+                if (resp.ok) {
+                    reposData = await resp.json();
+                    try {
+                        localStorage.setItem(CACHE_KEY, JSON.stringify(reposData));
+                        localStorage.setItem(CACHE_TIME_KEY, Date.now().toString());
+                    } catch (e) {}
+                }
+            } catch (err) {
+                console.warn('Live GitHub repos fetch failed:', err);
+            }
+        }
+
+        if (Array.isArray(reposData)) {
+            const repoMap = new Map();
+            reposData.forEach(r => {
+                if (r.name && r.pushed_at) {
+                    repoMap.set(r.name.toLowerCase(), r.pushed_at);
+                }
+            });
+
+            let changed = false;
+            data.projects.forEach(p => {
+                let repoName = null;
+                if (p.links) {
+                    for (const link of p.links) {
+                        const match = link.url && link.url.match(/github\.com\/SL1dee36\/([^/\s?#]+)/i);
+                        if (match) {
+                            repoName = match[1].toLowerCase();
+                            break;
+                        }
+                    }
+                }
+                if (!repoName && p.id) {
+                    repoName = p.id.toLowerCase();
+                }
+
+                if (repoName && repoMap.has(repoName)) {
+                    const freshDate = repoMap.get(repoName);
+                    if (p.pushed_at !== freshDate) {
+                        p.pushed_at = freshDate;
+                        changed = true;
+                    }
+                }
+            });
+
+            if (changed) {
+                data.projects = sortProjectsByRecent(data.projects);
+                renderProjectList(data.projects);
+                switchView(currentView);
+            }
+        }
+    }
+
     window.renderPortfolioApp = function (data) {
         if (!data) return;
         window.PORTFOLIO_DATA = data;
@@ -222,26 +329,8 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         if (data.projects && projectsContainer) {
-            projectsContainer.innerHTML = data.projects.map(p => `
-                <article class="project-item" id="${p.id || ''}" data-featured="${p.featured ? 'true' : 'false'}">
-                    <div class="project-thumb">${renderThumbContent(p.icon)}</div>
-                    <div class="project-content">
-                        <div class="project-top-bar">
-                            <div class="project-heading">
-                                <!-- <span class="project-category">${p.category || 'Project'}</span> -->
-                                <h3 class="project-title">${p.title || 'Untitled'}</h3>
-                            </div>
-                        </div>
-                        <p class="project-desc">${p.desc || ''}</p>
-                        <div class="project-tags">
-                                ${(p.tags || []).map(t => `<span class="blog-tag" data-search="${t}">${t}</span>`).join('')}
-                        </div>
-                        <div class="project-actions">
-                            ${(p.links || []).map(l => `<a href="${l.url}" target="_blank" rel="noopener noreferrer" class="action-btn">${l.label}</a>`).join('')}
-                        </div>
-                    </div>
-                </article>
-            `).join('');
+            data.projects = sortProjectsByRecent(data.projects);
+            renderProjectList(data.projects);
         }
 
         if (data.skills && skillsContainer) {
@@ -310,7 +399,11 @@ document.addEventListener('DOMContentLoaded', () => {
             const res = await fetch('src/data/data.json');
             if (!res.ok) throw new Error('data.json fetch failed');
             const data = await res.json();
+            if (data.projects) {
+                data.projects = sortProjectsByRecent(data.projects);
+            }
             window.renderPortfolioApp(data);
+            syncGitHubRepoUpdates(data);
         } catch (err) {
             console.warn('Using fallback data:', err);
             window.renderPortfolioApp(FALLBACK_DATA);
