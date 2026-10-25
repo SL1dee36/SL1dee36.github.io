@@ -190,7 +190,7 @@ document.addEventListener('DOMContentLoaded', () => {
     function createBlogCard(postData, filename) {
         const card = document.createElement('div');
         card.className = 'blog-card';
-        const snippet = postData.body.split('\n').find(l => l.length > 15 && !l.startsWith('#')) || '';
+        const snippet = postData.body.split('\n').find(l => l.length > 15 && !l.startsWith('#') && !l.startsWith('![')) || '';
         const tagsHtml = (postData.tags || []).map(t => `<span class="blog-tag" data-search="${t}">${t}</span>`).join(' ');
         card.innerHTML = `
             <h3><a href="src/blog/blog-post.html?post=${filename}">${postData.title || filename}</a></h3>
