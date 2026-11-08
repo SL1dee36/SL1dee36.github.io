@@ -617,18 +617,55 @@ button svg {
 }
 
 .about-text-content {
-    font-size: 15px;
-    line-height: 1.6;
-    color: #383c3d;
     display: flex;
     flex-direction: column;
-    gap: 12px;
+    gap: 18px;
+}
+
+.about-bio-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.about-bio-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-lime-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+}
+
+.about-bio-group p {
+    font-size: 15px;
+    line-height: 1.65;
+    color: #383c3d;
 }
 
 .about-section-block h3 {
     font-size: 16px;
     font-weight: 600;
-    margin-bottom: 12px;
+    margin-bottom: 14px;
+}
+
+.skills-groups {
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+}
+
+.skill-group {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.skill-group-title {
+    font-size: 13px;
+    font-weight: 600;
+    color: var(--color-lime-text);
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
 }
 
 .skills-chips {
@@ -645,6 +682,12 @@ button svg {
     font-size: 13px;
     font-weight: 500;
     color: var(--color-text-dark);
+    transition: background-color 0.15s ease, border-color 0.15s ease;
+}
+
+.skill-chip:hover {
+    background-color: var(--color-lime-30);
+    border-color: #c9e69c;
 }
 
 .contact-links-grid {
