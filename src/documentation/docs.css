@@ -88,7 +88,9 @@ header h1 {
 }
 
 .button-container button,
-#back-button {
+.button-container a,
+#back-button,
+#github-link-btn {
     display: inline-flex;
     align-items: center;
     gap: 8px;
@@ -101,11 +103,14 @@ header h1 {
     font-size: 14px;
     font-weight: 600;
     cursor: pointer;
+    text-decoration: none;
     transition: background-color 0.15s ease, transform 0.15s ease;
 }
 
 .button-container button:hover,
-#back-button:hover {
+.button-container a:hover,
+#back-button:hover,
+#github-link-btn:hover {
     background-color: #d4f7a3;
     transform: translateY(-1px);
 }

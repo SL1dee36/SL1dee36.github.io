@@ -1,6 +1,6 @@
 document.addEventListener('DOMContentLoaded', () => {
-    const backButton = document.getElementById('back-button') || document.querySelector('header button');
-    const projectNameHeader = document.querySelector('header h1');
+    const githubBtn = document.getElementById('github-link-btn') || document.getElementById('back-button');
+    const projectNameHeader = document.getElementById('doc-title') || document.querySelector('header h1');
     const markdownContainer = document.getElementById('markdown-content');
 
     const urlParams = new URLSearchParams(window.location.search);
@@ -11,27 +11,73 @@ document.addEventListener('DOMContentLoaded', () => {
         projectNameHeader.textContent = projectName;
     }
 
-    if (projectName && githubLink) {
+    let username = '';
+    let repo = '';
+
+    if (githubLink) {
         const match = githubLink.match(/github\.com\/([^\/]+)\/([^\/]+)/);
         if (match) {
-            const username = match[1];
-            const repo = match[2].replace(/\.git$/, '');
-            const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/main/README.md`;
+            username = match[1];
+            repo = match[2].replace(/\.git$/, '');
+        }
+        if (githubBtn) {
+            githubBtn.href = githubLink;
+            githubBtn.setAttribute('target', '_blank');
+            githubBtn.setAttribute('rel', 'noopener noreferrer');
+        }
+    } else if (githubBtn) {
+        githubBtn.style.display = 'none';
+    }
+
+    if (username && repo) {
+        const branches = ['main', 'master'];
+
+        function tryFetchReadme(index) {
+            if (index >= branches.length) {
+                if (markdownContainer) {
+                    markdownContainer.innerHTML = '<p style="color: #ff8080;">README not found for this repository.</p>';
+                }
+                return;
+            }
+            const branch = branches[index];
+            const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/README.md`;
 
             fetch(readmeURL)
                 .then(response => {
                     if (!response.ok) {
-                        return fetch(`https://raw.githubusercontent.com/${username}/${repo}/master/README.md`)
-                            .then(fallbackRes => {
-                                if (!fallbackRes.ok) throw new Error(`HTTP error! status: ${response.status}`);
-                                return fallbackRes.text();
-                            });
+                        tryFetchReadme(index + 1);
+                        return null;
                     }
                     return response.text();
                 })
                 .then(markdown => {
+                    if (!markdown) return;
                     if (window.marked) {
                         markdownContainer.innerHTML = marked.parse(markdown);
+
+                        // Ensure all links open in a new tab, and rewrite relative markdown links to GitHub
+                        markdownContainer.querySelectorAll('a').forEach(a => {
+                            const rawHref = a.getAttribute('href');
+                            if (!rawHref) return;
+
+                            a.setAttribute('target', '_blank');
+                            a.setAttribute('rel', 'noopener noreferrer');
+
+                            if (!rawHref.startsWith('http://') && !rawHref.startsWith('https://') && !rawHref.startsWith('#') && !rawHref.startsWith('mailto:')) {
+                                const cleanPath = rawHref.replace(/^\.?\//, '');
+                                a.href = `https://github.com/${username}/${repo}/blob/${branch}/${cleanPath}`;
+                            }
+                        });
+
+                        // Resolve relative images to raw.githubusercontent.com
+                        markdownContainer.querySelectorAll('img').forEach(img => {
+                            const rawSrc = img.getAttribute('src');
+                            if (rawSrc && !rawSrc.startsWith('http://') && !rawSrc.startsWith('https://') && !rawSrc.startsWith('data:')) {
+                                const cleanSrc = rawSrc.replace(/^\.?\//, '');
+                                img.src = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/${cleanSrc}`;
+                            }
+                        });
+
                         if (window.Prism) {
                             Prism.highlightAllUnder(markdownContainer);
                         }
@@ -43,24 +89,11 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (markdownContainer) {
                         markdownContainer.innerHTML = `<p style="color: #ff8080;">Error fetching README: ${error.message}</p>`;
                     }
-                    console.error("Error fetching README:", error);
                 });
-        } else if (markdownContainer) {
-            markdownContainer.innerHTML = "<p>Invalid GitHub link.</p>";
         }
-    } else if (markdownContainer) {
-        markdownContainer.innerHTML = "<p>Project information not found.</p>";
-    }
 
-    if (backButton) {
-        backButton.addEventListener('click', () => {
-            if (githubLink) {
-                window.open(githubLink, '_blank', 'noopener,noreferrer');
-            } else if (window.parent && window.parent !== window && window.parent.ModView) {
-                window.parent.ModView.close();
-            } else {
-                window.history.back();
-            }
-        });
+        tryFetchReadme(0);
+    } else if (markdownContainer) {
+        markdownContainer.innerHTML = '<p>Project information not found.</p>';
     }
 });

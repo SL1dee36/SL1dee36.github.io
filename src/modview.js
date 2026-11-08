@@ -138,6 +138,7 @@
             justify-content: center;
             color: #404D2D;
             cursor: pointer;
+            text-decoration: none;
             transition: background 0.15s ease, transform 0.15s ease;
         }
 
@@ -214,6 +215,13 @@
                 <h4 class="modview-title" id="modview-title-text">Loading...</h4>
             </div>
             <div class="modview-controls">
+                <a class="modview-btn" id="modview-external-btn" title="Open in New Tab" href="#" target="_blank" rel="noopener noreferrer">
+                    <svg width="17" height="17" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <path d="M18 13v6a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h6"></path>
+                        <polyline points="15 3 21 3 21 9"></polyline>
+                        <line x1="10" y1="14" x2="21" y2="3"></line>
+                    </svg>
+                </a>
                 <button class="modview-btn" id="modview-expand-btn" title="Toggle Fullscreen" type="button">
                     <svg id="modview-expand-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
                         <path d="M15 3h6v6M9 21H3v-6M21 3l-7 7M3 21l7-7"/>
@@ -274,9 +282,49 @@
         badge.textContent = isDocs ? 'Docs' : 'Demo';
         titleText.textContent = title;
 
+        const externalBtn = container.querySelector('#modview-external-btn');
+        if (externalBtn) {
+            let externalUrl = url;
+            if (url.includes('githubLink=')) {
+                try {
+                    const parsedUrl = new URL(url, window.location.href);
+                    const gh = parsedUrl.searchParams.get('githubLink');
+                    if (gh) externalUrl = gh;
+                } catch (e) {}
+            }
+            externalBtn.href = externalUrl;
+            externalBtn.title = externalUrl.includes('github.com') ? 'Open on GitHub' : 'Open in New Tab';
+        }
+
         loader.classList.remove('hidden');
         iframe.src = url;
-        iframe.onload = () => loader.classList.add('hidden');
+        iframe.onload = () => {
+            loader.classList.add('hidden');
+            try {
+                const doc = iframe.contentDocument || iframe.contentWindow?.document;
+                if (doc) {
+                    doc.addEventListener('click', (e) => {
+                        const a = e.target.closest('a');
+                        if (!a) return;
+                        const href = a.getAttribute('href');
+                        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+
+                        const isExternal = href.startsWith('http://') || 
+                                           href.startsWith('https://') || 
+                                           href.startsWith('//') || 
+                                           (a.hostname && a.hostname !== window.location.hostname);
+
+                        if (isExternal) {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            window.open(a.href, '_blank', 'noopener,noreferrer');
+                        }
+                    }, true);
+                }
+            } catch (err) {
+                // Cross-origin restriction fallback
+            }
+        };
 
         backdrop.classList.add('active');
         container.classList.add('open');

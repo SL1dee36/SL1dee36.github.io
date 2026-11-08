@@ -50,6 +50,12 @@ document.addEventListener('DOMContentLoaded', () => {
                 postTitleHeader.textContent = postData.title;
                 postMetaHeader.innerHTML = `<p>${postData.date} | Categories: ${postData.categories.join(', ')}</p>`;
                 markdownContainer.innerHTML = marked.parse(postData.body);
+                markdownContainer.querySelectorAll('a').forEach(a => {
+                    const rawHref = a.getAttribute('href');
+                    if (!rawHref) return;
+                    a.setAttribute('target', '_blank');
+                    a.setAttribute('rel', 'noopener noreferrer');
+                });
                 if (window.Prism) {
                     Prism.highlightAllUnder(markdownContainer);
                 }
