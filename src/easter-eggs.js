@@ -10,10 +10,21 @@
         if (typeof launchUFO === 'function') launchUFO();
     };
     window.launchUFO = window.triggerUFO;
-    try {
-        globalThis.triggerUFO = window.triggerUFO;
-        globalThis.launchUFO = window.triggerUFO;
-    } catch (e) {}
+    window.triggerMatrix = function () {
+        if (typeof startMatrixRain === 'function') startMatrixRain();
+    };
+    window.triggerCRT = function () {
+        if (typeof toggleCRTMode === 'function') toggleCRTMode();
+    };
+    window.triggerStarCatcher = function () {
+        if (typeof launchStarCatcher === 'function') launchStarCatcher();
+    };
+    window.triggerConstellation = function () {
+        if (typeof activateConstellation === 'function') activateConstellation();
+    };
+    window.triggerVinyl = function () {
+        if (typeof spinAvatarManually === 'function') spinAvatarManually();
+    };
 
     /* ======================================================================
        1. KONAMI CODE → Matrix Rain
@@ -119,16 +130,6 @@
         'hello world': {
             message: '#include <stdio.h>\n\nint main() {\n    printf("Hello, visitor!\\n");\n    printf("Welcome to my portfolio.\\n");\n    return 0;\n}',
             color: '#DFFFB3'
-        },
-        'ufo': {
-            message: '🛸 UNIDENTIFIED FLYING OBJECT DETECTED\nSector: Deep Sky 36\nTractor beam: online\n\nAbduction in progress... 👽',
-            color: '#DFFFB3',
-            action: () => window.triggerUFO()
-        },
-        'alien': {
-            message: '👽 Transmission intercepted:\n"Greetings, human. We are taking a sample."\n\n🛸 Saucer incoming...',
-            color: '#DFFFB3',
-            action: () => window.triggerUFO()
         }
     };
 
@@ -136,14 +137,22 @@
     if (searchBar) {
         searchBar.addEventListener('input', () => {
             const val = searchBar.value.toLowerCase().trim();
+
+            // Silent triggers without opening terminal
+            if (val === 'ufo' || val === 'alien') {
+                window.triggerUFO();
+                setTimeout(() => {
+                    searchBar.value = '';
+                    searchBar.dispatchEvent(new Event('input'));
+                }, 200);
+                return;
+            }
+
             if (val !== lastSearchValue) {
                 lastSearchValue = val;
                 const cmd = secretCommands[val];
                 if (cmd) {
                     showTerminalOverlay(cmd.message, cmd.color);
-                    if (typeof cmd.action === 'function') {
-                        cmd.action();
-                    }
                     // Reset search after a moment
                     setTimeout(() => {
                         searchBar.value = '';
@@ -761,6 +770,19 @@
         });
     }
 
+    function spinAvatarManually() {
+        const aboutBtn = document.querySelector('[data-view="about"]');
+        if (aboutBtn && !aboutBtn.classList.contains('active')) {
+            aboutBtn.click();
+        }
+        setTimeout(() => {
+            const avatar = document.querySelector('.about-avatar');
+            if (avatar) {
+                avatar.dispatchEvent(new MouseEvent('dblclick', { bubbles: true }));
+            }
+        }, 150);
+    }
+
     // Re-init avatar vinyl when about view becomes visible
     const observer = new MutationObserver(() => {
         const aboutView = document.getElementById('view-about');
@@ -781,9 +803,10 @@
 
 
     /* ======================================================================
-       7. AMBIENT FLYING SAUCER (UFO Abduction)
-       Subtle retro-futuristic saucer flies into the background sky,
-       hovers, beams up a star/cow/crystal with a tractor beam, then warps away.
+       7. AMBIENT FLYING SAUCER (UFO Abduction at Bottom Planet)
+       Subtle retro-futuristic saucer flies down to the bottom horizon planet,
+       hovers, beams up a specimen (cow/crystal/star) right from the planet surface,
+       then warps up into deep space.
        ====================================================================== */
     let ufoCanvas = null;
     let ufoCtx = null;
@@ -838,18 +861,25 @@
 
         // Choose random entrance side
         const fromLeft = Math.random() > 0.5;
-        ufoX = fromLeft ? -120 : w + 120;
-        ufoY = Math.max(90, Math.min(h * 0.45, 120 + Math.random() * (h * 0.25)));
+        ufoX = fromLeft ? -130 : w + 130;
+        ufoY = 50 + Math.random() * 80;
 
-        // Target hover location in open space of sky
+        // Fly down to the bottom planet horizon!
         ufoTargetX = fromLeft
-            ? (w * 0.18 + Math.random() * (w * 0.22))
-            : (w * 0.60 + Math.random() * (w * 0.24));
-        ufoTargetY = ufoY + (Math.random() - 0.5) * 40;
+            ? Math.max(90, Math.min(w * 0.22, 280))
+            : Math.min(w - 90, Math.max(w * 0.78, w - 280));
+
+        // Height of the planet surface at ufoTargetX (matching particle.js dome)
+        const normX = Math.max(0, Math.min(1, ufoTargetX / w));
+        const planetArch = Math.sin(normX * Math.PI) * (h * 0.22);
+        const planetSurfaceY = h - planetArch;
+
+        // Hover directly above the planet surface
+        ufoTargetY = planetSurfaceY - 145;
 
         ufoSpeedX = fromLeft ? 5 : -5;
         ufoSpeedY = 0;
-        ufoTilt = fromLeft ? 0.15 : -0.15;
+        ufoTilt = fromLeft ? 0.2 : -0.2;
         beamProgress = 0;
 
         // Pick abductee
@@ -865,9 +895,6 @@
         requestAnimationFrame(renderUFO);
     }
 
-    window.triggerUFO = launchUFO;
-    window.launchUFO = launchUFO;
-
     function renderUFO() {
         if (!ufoActive || !ufoCtx) return;
 
@@ -878,33 +905,39 @@
         beamRingsTime += 0.04;
         ufoLightsPhase += 0.08;
 
+        // Planet surface calculation at current X
+        const currentNormX = Math.max(0, Math.min(1, ufoX / w));
+        const planetArch = Math.sin(currentNormX * Math.PI) * (h * 0.22);
+        const planetSurfaceY = h - planetArch;
+        const fullBeamLength = Math.max(110, planetSurfaceY - (ufoY + 12));
+
         // State Machine
         if (ufoState === 'enter') {
             const dx = ufoTargetX - ufoX;
             const dy = ufoTargetY - ufoY;
-            ufoX += dx * 0.045;
-            ufoY += dy * 0.045 + Math.sin(beamRingsTime * 2) * 0.6;
+            ufoX += dx * 0.042;
+            ufoY += dy * 0.042 + Math.sin(beamRingsTime * 2) * 0.5;
             ufoTilt = (dx * 0.002);
 
-            if (Math.abs(dx) < 6) {
+            if (Math.abs(dx) < 6 && Math.abs(dy) < 8) {
                 ufoState = 'beam';
             }
         } else if (ufoState === 'beam') {
-            ufoY += Math.sin(beamRingsTime * 2.5) * 0.5;
+            ufoY += Math.sin(beamRingsTime * 2.5) * 0.4;
             ufoTilt *= 0.9;
-            beamProgress = Math.min(1.0, beamProgress + 0.05);
+            beamProgress = Math.min(1.0, beamProgress + 0.045);
 
             if (beamProgress >= 1.0) {
                 ufoState = 'abduct';
                 abducteeAlpha = 1.0;
             }
         } else if (ufoState === 'abduct') {
-            ufoY += Math.sin(beamRingsTime * 2.5) * 0.5;
-            abducteeProgress = Math.min(1.0, abducteeProgress + 0.016);
-            abducteeRot += 0.06;
+            ufoY += Math.sin(beamRingsTime * 2.5) * 0.4;
+            abducteeProgress = Math.min(1.0, abducteeProgress + 0.015);
+            abducteeRot += 0.05;
 
-            const beamLength = 210;
-            abducteeY = (ufoY + beamLength + 8) - (beamLength * abducteeProgress);
+            // Lift object right off the bottom planet surface into saucer
+            abducteeY = (planetSurfaceY - 4) - ((fullBeamLength - 4) * abducteeProgress);
 
             if (abducteeProgress >= 0.98) {
                 // Zap & suck inside
@@ -912,7 +945,7 @@
                 abducteeAlpha = 0;
 
                 // Burst of sparks
-                for (let i = 0; i < 18; i++) {
+                for (let i = 0; i < 20; i++) {
                     const ang = Math.random() * Math.PI * 2;
                     const spd = 2 + Math.random() * 3.5;
                     ufoSparks.push({
@@ -928,17 +961,18 @@
             }
         } else if (ufoState === 'zap') {
             beamProgress = Math.max(0, beamProgress - 0.12);
-            ufoTilt = -0.3; // Anticipation tilt before hyperspace jump
+            ufoTilt = (ufoX < w * 0.5 ? 0.35 : -0.35); // Tilt upward for space escape
 
             if (beamProgress <= 0.01) {
                 ufoState = 'warp';
-                ufoSpeedX = (ufoX < w * 0.5 ? -18 : 18);
-                ufoSpeedY = -9;
+                // Accelerate upward into deep space
+                ufoSpeedX = (ufoX < w * 0.5 ? 18 : -18);
+                ufoSpeedY = -22;
             }
         } else if (ufoState === 'warp') {
-            // Accelerate exponentially
-            ufoSpeedX *= 1.28;
-            ufoSpeedY *= 1.22;
+            // Accelerate exponentially up into space
+            ufoSpeedX *= 1.26;
+            ufoSpeedY *= 1.24;
             ufoX += ufoSpeedX;
             ufoY += ufoSpeedY;
             ufoTilt = Math.atan2(ufoSpeedY, ufoSpeedX) + (ufoSpeedX < 0 ? Math.PI : 0);
@@ -979,14 +1013,14 @@
             ufoCtx.stroke();
         }
 
-        // Draw Tractor Beam
+        // Draw Tractor Beam down to planet surface
         if (beamProgress > 0.01) {
-            drawTractorBeam(ufoCtx, ufoX, ufoY + 12, ufoTilt, beamProgress, beamRingsTime);
+            drawTractorBeam(ufoCtx, ufoX, ufoY + 12, ufoTilt, beamProgress, beamRingsTime, fullBeamLength);
         }
 
         // Draw Abductee
         if (abducteeAlpha > 0 && ufoState === 'abduct') {
-            const scale = 0.5 + 0.5 * (1.0 - abducteeProgress * 0.5);
+            const scale = 0.55 + 0.45 * (1.0 - abducteeProgress * 0.45);
             drawAbductee(ufoCtx, abducteeType, ufoX, abducteeY, abducteeRot, scale, abducteeAlpha);
         }
 
@@ -1090,17 +1124,18 @@
         ctx.restore();
     }
 
-    function drawTractorBeam(ctx, x, y, tilt, progress, time) {
+    function drawTractorBeam(ctx, x, y, tilt, progress, time, maxBeamLen) {
         ctx.save();
         ctx.translate(x, y);
         ctx.rotate(tilt);
 
         const startY = 0;
+        const targetLen = maxBeamLen || 210;
         const topRadius = 14;
-        const bottomRadius = 56 + Math.sin(time * 3) * 4;
-        const beamLength = 210 * progress;
+        const bottomRadius = 38 + Math.min(55, targetLen * 0.26) + Math.sin(time * 3) * 4;
+        const beamLength = targetLen * progress;
 
-        // Conical glowing gradient
+        // Conical glowing gradient down to the planet surface
         const beamGrad = ctx.createLinearGradient(0, startY, 0, startY + beamLength);
         beamGrad.addColorStop(0, `rgba(223, 255, 179, ${0.45 * progress})`);
         beamGrad.addColorStop(0.35, `rgba(223, 255, 179, ${0.25 * progress})`);
