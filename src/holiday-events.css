@@ -1,0 +1,341 @@
+/* ==========================================================================
+   🎉 Holiday Events Styles
+   ========================================================================== */
+
+/* --- Overlay Canvas (shared by all holiday particle effects) --- */
+.holiday-overlay-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+}
+
+/* --- Holiday Banner Notification --- */
+.holiday-banner {
+    position: fixed;
+    bottom: 24px;
+    right: 24px;
+    z-index: 9999;
+    opacity: 0;
+    transform: translateY(20px) scale(0.95);
+    transition: opacity 0.5s ease, transform 0.5s cubic-bezier(0.25, 1, 0.5, 1);
+    pointer-events: none;
+}
+
+.holiday-banner.visible {
+    opacity: 1;
+    transform: translateY(0) scale(1);
+}
+
+.holiday-banner-content {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    background: rgba(255, 255, 255, 0.95);
+    backdrop-filter: blur(12px);
+    border-radius: 16px;
+    padding: 14px 20px;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1);
+    min-width: 280px;
+    border-left: 4px solid var(--holiday-accent, #DFFFB3);
+}
+
+.holiday-banner-emoji {
+    font-size: 32px;
+    line-height: 1;
+}
+
+.holiday-banner-text {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.holiday-banner-text strong {
+    font-family: var(--font-main);
+    font-size: 15px;
+    font-weight: 600;
+    color: #191c1c;
+}
+
+.holiday-banner-text span {
+    font-family: var(--font-main);
+    font-size: 12px;
+    color: #5c6061;
+}
+
+/* ==========================================================================
+   🎄 New Year / Christmas
+   ========================================================================== */
+.holiday-newyear .header-breadcrumb,
+.holiday-newyear #search-bar,
+.holiday-newyear .header-avatar-btn {
+    background-color: #fce4e4 !important;
+}
+
+.holiday-newyear .header-breadcrumb:hover,
+.holiday-newyear #search-bar:focus {
+    background-color: #f9d0d0 !important;
+}
+
+.holiday-newyear .header-logo::after {
+    content: ' 🎄';
+}
+
+.holiday-newyear .side-nav-btn.active {
+    background-color: rgba(252, 228, 228, 0.3);
+    color: #ff6b6b;
+}
+
+.holiday-newyear .side-nav-btn.active .nav-dot {
+    background-color: #ff6b6b;
+}
+
+/* ==========================================================================
+   🎃 Halloween
+   ========================================================================== */
+.holiday-halloween .header-bar {
+    background-color: #1a1a2e !important;
+}
+
+.holiday-halloween .header-logo {
+    color: #ff6600 !important;
+}
+
+.holiday-halloween .header-logo::after {
+    content: ' 🎃';
+}
+
+.holiday-halloween .header-breadcrumb,
+.holiday-halloween #search-bar,
+.holiday-halloween .header-avatar-btn {
+    background-color: #2d1f4e !important;
+    color: #e0a0ff !important;
+}
+
+.holiday-halloween #search-bar::placeholder {
+    color: #b070d0 !important;
+}
+
+.holiday-halloween .header-breadcrumb:hover,
+.holiday-halloween #search-bar:focus {
+    background-color: #3a2868 !important;
+}
+
+.holiday-halloween .header-breadcrumb .arrow svg path {
+    fill: #e0a0ff;
+}
+
+.holiday-halloween .search-icon svg path {
+    stroke: #e0a0ff;
+}
+
+.holiday-halloween .avatar-dot {
+    background-color: #ff6600;
+}
+
+.holiday-halloween .main-card-viewport {
+    background-color: #0f0f1a !important;
+}
+
+.holiday-halloween .card-content-scroll {
+    color: #d0d0e0 !important;
+}
+
+.holiday-halloween .section-heading h2 {
+    color: #ff6600 !important;
+}
+
+.holiday-halloween .section-heading {
+    border-bottom-color: #2a2a3e !important;
+}
+
+.holiday-halloween .project-item,
+.holiday-halloween .blog-card,
+.holiday-halloween .contact-card {
+    background-color: #1a1a30 !important;
+    border-color: #2a2a45 !important;
+}
+
+.holiday-halloween .action-btn {
+    background-color: #1a1a30 !important;
+    border-color: #3a2868 !important;
+    color: #d0d0e0 !important;
+}
+
+.holiday-halloween .action-btn.accent {
+    background-color: #ff6600 !important;
+    color: #fff !important;
+}
+
+.holiday-halloween .skill-chip {
+    background-color: #1a1a30 !important;
+    border-color: #2a2a45 !important;
+    color: #d0d0e0 !important;
+}
+
+.holiday-halloween .blog-tag {
+    background: rgba(255, 102, 0, 0.15) !important;
+    color: #ff8833 !important;
+    border-color: #3a2868 !important;
+}
+
+.holiday-halloween .side-nav-btn {
+    color: #8080a0;
+}
+
+.holiday-halloween .side-nav-btn:hover {
+    background-color: rgba(160, 80, 255, 0.08);
+    color: #c0a0ff;
+}
+
+.holiday-halloween .side-nav-btn.active {
+    background-color: rgba(255, 102, 0, 0.15);
+    color: #ff6600;
+}
+
+.holiday-halloween .side-nav-btn.active .nav-dot {
+    background-color: #ff6600;
+}
+
+.holiday-halloween .side-nav-btn .nav-dot {
+    background-color: #3a2868;
+}
+
+.holiday-halloween .about-avatar {
+    border-color: #ff6600 !important;
+}
+
+.holiday-halloween .project-info h3,
+.holiday-halloween .project-title {
+    color: #e0d0f0 !important;
+}
+
+.holiday-halloween .project-desc,
+.holiday-halloween .project-info p {
+    color: #8888a8 !important;
+}
+
+.holiday-halloween .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #ff6600;
+}
+
+/* ==========================================================================
+   💕 Valentine's Day
+   ========================================================================== */
+.holiday-valentine .header-logo::after {
+    content: ' 💕';
+}
+
+.holiday-valentine .header-breadcrumb,
+.holiday-valentine #search-bar,
+.holiday-valentine .header-avatar-btn {
+    background-color: #ffe0ec !important;
+}
+
+.holiday-valentine .header-breadcrumb:hover,
+.holiday-valentine #search-bar:focus {
+    background-color: #ffd0e0 !important;
+}
+
+.holiday-valentine .header-breadcrumb .arrow svg path,
+.holiday-valentine #search-bar::placeholder,
+.holiday-valentine .header-breadcrumb .text {
+    color: #c44a7a !important;
+    fill: #c44a7a;
+}
+
+.holiday-valentine .search-icon svg path {
+    stroke: #c44a7a;
+}
+
+.holiday-valentine .avatar-dot {
+    background-color: #e74c8b;
+}
+
+.holiday-valentine .side-nav-btn.active {
+    background-color: rgba(231, 76, 139, 0.15);
+    color: #e74c8b;
+}
+
+.holiday-valentine .side-nav-btn.active .nav-dot {
+    background-color: #e74c8b;
+}
+
+.holiday-valentine .action-btn.accent {
+    background-color: #e74c8b !important;
+    color: #fff !important;
+    border-color: transparent !important;
+}
+
+.holiday-valentine .blog-tag {
+    background: rgba(231, 76, 139, 0.12) !important;
+    color: #c44a7a !important;
+    border-color: #f0c0d0 !important;
+}
+
+.holiday-valentine .about-avatar {
+    border-color: #e74c8b !important;
+}
+
+.holiday-valentine .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #e74c8b;
+}
+
+/* ==========================================================================
+   👨‍💻 Programmer's Day
+   ========================================================================== */
+.holiday-programmer .header-logo::after {
+    content: ' { }';
+    font-size: 0.6em;
+    color: var(--color-lime);
+}
+
+/* ==========================================================================
+   🥧 Pi Day
+   ========================================================================== */
+.holiday-piday .header-logo::after {
+    content: ' π';
+    color: var(--color-lime);
+}
+
+/* ==========================================================================
+   🚀 Cosmonautics Day
+   ========================================================================== */
+.holiday-cosmonautics .header-logo::after {
+    content: ' 🚀';
+}
+
+/* ==========================================================================
+   🃏 April Fools
+   ========================================================================== */
+.holiday-aprilfools {
+    transform-origin: center center;
+}
+
+.holiday-aprilfools .header-logo::after {
+    content: ' 🃏';
+}
+
+/* ==========================================================================
+   Responsive
+   ========================================================================== */
+@media (max-width: 768px) {
+    .holiday-banner {
+        bottom: 12px;
+        right: 12px;
+        left: 12px;
+    }
+
+    .holiday-banner-content {
+        min-width: unset;
+    }
+
+    .holiday-banner-emoji {
+        font-size: 24px;
+    }
+}
+
