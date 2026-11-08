@@ -210,13 +210,55 @@
 }
 
 .holiday-halloween .project-info h3,
+.holiday-halloween .project-heading h3,
 .holiday-halloween .project-title {
-    color: #e0d0f0 !important;
+    color: #ff9933 !important;
 }
 
 .holiday-halloween .project-desc,
 .holiday-halloween .project-info p {
-    color: #8888a8 !important;
+    color: #b0a4c8 !important;
+}
+
+/* Blog Cards & Posts in Halloween */
+.holiday-halloween .blog-card h3 a {
+    color: #ff9933 !important;
+    text-shadow: 0 0 10px rgba(255, 153, 51, 0.35);
+}
+
+.holiday-halloween .blog-card h3 a:hover {
+    color: #ffb866 !important;
+    text-shadow: 0 0 14px rgba(255, 184, 102, 0.6);
+}
+
+.holiday-halloween .blog-card p {
+    color: #c8bcdc !important;
+}
+
+.holiday-halloween .blog-meta-row,
+.holiday-halloween .blog-meta-row span {
+    color: #9888b8 !important;
+}
+
+/* About Section in Halloween */
+.holiday-halloween .about-title-wrap h2,
+.holiday-halloween .about-section-block h3,
+.holiday-halloween .about-bio-title,
+.holiday-halloween .skill-group-title {
+    color: #ff7700 !important;
+}
+
+.holiday-halloween .about-subtitle,
+.holiday-halloween .about-bio-group p {
+    color: #c8bcdc !important;
+}
+
+.holiday-halloween .contact-name {
+    color: #ff9933 !important;
+}
+
+.holiday-halloween .contact-val {
+    color: #e0d0f0 !important;
 }
 
 .holiday-halloween .card-content-scroll::-webkit-scrollbar-thumb {
