@@ -1,0 +1,394 @@
+/* ==========================================================================
+   🥚 Easter Eggs Styles
+   ========================================================================== */
+
+/* --- 1. Matrix Rain Canvas --- */
+.easter-matrix-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 9999;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1s ease;
+}
+
+/* --- 2. Terminal Overlay (Secret Search Commands) --- */
+.easter-terminal {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0);
+    backdrop-filter: blur(0px);
+    transition: background 0.4s ease, backdrop-filter 0.4s ease;
+    cursor: pointer;
+}
+
+.easter-terminal.visible {
+    background: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(8px);
+}
+
+.easter-terminal-window {
+    background: #1a1b1b;
+    border: 1px solid #333;
+    border-radius: 12px;
+    width: 420px;
+    max-width: 90vw;
+    overflow: hidden;
+    box-shadow: 0 24px 64px rgba(0, 0, 0, 0.5);
+    transform: translateY(20px) scale(0.95);
+    opacity: 0;
+    transition: transform 0.4s cubic-bezier(0.25, 1, 0.5, 1), opacity 0.4s ease;
+}
+
+.easter-terminal.visible .easter-terminal-window {
+    transform: translateY(0) scale(1);
+    opacity: 1;
+}
+
+.easter-terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 10px 14px;
+    background: #252626;
+    border-bottom: 1px solid #333;
+}
+
+.terminal-dot {
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+}
+
+.terminal-dot.red { background: #ff5f57; }
+.terminal-dot.yellow { background: #ffbd2e; }
+.terminal-dot.green { background: #28c840; }
+
+.terminal-title {
+    margin-left: 8px;
+    font-size: 12px;
+    color: #666;
+    font-family: monospace;
+}
+
+.easter-terminal-body {
+    padding: 16px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--accent, #DFFFB3);
+    white-space: pre-wrap;
+    word-wrap: break-word;
+    min-height: 120px;
+}
+
+/* --- 3. CRT Terminal Mode --- */
+.easter-crt-mode .main-card-viewport {
+    background-color: #0a0f0a !important;
+    box-shadow: inset 0 0 60px rgba(0, 0, 0, 0.8);
+}
+
+.easter-crt-mode .card-content-scroll {
+    color: #33ff33 !important;
+    font-family: 'Courier New', monospace !important;
+    text-shadow: 0 0 4px rgba(51, 255, 51, 0.6);
+}
+
+.easter-crt-mode .main-card-viewport::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(0, 0, 0, 0.15) 2px,
+        rgba(0, 0, 0, 0.15) 4px
+    );
+    pointer-events: none;
+    z-index: 10;
+    border-radius: inherit;
+}
+
+.easter-crt-mode .main-card-viewport::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(
+        ellipse at center,
+        transparent 60%,
+        rgba(0, 0, 0, 0.4) 100%
+    );
+    pointer-events: none;
+    z-index: 10;
+    border-radius: inherit;
+    animation: easter-crt-flicker 0.08s infinite;
+}
+
+@keyframes easter-crt-flicker {
+    0%   { opacity: 0.97; }
+    50%  { opacity: 1; }
+    100% { opacity: 0.98; }
+}
+
+.easter-crt-mode .project-item,
+.easter-crt-mode .blog-card,
+.easter-crt-mode .contact-card {
+    background-color: rgba(0, 20, 0, 0.5) !important;
+    border-color: #1a4a1a !important;
+}
+
+.easter-crt-mode h2,
+.easter-crt-mode h3,
+.easter-crt-mode h4 {
+    color: #33ff33 !important;
+    text-shadow: 0 0 8px rgba(51, 255, 51, 0.5);
+}
+
+.easter-crt-mode p,
+.easter-crt-mode span,
+.easter-crt-mode a {
+    color: #22cc22 !important;
+}
+
+.easter-crt-mode .project-thumb {
+    background: rgba(0, 40, 0, 0.4) !important;
+    border-color: #1a4a1a !important;
+}
+
+.easter-crt-mode .project-thumb-img {
+    filter: grayscale(1) brightness(0.5) sepia(1) hue-rotate(70deg) saturate(3);
+}
+
+.easter-crt-mode .action-btn {
+    background: transparent !important;
+    border-color: #33ff33 !important;
+    color: #33ff33 !important;
+}
+
+.easter-crt-mode .action-btn.accent {
+    background: rgba(51, 255, 51, 0.15) !important;
+}
+
+.easter-crt-mode .skill-chip {
+    background: rgba(0, 40, 0, 0.4) !important;
+    border-color: #1a4a1a !important;
+    color: #33ff33 !important;
+}
+
+.easter-crt-mode .section-heading {
+    border-bottom-color: #1a4a1a !important;
+}
+
+.easter-crt-mode .blog-tag {
+    background: rgba(51, 255, 51, 0.12) !important;
+    color: #33ff33 !important;
+    border-color: #1a4a1a !important;
+}
+
+.easter-crt-mode .about-avatar {
+    border-color: #33ff33 !important;
+    filter: grayscale(1) brightness(0.5) sepia(1) hue-rotate(70deg) saturate(3);
+}
+
+/* CRT access banner */
+.easter-crt-banner {
+    position: fixed;
+    inset: 0;
+    z-index: 10001;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.85);
+    opacity: 0;
+    transition: opacity 0.3s ease;
+    pointer-events: none;
+}
+
+.easter-crt-banner.visible {
+    opacity: 1;
+}
+
+.crt-banner-text {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+}
+
+.crt-line {
+    font-family: 'Courier New', monospace;
+    font-size: 18px;
+    color: #33ff33;
+    text-shadow: 0 0 10px rgba(51, 255, 51, 0.8);
+    letter-spacing: 4px;
+    text-transform: uppercase;
+}
+
+.crt-line.accent {
+    font-size: 32px;
+    font-weight: bold;
+    animation: easter-crt-glow 1s ease-in-out infinite alternate;
+}
+
+.crt-line.small {
+    font-size: 12px;
+    color: #1a6a1a;
+    letter-spacing: 2px;
+    margin-top: 12px;
+}
+
+@keyframes easter-crt-glow {
+    from { text-shadow: 0 0 10px rgba(51, 255, 51, 0.5); }
+    to   { text-shadow: 0 0 20px rgba(51, 255, 51, 0.9), 0 0 40px rgba(51, 255, 51, 0.3); }
+}
+
+/* --- 4. Star Catcher Mini-Game --- */
+.easter-game-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 10000;
+    background: rgba(28, 29, 29, 0.95);
+    opacity: 0;
+    transition: opacity 0.4s ease;
+}
+
+.easter-game-overlay.visible {
+    opacity: 1;
+}
+
+.easter-game-canvas {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+}
+
+.easter-game-hud {
+    position: absolute;
+    top: 16px;
+    left: 16px;
+    right: 16px;
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    z-index: 2;
+}
+
+.game-score {
+    font-family: 'Google Sans Flex', sans-serif;
+    font-size: 20px;
+    font-weight: 600;
+    color: #DFFFB3;
+}
+
+.game-timer {
+    font-family: 'Courier New', monospace;
+    font-size: 16px;
+    color: #8a8e7a;
+}
+
+.game-close {
+    margin-left: auto;
+    width: 36px;
+    height: 36px;
+    border-radius: 50%;
+    border: 1px solid #444;
+    background: rgba(255, 255, 255, 0.05);
+    color: #888;
+    font-size: 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    transition: background 0.2s;
+}
+
+.game-close:hover {
+    background: rgba(255, 255, 255, 0.12);
+    color: #fff;
+}
+
+.easter-game-start {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 12px;
+    z-index: 3;
+}
+
+.easter-game-start h2 {
+    font-size: 36px;
+    color: #DFFFB3;
+    text-shadow: 0 0 20px rgba(223, 255, 179, 0.3);
+}
+
+.easter-game-start p {
+    color: #8a8e7a;
+    font-size: 16px;
+}
+
+.game-start-btn {
+    margin-top: 12px;
+    padding: 12px 36px;
+    background: #DFFFB3;
+    color: #404D2D;
+    border: none;
+    border-radius: 64px;
+    font-family: 'Google Sans Flex', sans-serif;
+    font-size: 16px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: transform 0.2s, box-shadow 0.2s;
+}
+
+.game-start-btn:hover {
+    transform: scale(1.05);
+    box-shadow: 0 4px 20px rgba(223, 255, 179, 0.3);
+}
+
+/* --- 5. Constellation Canvas --- */
+.easter-constellation-canvas {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    z-index: 0;
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 1.5s ease;
+}
+
+/* --- 6. Vinyl Spin Avatar --- */
+.easter-vinyl-spin {
+    transition: none !important;
+    box-shadow: 0 0 0 3px #1c1d1d, 0 0 0 5px #DFFFB3, 0 0 20px rgba(223, 255, 179, 0.3) !important;
+}
+
+/* Vinyl grooves effect during spin */
+.easter-vinyl-spin::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    border-radius: 50%;
+    background: repeating-radial-gradient(
+        circle at center,
+        transparent,
+        transparent 4px,
+        rgba(0, 0, 0, 0.08) 4px,
+        rgba(0, 0, 0, 0.08) 5px
+    );
+    pointer-events: none;
+}
+
