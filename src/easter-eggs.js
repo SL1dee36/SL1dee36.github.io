@@ -108,6 +108,16 @@
         'hello world': {
             message: '#include <stdio.h>\n\nint main() {\n    printf("Hello, visitor!\\n");\n    printf("Welcome to my portfolio.\\n");\n    return 0;\n}',
             color: '#DFFFB3'
+        },
+        'ufo': {
+            message: '🛸 UNIDENTIFIED FLYING OBJECT DETECTED\nSector: Deep Sky 36\nTractor beam: online\n\nAbduction in progress... 👽',
+            color: '#DFFFB3',
+            action: () => triggerUFO()
+        },
+        'alien': {
+            message: '👽 Transmission intercepted:\n"Greetings, human. We are taking a sample."\n\n🛸 Saucer incoming...',
+            color: '#DFFFB3',
+            action: () => triggerUFO()
         }
     };
 
@@ -120,6 +130,9 @@
                 const cmd = secretCommands[val];
                 if (cmd) {
                     showTerminalOverlay(cmd.message, cmd.color);
+                    if (typeof cmd.action === 'function') {
+                        cmd.action();
+                    }
                     // Reset search after a moment
                     setTimeout(() => {
                         searchBar.value = '';
@@ -462,28 +475,106 @@
 
 
     /* ======================================================================
-       5. IDLE ANIMATION — Stars form constellation
-       After 30s of no mouse movement, background stars drift into </>
+       5. IDLE ANIMATION — Full-Width Star Cluster Constellation </> (No Lines)
+       After 25s of inactivity, stars across the entire sky converge to form
+       a giant </> constellation made purely of twinkling stars and star dust.
        ====================================================================== */
     let idleTimer = null;
     let idleConstellationActive = false;
-
-    // The shape: </> represented as normalized points (0-1 range)
-    const constellationPoints = [
-        // <
-        { x: 0.30, y: 0.25 }, { x: 0.15, y: 0.40 }, { x: 0.30, y: 0.55 },
-        // /
-        { x: 0.40, y: 0.60 }, { x: 0.55, y: 0.20 },
-        // >
-        { x: 0.65, y: 0.25 }, { x: 0.80, y: 0.40 }, { x: 0.65, y: 0.55 },
-    ];
 
     function resetIdleTimer() {
         clearTimeout(idleTimer);
         if (idleConstellationActive) {
             deactivateConstellation();
         }
-        idleTimer = setTimeout(activateConstellation, 30000);
+        idleTimer = setTimeout(activateConstellation, 25000);
+    }
+
+    function generateConstellationStars(w, h) {
+        const stars = [];
+
+        // Helper: creates a stream of stars along a line segment
+        function addSegmentStars(x1, y1, x2, y2, count, jitter, isMajorSegment) {
+            const dx = x2 - x1;
+            const dy = y2 - y1;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len;
+            const ny = dx / len;
+
+            for (let i = 0; i <= count; i++) {
+                const t = i / count;
+                const baseX = x1 + dx * t;
+                const baseY = y1 + dy * t;
+                const isAnchor = (i === 0 || i === count);
+
+                const jitDist = isAnchor ? 0 : (Math.random() - 0.5) * jitter;
+                const randOffset = (Math.random() - 0.5) * 3;
+
+                const starSize = isAnchor ? (3.2 + Math.random() * 1.0) : (1.1 + Math.random() * 1.8);
+                const baseAlpha = isAnchor ? 1.0 : (0.5 + Math.random() * 0.45);
+
+                stars.push({
+                    targetX: baseX + nx * jitDist + randOffset,
+                    targetY: baseY + ny * jitDist + randOffset,
+                    x: Math.random() * w,
+                    y: Math.random() * h,
+                    size: starSize,
+                    isAnchor: isAnchor && isMajorSegment,
+                    baseAlpha: baseAlpha,
+                    twinkleSpeed: 0.02 + Math.random() * 0.04,
+                    phase: Math.random() * Math.PI * 2,
+                    alpha: 0,
+                    delay: Math.floor(Math.random() * 18)
+                });
+            }
+        }
+
+        // Full-screen width geometry for < / >
+        const topY = h * 0.16;
+        const midY = h * 0.40;
+        const botY = h * 0.64;
+
+        // < (Left side of screen)
+        const leftTipX = Math.max(30, w * 0.05);
+        const leftEndX = Math.min(w * 0.28, leftTipX + 240);
+        addSegmentStars(leftEndX, topY, leftTipX, midY, 28, 7, true);
+        addSegmentStars(leftTipX, midY, leftEndX, botY, 28, 7, true);
+
+        // / (Middle of screen)
+        const slashTopX = w * 0.58;
+        const slashTopY = h * 0.12;
+        const slashBotX = w * 0.42;
+        const slashBotY = h * 0.68;
+        addSegmentStars(slashBotX, slashBotY, slashTopX, slashTopY, 46, 8, true);
+
+        // > (Right side of screen)
+        const rightTipX = Math.min(w - 30, w * 0.95);
+        const rightEndX = Math.max(w * 0.72, rightTipX - 240);
+        addSegmentStars(rightEndX, topY, rightTipX, midY, 28, 7, true);
+        addSegmentStars(rightTipX, midY, rightEndX, botY, 28, 7, true);
+
+        // Ambient star cluster dust around the lines (nebula feel)
+        const coreLength = stars.length;
+        for (let i = 0; i < 65; i++) {
+            const anchor = stars[Math.floor(Math.random() * coreLength)];
+            const angle = Math.random() * Math.PI * 2;
+            const dist = 8 + Math.random() * 32;
+            stars.push({
+                targetX: anchor.targetX + Math.cos(angle) * dist,
+                targetY: anchor.targetY + Math.sin(angle) * dist,
+                x: Math.random() * w,
+                y: Math.random() * h,
+                size: 0.8 + Math.random() * 1.1,
+                isAnchor: false,
+                baseAlpha: 0.25 + Math.random() * 0.35,
+                twinkleSpeed: 0.015 + Math.random() * 0.03,
+                phase: Math.random() * Math.PI * 2,
+                alpha: 0,
+                delay: 10 + Math.floor(Math.random() * 25)
+            });
+        }
+
+        return stars;
     }
 
     function activateConstellation() {
@@ -492,7 +583,6 @@
 
         idleConstellationActive = true;
 
-        // Create a constellation overlay canvas
         const conCanvas = document.createElement('canvas');
         conCanvas.className = 'easter-constellation-canvas';
         conCanvas.width = window.innerWidth;
@@ -502,114 +592,66 @@
         requestAnimationFrame(() => conCanvas.style.opacity = '1');
 
         const ctx = conCanvas.getContext('2d');
-        const w = conCanvas.width;
-        const h = conCanvas.height;
+        let w = conCanvas.width;
+        let h = conCanvas.height;
 
-        // Place constellation in upper portion of screen
-        const offsetX = w * 0.25;
-        const offsetY = h * 0.10;
-        const scaleX = w * 0.5;
-        const scaleY = h * 0.5;
+        let stars = generateConstellationStars(w, h);
 
-        // Create "star" dots that drift toward constellation positions
-        const constellationStars = constellationPoints.map((cp, i) => ({
-            targetX: offsetX + cp.x * scaleX,
-            targetY: offsetY + cp.y * scaleY,
-            x: Math.random() * w,
-            y: Math.random() * h * 0.6,
-            size: 2.5 + Math.random() * 1.5,
-            alpha: 0,
-            arrived: false,
-            delay: i * 6 // frames delay
-        }));
-
-        // Extra ambient stars
-        for (let i = 0; i < 20; i++) {
-            const cpIdx = Math.floor(Math.random() * constellationPoints.length);
-            const cp = constellationPoints[cpIdx];
-            constellationStars.push({
-                targetX: offsetX + cp.x * scaleX + (Math.random() - 0.5) * 60,
-                targetY: offsetY + cp.y * scaleY + (Math.random() - 0.5) * 60,
-                x: Math.random() * w,
-                y: Math.random() * h * 0.6,
-                size: 1 + Math.random(),
-                alpha: 0,
-                arrived: false,
-                delay: 8 + i * 3
-            });
-        }
+        window.addEventListener('resize', () => {
+            if (!idleConstellationActive) return;
+            w = conCanvas.width = window.innerWidth;
+            h = conCanvas.height = window.innerHeight;
+            stars = generateConstellationStars(w, h);
+        });
 
         let frame = 0;
-        let lineAlpha = 0;
 
         function drawConstellation() {
             if (!idleConstellationActive) {
                 conCanvas.style.opacity = '0';
-                setTimeout(() => conCanvas.remove(), 1000);
+                setTimeout(() => conCanvas.remove(), 1800);
                 return;
             }
 
             frame++;
             ctx.clearRect(0, 0, w, h);
 
-            // Move stars toward targets
-            constellationStars.forEach(star => {
-                if (frame < star.delay) return;
+            stars.forEach(s => {
+                if (frame < s.delay) return;
 
-                const dx = star.targetX - star.x;
-                const dy = star.targetY - star.y;
-                star.x += dx * 0.025;
-                star.y += dy * 0.025;
-                star.alpha = Math.min(1, star.alpha + 0.015);
+                // Smooth drift toward constellation position
+                const dx = s.targetX - s.x;
+                const dy = s.targetY - s.y;
+                s.x += dx * 0.028;
+                s.y += dy * 0.028;
+                s.alpha = Math.min(s.baseAlpha, s.alpha + 0.012);
 
-                if (Math.abs(dx) < 2 && Math.abs(dy) < 2) {
-                    star.arrived = true;
-                }
+                // Twinkle
+                const twinkle = Math.sin(frame * s.twinkleSpeed + s.phase) * 0.22;
+                const currentAlpha = Math.max(0.1, Math.min(1.0, s.alpha + twinkle));
 
-                // Draw star
-                ctx.fillStyle = `rgba(223, 255, 179, ${star.alpha * 0.9})`;
+                // Pure star drawing without any connecting lines
+                ctx.fillStyle = `rgba(223, 255, 179, ${currentAlpha})`;
                 ctx.shadowColor = '#DFFFB3';
-                ctx.shadowBlur = 6;
+                ctx.shadowBlur = s.isAnchor ? 12 : 5;
                 ctx.beginPath();
-                ctx.arc(star.x, star.y, star.size, 0, Math.PI * 2);
+                ctx.arc(s.x, s.y, s.size, 0, Math.PI * 2);
                 ctx.fill();
                 ctx.shadowBlur = 0;
+
+                // Astronomical diffraction spike on major anchor stars
+                if (s.isAnchor && currentAlpha > 0.65) {
+                    const spikeLen = s.size * 3.4;
+                    ctx.strokeStyle = `rgba(223, 255, 179, ${currentAlpha * 0.35})`;
+                    ctx.lineWidth = 0.9;
+                    ctx.beginPath();
+                    ctx.moveTo(s.x - spikeLen, s.y);
+                    ctx.lineTo(s.x + spikeLen, s.y);
+                    ctx.moveTo(s.x, s.y - spikeLen);
+                    ctx.lineTo(s.x, s.y + spikeLen);
+                    ctx.stroke();
+                }
             });
-
-            // Draw connecting lines once stars arrive
-            const mainStars = constellationStars.slice(0, constellationPoints.length);
-            const allArrived = mainStars.every(s => s.arrived);
-            if (allArrived) {
-                lineAlpha = Math.min(0.4, lineAlpha + 0.005);
-            }
-
-            if (lineAlpha > 0) {
-                ctx.strokeStyle = `rgba(223, 255, 179, ${lineAlpha})`;
-                ctx.lineWidth = 1;
-                ctx.setLineDash([4, 4]);
-
-                // < lines
-                ctx.beginPath();
-                ctx.moveTo(mainStars[0].x, mainStars[0].y);
-                ctx.lineTo(mainStars[1].x, mainStars[1].y);
-                ctx.lineTo(mainStars[2].x, mainStars[2].y);
-                ctx.stroke();
-
-                // / line
-                ctx.beginPath();
-                ctx.moveTo(mainStars[3].x, mainStars[3].y);
-                ctx.lineTo(mainStars[4].x, mainStars[4].y);
-                ctx.stroke();
-
-                // > lines
-                ctx.beginPath();
-                ctx.moveTo(mainStars[5].x, mainStars[5].y);
-                ctx.lineTo(mainStars[6].x, mainStars[6].y);
-                ctx.lineTo(mainStars[7].x, mainStars[7].y);
-                ctx.stroke();
-
-                ctx.setLineDash([]);
-            }
 
             requestAnimationFrame(drawConstellation);
         }
@@ -725,6 +767,468 @@
     if (viewAbout && viewAbout.classList.contains('visible')) {
         initAvatarVinyl();
     }
+
+
+    /* ======================================================================
+       7. AMBIENT FLYING SAUCER (UFO Abduction)
+       Subtle retro-futuristic saucer flies into the background sky,
+       hovers, beams up a star/cow/crystal with a tractor beam, then warps away.
+       ====================================================================== */
+    let ufoCanvas = null;
+    let ufoCtx = null;
+    let ufoActive = false;
+    let ufoState = 'idle'; // idle | enter | beam | abduct | zap | warp
+    let ufoTimer = null;
+
+    let ufoX = 0, ufoY = 0;
+    let ufoTargetX = 0, ufoTargetY = 0;
+    let ufoTilt = 0;
+    let ufoSpeedX = 0, ufoSpeedY = 0;
+    let ufoLightsPhase = 0;
+    let beamProgress = 0;
+    let beamRingsTime = 0;
+
+    let abducteeType = 'cow'; // 'cow' | 'star' | 'crystal'
+    let abducteeY = 0;
+    let abducteeProgress = 0;
+    let abducteeRot = 0;
+    let abducteeAlpha = 0;
+
+    const ufoSparks = [];
+    const warpTrails = [];
+
+    function ensureUFOCanvas() {
+        if (!ufoCanvas) {
+            ufoCanvas = document.createElement('canvas');
+            ufoCanvas.className = 'easter-ufo-canvas';
+            ufoCanvas.width = window.innerWidth;
+            ufoCanvas.height = window.innerHeight;
+            document.body.appendChild(ufoCanvas);
+            ufoCtx = ufoCanvas.getContext('2d');
+
+            window.addEventListener('resize', () => {
+                if (ufoCanvas) {
+                    ufoCanvas.width = window.innerWidth;
+                    ufoCanvas.height = window.innerHeight;
+                }
+            });
+        }
+    }
+
+    function launchUFO() {
+        if (ufoActive) return;
+        ensureUFOCanvas();
+
+        ufoActive = true;
+        ufoState = 'enter';
+
+        const w = ufoCanvas.width;
+        const h = ufoCanvas.height;
+
+        // Choose random entrance side
+        const fromLeft = Math.random() > 0.5;
+        ufoX = fromLeft ? -120 : w + 120;
+        ufoY = Math.max(90, Math.min(h * 0.45, 120 + Math.random() * (h * 0.25)));
+
+        // Target hover location in open space of sky
+        ufoTargetX = fromLeft
+            ? (w * 0.18 + Math.random() * (w * 0.22))
+            : (w * 0.60 + Math.random() * (w * 0.24));
+        ufoTargetY = ufoY + (Math.random() - 0.5) * 40;
+
+        ufoSpeedX = fromLeft ? 5 : -5;
+        ufoSpeedY = 0;
+        ufoTilt = fromLeft ? 0.15 : -0.15;
+        beamProgress = 0;
+
+        // Pick abductee
+        const types = ['cow', 'star', 'crystal'];
+        abducteeType = types[Math.floor(Math.random() * types.length)];
+        abducteeProgress = 0;
+        abducteeRot = 0;
+        abducteeAlpha = 0;
+
+        ufoSparks.length = 0;
+        warpTrails.length = 0;
+
+        requestAnimationFrame(renderUFO);
+    }
+
+    window.triggerUFO = launchUFO;
+    window.launchUFO = launchUFO;
+
+    function renderUFO() {
+        if (!ufoActive || !ufoCtx) return;
+
+        const w = ufoCanvas.width;
+        const h = ufoCanvas.height;
+        ufoCtx.clearRect(0, 0, w, h);
+
+        beamRingsTime += 0.04;
+        ufoLightsPhase += 0.08;
+
+        // State Machine
+        if (ufoState === 'enter') {
+            const dx = ufoTargetX - ufoX;
+            const dy = ufoTargetY - ufoY;
+            ufoX += dx * 0.045;
+            ufoY += dy * 0.045 + Math.sin(beamRingsTime * 2) * 0.6;
+            ufoTilt = (dx * 0.002);
+
+            if (Math.abs(dx) < 6) {
+                ufoState = 'beam';
+            }
+        } else if (ufoState === 'beam') {
+            ufoY += Math.sin(beamRingsTime * 2.5) * 0.5;
+            ufoTilt *= 0.9;
+            beamProgress = Math.min(1.0, beamProgress + 0.05);
+
+            if (beamProgress >= 1.0) {
+                ufoState = 'abduct';
+                abducteeAlpha = 1.0;
+            }
+        } else if (ufoState === 'abduct') {
+            ufoY += Math.sin(beamRingsTime * 2.5) * 0.5;
+            abducteeProgress = Math.min(1.0, abducteeProgress + 0.016);
+            abducteeRot += 0.06;
+
+            const beamLength = 210;
+            abducteeY = (ufoY + beamLength + 8) - (beamLength * abducteeProgress);
+
+            if (abducteeProgress >= 0.98) {
+                // Zap & suck inside
+                ufoState = 'zap';
+                abducteeAlpha = 0;
+
+                // Burst of sparks
+                for (let i = 0; i < 18; i++) {
+                    const ang = Math.random() * Math.PI * 2;
+                    const spd = 2 + Math.random() * 3.5;
+                    ufoSparks.push({
+                        x: ufoX,
+                        y: ufoY + 12,
+                        vx: Math.cos(ang) * spd,
+                        vy: Math.sin(ang) * spd,
+                        life: 1.0,
+                        decay: 0.04 + Math.random() * 0.03,
+                        size: 1.2 + Math.random() * 2
+                    });
+                }
+            }
+        } else if (ufoState === 'zap') {
+            beamProgress = Math.max(0, beamProgress - 0.12);
+            ufoTilt = -0.3; // Anticipation tilt before hyperspace jump
+
+            if (beamProgress <= 0.01) {
+                ufoState = 'warp';
+                ufoSpeedX = (ufoX < w * 0.5 ? -18 : 18);
+                ufoSpeedY = -9;
+            }
+        } else if (ufoState === 'warp') {
+            // Accelerate exponentially
+            ufoSpeedX *= 1.28;
+            ufoSpeedY *= 1.22;
+            ufoX += ufoSpeedX;
+            ufoY += ufoSpeedY;
+            ufoTilt = Math.atan2(ufoSpeedY, ufoSpeedX) + (ufoSpeedX < 0 ? Math.PI : 0);
+
+            // Warp speed streak trail
+            warpTrails.push({
+                x: ufoX,
+                y: ufoY,
+                vx: -ufoSpeedX * 0.4,
+                vy: -ufoSpeedY * 0.4,
+                alpha: 0.9,
+                len: Math.hypot(ufoSpeedX, ufoSpeedY) * 2
+            });
+
+            // Off-screen check
+            if (ufoX < -250 || ufoX > w + 250 || ufoY < -200) {
+                ufoActive = false;
+                ufoState = 'idle';
+                ufoCtx.clearRect(0, 0, w, h);
+                scheduleNextUFO();
+                return;
+            }
+        }
+
+        // Draw Warp Trails
+        for (let i = warpTrails.length - 1; i >= 0; i--) {
+            const tr = warpTrails[i];
+            tr.alpha -= 0.06;
+            if (tr.alpha <= 0) {
+                warpTrails.splice(i, 1);
+                continue;
+            }
+            ufoCtx.strokeStyle = `rgba(223, 255, 179, ${tr.alpha * 0.6})`;
+            ufoCtx.lineWidth = 3;
+            ufoCtx.beginPath();
+            ufoCtx.moveTo(tr.x, tr.y);
+            ufoCtx.lineTo(tr.x + tr.vx, tr.y + tr.vy);
+            ufoCtx.stroke();
+        }
+
+        // Draw Tractor Beam
+        if (beamProgress > 0.01) {
+            drawTractorBeam(ufoCtx, ufoX, ufoY + 12, ufoTilt, beamProgress, beamRingsTime);
+        }
+
+        // Draw Abductee
+        if (abducteeAlpha > 0 && ufoState === 'abduct') {
+            const scale = 0.5 + 0.5 * (1.0 - abducteeProgress * 0.5);
+            drawAbductee(ufoCtx, abducteeType, ufoX, abducteeY, abducteeRot, scale, abducteeAlpha);
+        }
+
+        // Draw Sparks
+        for (let i = ufoSparks.length - 1; i >= 0; i--) {
+            const sp = ufoSparks[i];
+            sp.x += sp.vx;
+            sp.y += sp.vy;
+            sp.life -= sp.decay;
+            if (sp.life <= 0) {
+                ufoSparks.splice(i, 1);
+                continue;
+            }
+            ufoCtx.fillStyle = `rgba(223, 255, 179, ${sp.life})`;
+            ufoCtx.shadowColor = '#DFFFB3';
+            ufoCtx.shadowBlur = 8;
+            ufoCtx.beginPath();
+            ufoCtx.arc(sp.x, sp.y, sp.size * sp.life, 0, Math.PI * 2);
+            ufoCtx.fill();
+            ufoCtx.shadowBlur = 0;
+        }
+
+        // Draw Saucer
+        drawSaucer(ufoCtx, ufoX, ufoY, ufoTilt, ufoLightsPhase, 1.0, 1.0);
+
+        requestAnimationFrame(renderUFO);
+    }
+
+    function drawSaucer(ctx, x, y, tilt, lightsPhase, scale, alpha) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(tilt);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = alpha;
+
+        const width = 86;
+        const height = 24;
+
+        // 1. Cockpit glass dome (glowing cyan-lime)
+        const domeGrad = ctx.createRadialGradient(-4, -13, 2, 0, -8, 22);
+        domeGrad.addColorStop(0, 'rgba(255, 255, 255, 0.95)');
+        domeGrad.addColorStop(0.3, 'rgba(223, 255, 179, 0.7)');
+        domeGrad.addColorStop(0.7, 'rgba(64, 77, 45, 0.4)');
+        domeGrad.addColorStop(1, 'rgba(28, 29, 29, 0.2)');
+        ctx.fillStyle = domeGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, -6, width * 0.28, height * 0.75, 0, Math.PI, 0);
+        ctx.fill();
+
+        // Glowing core/pilot inside dome
+        ctx.fillStyle = '#DFFFB3';
+        ctx.shadowColor = '#DFFFB3';
+        ctx.shadowBlur = 10;
+        ctx.beginPath();
+        ctx.arc(0, -9, 3.2, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 2. Main metallic saucer body
+        const bodyGrad = ctx.createLinearGradient(0, -height * 0.5, 0, height * 0.6);
+        bodyGrad.addColorStop(0, '#3e4933');
+        bodyGrad.addColorStop(0.3, '#2a3324');
+        bodyGrad.addColorStop(0.7, '#1f251a');
+        bodyGrad.addColorStop(1, '#141811');
+
+        ctx.fillStyle = bodyGrad;
+        ctx.beginPath();
+        ctx.ellipse(0, 0, width * 0.5, height * 0.5, 0, 0, Math.PI * 2);
+        ctx.fill();
+
+        // Neon rim outline
+        ctx.strokeStyle = 'rgba(223, 255, 179, 0.65)';
+        ctx.lineWidth = 1.3;
+        ctx.stroke();
+
+        // 3. Bottom tractor beam emitter
+        ctx.fillStyle = 'rgba(223, 255, 179, 0.95)';
+        ctx.shadowColor = '#DFFFB3';
+        ctx.shadowBlur = 12;
+        ctx.beginPath();
+        ctx.ellipse(0, height * 0.35, width * 0.18, height * 0.22, 0, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+
+        // 4. Perimeter running lights (8 pulsing LEDs)
+        const numLights = 8;
+        for (let i = 0; i < numLights; i++) {
+            const ang = (i / numLights) * Math.PI * 2 + lightsPhase;
+            const lx = Math.cos(ang) * (width * 0.44);
+            const ly = Math.sin(ang) * (height * 0.38);
+
+            const isFront = Math.sin(ang) > -0.2;
+            const lAlpha = isFront ? (0.5 + 0.5 * Math.sin(lightsPhase * 2 + i * 1.2)) : 0.25;
+
+            ctx.fillStyle = (i % 2 === 0) ? `rgba(223, 255, 179, ${lAlpha})` : `rgba(255, 255, 255, ${lAlpha})`;
+            ctx.beginPath();
+            ctx.arc(lx, ly, 1.8, 0, Math.PI * 2);
+            ctx.fill();
+        }
+
+        ctx.restore();
+    }
+
+    function drawTractorBeam(ctx, x, y, tilt, progress, time) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(tilt);
+
+        const startY = 0;
+        const topRadius = 14;
+        const bottomRadius = 56 + Math.sin(time * 3) * 4;
+        const beamLength = 210 * progress;
+
+        // Conical glowing gradient
+        const beamGrad = ctx.createLinearGradient(0, startY, 0, startY + beamLength);
+        beamGrad.addColorStop(0, `rgba(223, 255, 179, ${0.45 * progress})`);
+        beamGrad.addColorStop(0.35, `rgba(223, 255, 179, ${0.25 * progress})`);
+        beamGrad.addColorStop(0.75, `rgba(223, 255, 179, ${0.10 * progress})`);
+        beamGrad.addColorStop(1, 'rgba(223, 255, 179, 0)');
+
+        ctx.fillStyle = beamGrad;
+        ctx.beginPath();
+        ctx.moveTo(-topRadius, startY);
+        ctx.lineTo(topRadius, startY);
+        ctx.lineTo(bottomRadius, startY + beamLength);
+        ctx.lineTo(-bottomRadius, startY + beamLength);
+        ctx.closePath();
+        ctx.fill();
+
+        // Pulsing ascending energy rings
+        const numRings = 4;
+        for (let i = 0; i < numRings; i++) {
+            const ringProgress = ((time * 0.5 + i / numRings) % 1.0);
+            const ry = startY + beamLength * (1.0 - ringProgress);
+            const rw = topRadius + (bottomRadius - topRadius) * (1.0 - ringProgress);
+            const ringAlpha = Math.sin(ringProgress * Math.PI) * 0.35 * progress;
+
+            ctx.strokeStyle = `rgba(223, 255, 179, ${ringAlpha})`;
+            ctx.lineWidth = 1.5;
+            ctx.beginPath();
+            ctx.ellipse(0, ry, rw * 0.9, 4, 0, 0, Math.PI * 2);
+            ctx.stroke();
+        }
+
+        ctx.restore();
+    }
+
+    function drawAbductee(ctx, type, x, y, rot, scale, alpha) {
+        ctx.save();
+        ctx.translate(x, y);
+        ctx.rotate(rot);
+        ctx.scale(scale, scale);
+        ctx.globalAlpha = Math.max(0, Math.min(1, alpha));
+
+        if (type === 'cow') {
+            // Cute tiny cow 🐄
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(-12, -7, 24, 14, 4);
+            ctx.fill();
+
+            // Black patches
+            ctx.fillStyle = '#222222';
+            ctx.beginPath();
+            ctx.arc(-4, -2, 4, 0, Math.PI * 2);
+            ctx.arc(5, 1, 3.5, 0, Math.PI * 2);
+            ctx.fill();
+
+            // Head
+            ctx.fillStyle = '#ffffff';
+            ctx.beginPath();
+            ctx.roundRect(9, -9, 10, 10, 2);
+            ctx.fill();
+
+            // Pink snout
+            ctx.fillStyle = '#ffb6c1';
+            ctx.beginPath();
+            ctx.roundRect(14, -6, 5, 6, 2);
+            ctx.fill();
+
+            // Eye
+            ctx.fillStyle = '#000000';
+            ctx.fillRect(12, -7, 1.5, 1.5);
+
+            // Legs
+            ctx.fillStyle = '#ffffff';
+            ctx.fillRect(-9, 7, 3, 6);
+            ctx.fillRect(-3, 7, 3, 6);
+            ctx.fillRect(3, 7, 3, 6);
+            ctx.fillRect(8, 7, 3, 6);
+
+            // Hooves
+            ctx.fillStyle = '#222222';
+            ctx.fillRect(-9, 11, 3, 2);
+            ctx.fillRect(-3, 11, 3, 2);
+            ctx.fillRect(3, 11, 3, 2);
+            ctx.fillRect(8, 11, 3, 2);
+        } else if (type === 'crystal') {
+            // Glowing neon crystal 💎
+            ctx.fillStyle = 'rgba(223, 255, 179, 0.9)';
+            ctx.shadowColor = '#DFFFB3';
+            ctx.shadowBlur = 14;
+            ctx.beginPath();
+            ctx.moveTo(0, -14);
+            ctx.lineTo(10, -3);
+            ctx.lineTo(6, 12);
+            ctx.lineTo(-6, 12);
+            ctx.lineTo(-10, -3);
+            ctx.closePath();
+            ctx.fill();
+            ctx.strokeStyle = '#ffffff';
+            ctx.lineWidth = 1;
+            ctx.stroke();
+            ctx.shadowBlur = 0;
+        } else {
+            // Golden-lime star ⭐
+            ctx.fillStyle = '#DFFFB3';
+            ctx.shadowColor = '#DFFFB3';
+            ctx.shadowBlur = 14;
+            const spikes = 5;
+            const outer = 13;
+            const inner = 5.5;
+            let r = Math.PI / 2 * 3;
+            const step = Math.PI / spikes;
+            ctx.beginPath();
+            ctx.moveTo(0, -outer);
+            for (let i = 0; i < spikes; i++) {
+                ctx.lineTo(Math.cos(r) * outer, Math.sin(r) * outer);
+                r += step;
+                ctx.lineTo(Math.cos(r) * inner, Math.sin(r) * inner);
+                r += step;
+            }
+            ctx.closePath();
+            ctx.fill();
+            ctx.shadowBlur = 0;
+        }
+
+        ctx.restore();
+    }
+
+    function scheduleNextUFO() {
+        clearTimeout(ufoTimer);
+        // Random appearance between 50 and 95 seconds
+        const delay = 50000 + Math.random() * 45000;
+        ufoTimer = setTimeout(() => {
+            launchUFO();
+        }, delay);
+    }
+
+    // First UFO flyby ~22 seconds after page load
+    setTimeout(() => {
+        scheduleNextUFO();
+    }, 22000);
 
 })();
 
