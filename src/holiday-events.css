@@ -1,5 +1,6 @@
 /* ==========================================================================
-   🎉 Holiday Events Styles
+   🎉 Holiday Events Complete Theme Overhauls
+   Cursors, Borders, Headers, Nav, Cards, Accents & Typography per Event
    ========================================================================== */
 
 /* --- Overlay Canvas (shared by all holiday particle effects) --- */
@@ -33,337 +34,626 @@
 .holiday-banner-content {
     display: flex;
     align-items: center;
-    gap: 12px;
-    background: rgba(255, 255, 255, 0.95);
-    backdrop-filter: blur(12px);
+    gap: 14px;
+    background: rgba(20, 24, 30, 0.92);
+    backdrop-filter: blur(16px);
     border-radius: 16px;
-    padding: 14px 20px;
-    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), 0 0 0 1px rgba(255, 255, 255, 0.1);
-    min-width: 280px;
+    padding: 14px 22px;
+    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.4), 0 0 0 1px rgba(255, 255, 255, 0.12);
+    min-width: 300px;
     border-left: 4px solid var(--holiday-accent, #DFFFB3);
 }
 
 .holiday-banner-emoji {
     font-size: 32px;
     line-height: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.holiday-banner-svg {
+    width: 36px;
+    height: 36px;
+    display: block;
+    filter: drop-shadow(0 2px 8px rgba(0, 180, 255, 0.5));
 }
 
 .holiday-banner-text {
     display: flex;
     flex-direction: column;
-    gap: 2px;
+    gap: 3px;
 }
 
 .holiday-banner-text strong {
     font-family: var(--font-main);
     font-size: 15px;
     font-weight: 600;
-    color: #191c1c;
+    color: #ffffff;
 }
 
 .holiday-banner-text span {
     font-family: var(--font-main);
     font-size: 12px;
-    color: #5c6061;
+    color: #a0aec0;
 }
+
 
 /* ==========================================================================
-   🎄 New Year / Christmas
+   🎃 1. HALLOWEEN THEME (Blood Orange, Deep Violet & Pumpkin Neon)
    ========================================================================== */
-.holiday-newyear .header-breadcrumb,
-.holiday-newyear #search-bar,
-.holiday-newyear .header-avatar-btn {
-    background-color: #fce4e4 !important;
+/* Cursor */
+body.holiday-halloween .fluid-blob-path {
+    stroke: rgba(255, 102, 0, 0.85) !important;
+}
+body.holiday-halloween .fluid-cursor-dot {
+    background-color: #ff6600 !important;
+    box-shadow: 0 0 8px #ff6600 !important;
+}
+body.holiday-halloween .custom-cursor-fluid.is-text .fluid-blob-path {
+    fill: #ff6600 !important;
 }
 
-.holiday-newyear .header-breadcrumb:hover,
-.holiday-newyear #search-bar:focus {
-    background-color: #f9d0d0 !important;
-}
-
-.holiday-newyear .header-logo::after {
-    content: ' 🎄';
-}
-
-.holiday-newyear .side-nav-btn.active {
-    background-color: rgba(252, 228, 228, 0.3);
-    color: #ff6b6b;
-}
-
-.holiday-newyear .side-nav-btn.active .nav-dot {
-    background-color: #ff6b6b;
-}
-
-/* ==========================================================================
-   🎃 Halloween
-   ========================================================================== */
+/* Header & Container */
 .holiday-halloween .header-bar {
-    background-color: #1a1a2e !important;
+    background-color: #120822 !important;
+    border: 1px solid rgba(255, 102, 0, 0.35) !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 102, 0, 0.15) !important;
 }
-
 .holiday-halloween .header-logo {
-    color: #ff6600 !important;
+    color: #ff8822 !important;
+    text-shadow: 0 0 10px rgba(255, 102, 0, 0.4) !important;
 }
-
 .holiday-halloween .header-logo::after {
     content: ' 🎃';
 }
-
 .holiday-halloween .header-breadcrumb,
 .holiday-halloween #search-bar,
 .holiday-halloween .header-avatar-btn {
-    background-color: #2d1f4e !important;
-    color: #e0a0ff !important;
+    background-color: #271242 !important;
+    color: #ffa044 !important;
+    border: 1px solid rgba(255, 102, 0, 0.3) !important;
 }
-
 .holiday-halloween #search-bar::placeholder {
-    color: #b070d0 !important;
+    color: #b088d8 !important;
 }
-
 .holiday-halloween .header-breadcrumb:hover,
 .holiday-halloween #search-bar:focus {
-    background-color: #3a2868 !important;
+    background-color: #35185a !important;
+    border-color: #ff8822 !important;
 }
-
 .holiday-halloween .header-breadcrumb .arrow svg path {
-    fill: #e0a0ff;
+    fill: #ffa044;
 }
-
 .holiday-halloween .search-icon svg path {
-    stroke: #e0a0ff;
+    stroke: #ffa044;
 }
-
+.holiday-halloween .search-kbd {
+    background: rgba(255, 102, 0, 0.2) !important;
+    color: #ffaa44 !important;
+}
 .holiday-halloween .avatar-dot {
     background-color: #ff6600;
+    box-shadow: 0 0 6px #ff6600;
 }
 
+/* Main Cards & Viewport */
 .holiday-halloween .main-card-viewport {
-    background-color: #0f0f1a !important;
+    background-color: #0d0618 !important;
+    border: 1px solid rgba(255, 102, 0, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(255, 102, 0, 0.12) !important;
 }
-
 .holiday-halloween .card-content-scroll {
-    color: #d0d0e0 !important;
+    color: #c8bcdc !important;
 }
-
-.holiday-halloween .section-heading h2 {
-    color: #ff6600 !important;
-}
-
 .holiday-halloween .section-heading {
-    border-bottom-color: #2a2a3e !important;
+    border-bottom-color: rgba(255, 102, 0, 0.25) !important;
+}
+.holiday-halloween .section-heading h2 {
+    color: #ff8822 !important;
+    text-shadow: 0 0 12px rgba(255, 102, 0, 0.35) !important;
 }
 
+/* Side Navigation */
+.holiday-halloween .side-nav-btn {
+    color: #9488b0;
+}
+.holiday-halloween .side-nav-btn:hover {
+    background-color: rgba(255, 102, 0, 0.12);
+    color: #ffaa55;
+}
+.holiday-halloween .side-nav-btn.active {
+    background-color: rgba(255, 102, 0, 0.2);
+    color: #ff8822;
+}
+.holiday-halloween .side-nav-btn.active .nav-dot {
+    background-color: #ff6600;
+    box-shadow: 0 0 8px #ff6600;
+}
+.holiday-halloween .side-nav-btn .nav-dot {
+    background-color: #3b1e58;
+}
+
+/* Project & Blog Items */
 .holiday-halloween .project-item,
 .holiday-halloween .blog-card,
 .holiday-halloween .contact-card {
-    background-color: #1a1a30 !important;
-    border-color: #2a2a45 !important;
+    background-color: #170d2b !important;
+    border: 1px solid rgba(255, 102, 0, 0.25) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
 }
-
-.holiday-halloween .action-btn {
-    background-color: #1a1a30 !important;
-    border-color: #3a2868 !important;
-    color: #d0d0e0 !important;
+.holiday-halloween .project-item:hover,
+.holiday-halloween .blog-card:hover,
+.holiday-halloween .contact-card:hover {
+    border-color: rgba(255, 102, 0, 0.55) !important;
+    box-shadow: 0 6px 20px rgba(255, 102, 0, 0.18) !important;
 }
-
-.holiday-halloween .action-btn.accent {
-    background-color: #ff6600 !important;
-    color: #fff !important;
+.holiday-halloween .project-thumb {
+    background: rgba(255, 102, 0, 0.12) !important;
+    border-color: rgba(255, 102, 0, 0.3) !important;
 }
-
-.holiday-halloween .skill-chip {
-    background-color: #1a1a30 !important;
-    border-color: #2a2a45 !important;
-    color: #d0d0e0 !important;
-}
-
-.holiday-halloween .blog-tag {
-    background: rgba(255, 102, 0, 0.15) !important;
-    color: #ff8833 !important;
-    border-color: #3a2868 !important;
-}
-
-.holiday-halloween .side-nav-btn {
-    color: #8080a0;
-}
-
-.holiday-halloween .side-nav-btn:hover {
-    background-color: rgba(160, 80, 255, 0.08);
-    color: #c0a0ff;
-}
-
-.holiday-halloween .side-nav-btn.active {
-    background-color: rgba(255, 102, 0, 0.15);
-    color: #ff6600;
-}
-
-.holiday-halloween .side-nav-btn.active .nav-dot {
-    background-color: #ff6600;
-}
-
-.holiday-halloween .side-nav-btn .nav-dot {
-    background-color: #3a2868;
-}
-
-.holiday-halloween .about-avatar {
-    border-color: #ff6600 !important;
-}
-
 .holiday-halloween .project-info h3,
 .holiday-halloween .project-heading h3,
 .holiday-halloween .project-title {
     color: #ff9933 !important;
 }
-
 .holiday-halloween .project-desc,
 .holiday-halloween .project-info p {
     color: #b0a4c8 !important;
 }
 
-/* Blog Cards & Posts in Halloween */
+/* Blog Headings (Fixed Contrast) */
 .holiday-halloween .blog-card h3 a {
     color: #ff9933 !important;
-    text-shadow: 0 0 10px rgba(255, 153, 51, 0.35);
+    text-shadow: 0 0 10px rgba(255, 153, 51, 0.4) !important;
 }
-
 .holiday-halloween .blog-card h3 a:hover {
-    color: #ffb866 !important;
-    text-shadow: 0 0 14px rgba(255, 184, 102, 0.6);
+    color: #ffba66 !important;
+    text-shadow: 0 0 14px rgba(255, 184, 102, 0.7) !important;
 }
-
 .holiday-halloween .blog-card p {
     color: #c8bcdc !important;
 }
-
 .holiday-halloween .blog-meta-row,
 .holiday-halloween .blog-meta-row span {
     color: #9888b8 !important;
 }
+.holiday-halloween .blog-tag,
+.holiday-halloween .skill-chip {
+    background-color: rgba(255, 102, 0, 0.15) !important;
+    color: #ffaa55 !important;
+    border: 1px solid rgba(255, 102, 0, 0.3) !important;
+}
 
-/* About Section in Halloween */
+/* Buttons */
+.holiday-halloween .action-btn {
+    background-color: #24123c !important;
+    border-color: rgba(255, 102, 0, 0.35) !important;
+    color: #e0d0f0 !important;
+}
+.holiday-halloween .action-btn:hover {
+    background-color: #351a56 !important;
+    border-color: #ff8822 !important;
+}
+.holiday-halloween .action-btn.accent {
+    background-color: #ff6600 !important;
+    color: #ffffff !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 10px rgba(255, 102, 0, 0.4) !important;
+}
+.holiday-halloween .action-btn.accent:hover {
+    background-color: #ff7711 !important;
+}
+
+/* About Page */
+.holiday-halloween .about-avatar {
+    border-color: #ff6600 !important;
+    box-shadow: 0 0 16px rgba(255, 102, 0, 0.4) !important;
+}
 .holiday-halloween .about-title-wrap h2,
 .holiday-halloween .about-section-block h3,
 .holiday-halloween .about-bio-title,
 .holiday-halloween .skill-group-title {
-    color: #ff7700 !important;
+    color: #ff8822 !important;
 }
-
 .holiday-halloween .about-subtitle,
 .holiday-halloween .about-bio-group p {
     color: #c8bcdc !important;
 }
-
 .holiday-halloween .contact-name {
     color: #ff9933 !important;
 }
-
 .holiday-halloween .contact-val {
     color: #e0d0f0 !important;
 }
-
 .holiday-halloween .card-content-scroll::-webkit-scrollbar-thumb {
     background-color: #ff6600;
 }
 
+
 /* ==========================================================================
-   💕 Valentine's Day
+   🎄 2. NEW YEAR THEME (Frosty Cyan, Ice Mint & Deep Midnight Blue)
    ========================================================================== */
+/* Cursor */
+body.holiday-newyear .fluid-blob-path {
+    stroke: rgba(92, 225, 230, 0.85) !important;
+}
+body.holiday-newyear .fluid-cursor-dot {
+    background-color: #5ce1e6 !important;
+    box-shadow: 0 0 8px #5ce1e6 !important;
+}
+body.holiday-newyear .custom-cursor-fluid.is-text .fluid-blob-path {
+    fill: #5ce1e6 !important;
+}
+
+/* Header & Container */
+.holiday-newyear .header-bar {
+    background-color: #08172c !important;
+    border: 1px solid rgba(92, 225, 230, 0.35) !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5), 0 0 18px rgba(92, 225, 230, 0.15) !important;
+}
+.holiday-newyear .header-logo {
+    color: #7ee8ec !important;
+    text-shadow: 0 0 10px rgba(92, 225, 230, 0.4) !important;
+}
+.holiday-newyear .header-logo::after {
+    content: ' 🎄';
+}
+.holiday-newyear .header-breadcrumb,
+.holiday-newyear #search-bar,
+.holiday-newyear .header-avatar-btn {
+    background-color: #102d4f !important;
+    color: #8bebf0 !important;
+    border: 1px solid rgba(92, 225, 230, 0.3) !important;
+}
+.holiday-newyear #search-bar::placeholder {
+    color: #6a9abf !important;
+}
+.holiday-newyear .header-breadcrumb:hover,
+.holiday-newyear #search-bar:focus {
+    background-color: #173b66 !important;
+    border-color: #5ce1e6 !important;
+}
+.holiday-newyear .header-breadcrumb .arrow svg path {
+    fill: #8bebf0;
+}
+.holiday-newyear .search-icon svg path {
+    stroke: #8bebf0;
+}
+.holiday-newyear .search-kbd {
+    background: rgba(92, 225, 230, 0.2) !important;
+    color: #8bebf0 !important;
+}
+.holiday-newyear .avatar-dot {
+    background-color: #5ce1e6;
+    box-shadow: 0 0 6px #5ce1e6;
+}
+
+/* Main Viewport & Cards */
+.holiday-newyear .main-card-viewport {
+    background-color: #05101f !important;
+    border: 1px solid rgba(92, 225, 230, 0.3) !important;
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.6), 0 0 24px rgba(92, 225, 230, 0.12) !important;
+}
+.holiday-newyear .card-content-scroll {
+    color: #b8d5ec !important;
+}
+.holiday-newyear .section-heading {
+    border-bottom-color: rgba(92, 225, 230, 0.25) !important;
+}
+.holiday-newyear .section-heading h2 {
+    color: #7ee8ec !important;
+    text-shadow: 0 0 12px rgba(92, 225, 230, 0.35) !important;
+}
+
+/* Side Navigation */
+.holiday-newyear .side-nav-btn {
+    color: #7ba2c5;
+}
+.holiday-newyear .side-nav-btn:hover {
+    background-color: rgba(92, 225, 230, 0.12);
+    color: #b0e9f0;
+}
+.holiday-newyear .side-nav-btn.active {
+    background-color: rgba(92, 225, 230, 0.2);
+    color: #7ee8ec;
+}
+.holiday-newyear .side-nav-btn.active .nav-dot {
+    background-color: #5ce1e6;
+    box-shadow: 0 0 8px #5ce1e6;
+}
+.holiday-newyear .side-nav-btn .nav-dot {
+    background-color: #1a3c62;
+}
+
+/* Cards & Lists */
+.holiday-newyear .project-item,
+.holiday-newyear .blog-card,
+.holiday-newyear .contact-card {
+    background-color: #0d223d !important;
+    border: 1px solid rgba(92, 225, 230, 0.25) !important;
+    box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+}
+.holiday-newyear .project-item:hover,
+.holiday-newyear .blog-card:hover,
+.holiday-newyear .contact-card:hover {
+    border-color: rgba(92, 225, 230, 0.55) !important;
+    box-shadow: 0 6px 20px rgba(92, 225, 230, 0.18) !important;
+}
+.holiday-newyear .project-thumb {
+    background: rgba(92, 225, 230, 0.12) !important;
+    border-color: rgba(92, 225, 230, 0.3) !important;
+}
+.holiday-newyear .project-info h3,
+.holiday-newyear .project-heading h3,
+.holiday-newyear .project-title {
+    color: #7ee8ec !important;
+}
+.holiday-newyear .project-desc,
+.holiday-newyear .project-info p {
+    color: #a4c4de !important;
+}
+.holiday-newyear .blog-card h3 a {
+    color: #7ee8ec !important;
+    text-shadow: 0 0 10px rgba(92, 225, 230, 0.35) !important;
+}
+.holiday-newyear .blog-card h3 a:hover {
+    color: #bbf4f7 !important;
+}
+.holiday-newyear .blog-card p {
+    color: #b8d5ec !important;
+}
+.holiday-newyear .blog-meta-row,
+.holiday-newyear .blog-meta-row span {
+    color: #7fa4c6 !important;
+}
+.holiday-newyear .blog-tag,
+.holiday-newyear .skill-chip {
+    background-color: rgba(92, 225, 230, 0.15) !important;
+    color: #8bebf0 !important;
+    border: 1px solid rgba(92, 225, 230, 0.3) !important;
+}
+
+/* Buttons */
+.holiday-newyear .action-btn {
+    background-color: #122e50 !important;
+    border-color: rgba(92, 225, 230, 0.35) !important;
+    color: #d8eeff !important;
+}
+.holiday-newyear .action-btn:hover {
+    background-color: #1b4270 !important;
+    border-color: #5ce1e6 !important;
+}
+.holiday-newyear .action-btn.accent {
+    background-color: #5ce1e6 !important;
+    color: #051426 !important;
+    border-color: transparent !important;
+    box-shadow: 0 2px 10px rgba(92, 225, 230, 0.4) !important;
+}
+
+/* About */
+.holiday-newyear .about-avatar {
+    border-color: #5ce1e6 !important;
+    box-shadow: 0 0 16px rgba(92, 225, 230, 0.4) !important;
+}
+.holiday-newyear .about-title-wrap h2,
+.holiday-newyear .about-section-block h3,
+.holiday-newyear .about-bio-title,
+.holiday-newyear .skill-group-title {
+    color: #7ee8ec !important;
+}
+.holiday-newyear .about-subtitle,
+.holiday-newyear .about-bio-group p {
+    color: #b8d5ec !important;
+}
+.holiday-newyear .contact-name {
+    color: #5ce1e6 !important;
+}
+.holiday-newyear .contact-val {
+    color: #d8eeff !important;
+}
+.holiday-newyear .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #5ce1e6;
+}
+
+
+/* ==========================================================================
+   💕 3. VALENTINE'S DAY THEME (Rose Neon & Romance Ruby)
+   ========================================================================== */
+body.holiday-valentine .fluid-blob-path {
+    stroke: rgba(255, 64, 129, 0.85) !important;
+}
+body.holiday-valentine .fluid-cursor-dot {
+    background-color: #ff4081 !important;
+    box-shadow: 0 0 8px #ff4081 !important;
+}
+.holiday-valentine .header-bar {
+    background-color: #1a081c !important;
+    border: 1px solid rgba(255, 64, 129, 0.35) !important;
+    box-shadow: 0 4px 25px rgba(0, 0, 0, 0.5), 0 0 18px rgba(255, 64, 129, 0.15) !important;
+}
+.holiday-valentine .header-logo {
+    color: #ff80ab !important;
+}
 .holiday-valentine .header-logo::after {
     content: ' 💕';
 }
-
 .holiday-valentine .header-breadcrumb,
 .holiday-valentine #search-bar,
 .holiday-valentine .header-avatar-btn {
-    background-color: #ffe0ec !important;
+    background-color: #35103a !important;
+    color: #ffa4c4 !important;
+    border: 1px solid rgba(255, 64, 129, 0.3) !important;
 }
-
-.holiday-valentine .header-breadcrumb:hover,
-.holiday-valentine #search-bar:focus {
-    background-color: #ffd0e0 !important;
+.holiday-valentine #search-bar::placeholder {
+    color: #ba769e !important;
 }
-
-.holiday-valentine .header-breadcrumb .arrow svg path,
-.holiday-valentine #search-bar::placeholder,
-.holiday-valentine .header-breadcrumb .text {
-    color: #c44a7a !important;
-    fill: #c44a7a;
+.holiday-valentine .header-breadcrumb .arrow svg path {
+    fill: #ffa4c4;
 }
-
 .holiday-valentine .search-icon svg path {
-    stroke: #c44a7a;
+    stroke: #ffa4c4;
 }
-
 .holiday-valentine .avatar-dot {
-    background-color: #e74c8b;
+    background-color: #ff4081;
+    box-shadow: 0 0 6px #ff4081;
 }
-
+.holiday-valentine .main-card-viewport {
+    background-color: #120516 !important;
+    border: 1px solid rgba(255, 64, 129, 0.3) !important;
+}
+.holiday-valentine .card-content-scroll {
+    color: #e4c6d8 !important;
+}
+.holiday-valentine .section-heading h2 {
+    color: #ff80ab !important;
+}
 .holiday-valentine .side-nav-btn.active {
-    background-color: rgba(231, 76, 139, 0.15);
-    color: #e74c8b;
+    background-color: rgba(255, 64, 129, 0.2);
+    color: #ff80ab;
 }
-
 .holiday-valentine .side-nav-btn.active .nav-dot {
-    background-color: #e74c8b;
+    background-color: #ff4081;
 }
-
+.holiday-valentine .project-item,
+.holiday-valentine .blog-card,
+.holiday-valentine .contact-card {
+    background-color: #220b26 !important;
+    border-color: rgba(255, 64, 129, 0.25) !important;
+}
+.holiday-valentine .project-info h3,
+.holiday-valentine .blog-card h3 a {
+    color: #ff80ab !important;
+}
 .holiday-valentine .action-btn.accent {
-    background-color: #e74c8b !important;
-    color: #fff !important;
-    border-color: transparent !important;
+    background-color: #ff4081 !important;
+    color: #ffffff !important;
 }
-
-.holiday-valentine .blog-tag {
-    background: rgba(231, 76, 139, 0.12) !important;
-    color: #c44a7a !important;
-    border-color: #f0c0d0 !important;
-}
-
 .holiday-valentine .about-avatar {
-    border-color: #e74c8b !important;
+    border-color: #ff4081 !important;
+}
+.holiday-valentine .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #ff4081;
 }
 
-.holiday-valentine .card-content-scroll::-webkit-scrollbar-thumb {
-    background-color: #e74c8b;
-}
 
 /* ==========================================================================
-   👨‍💻 Programmer's Day
+   👨‍💻 4. PROGRAMMER'S DAY THEME (Matrix Cyber Green)
    ========================================================================== */
+body.holiday-programmer .fluid-blob-path {
+    stroke: rgba(0, 255, 102, 0.85) !important;
+}
+body.holiday-programmer .fluid-cursor-dot {
+    background-color: #00ff66 !important;
+    box-shadow: 0 0 8px #00ff66 !important;
+}
+.holiday-programmer .header-bar {
+    background-color: #08140a !important;
+    border: 1px solid rgba(0, 255, 102, 0.35) !important;
+}
+.holiday-programmer .header-logo {
+    color: #39ff14 !important;
+}
 .holiday-programmer .header-logo::after {
     content: ' { }';
     font-size: 0.6em;
-    color: var(--color-lime);
+}
+.holiday-programmer .header-breadcrumb,
+.holiday-programmer #search-bar,
+.holiday-programmer .header-avatar-btn {
+    background-color: #102614 !important;
+    color: #39ff14 !important;
+    border: 1px solid rgba(0, 255, 102, 0.3) !important;
+}
+.holiday-programmer .header-breadcrumb .arrow svg path {
+    fill: #39ff14;
+}
+.holiday-programmer .search-icon svg path {
+    stroke: #39ff14;
+}
+.holiday-programmer .avatar-dot {
+    background-color: #00ff66;
+}
+.holiday-programmer .main-card-viewport {
+    background-color: #050d06 !important;
+    border: 1px solid rgba(0, 255, 102, 0.3) !important;
+}
+.holiday-programmer .section-heading h2,
+.holiday-programmer .project-info h3,
+.holiday-programmer .blog-card h3 a {
+    color: #39ff14 !important;
+}
+.holiday-programmer .action-btn.accent {
+    background-color: #00ff66 !important;
+    color: #051405 !important;
+}
+.holiday-programmer .about-avatar {
+    border-color: #00ff66 !important;
+}
+.holiday-programmer .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #00ff66;
 }
 
-/* ==========================================================================
-   🥧 Pi Day
-   ========================================================================== */
-.holiday-piday .header-logo::after {
-    content: ' π';
-    color: var(--color-lime);
-}
 
 /* ==========================================================================
-   🚀 Cosmonautics Day
+   🚀 5. COSMONAUTICS DAY THEME (Orbital Azure & Space Steel)
    ========================================================================== */
+body.holiday-cosmonautics .fluid-blob-path {
+    stroke: rgba(0, 210, 255, 0.85) !important;
+}
+body.holiday-cosmonautics .fluid-cursor-dot {
+    background-color: #00d2ff !important;
+    box-shadow: 0 0 8px #00d2ff !important;
+}
+.holiday-cosmonautics .header-bar {
+    background-color: #08152a !important;
+    border: 1px solid rgba(0, 210, 255, 0.35) !important;
+}
+.holiday-cosmonautics .header-logo {
+    color: #64d8ff !important;
+}
 .holiday-cosmonautics .header-logo::after {
     content: ' 🚀';
 }
-
-/* ==========================================================================
-   🃏 April Fools
-   ========================================================================== */
-.holiday-aprilfools {
-    transform-origin: center center;
+.holiday-cosmonautics .header-breadcrumb,
+.holiday-cosmonautics #search-bar,
+.holiday-cosmonautics .header-avatar-btn {
+    background-color: #102a4e !important;
+    color: #64d8ff !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+}
+.holiday-cosmonautics .header-breadcrumb .arrow svg path {
+    fill: #64d8ff;
+}
+.holiday-cosmonautics .search-icon svg path {
+    stroke: #64d8ff;
+}
+.holiday-cosmonautics .avatar-dot {
+    background-color: #00d2ff;
+}
+.holiday-cosmonautics .main-card-viewport {
+    background-color: #050e1c !important;
+    border: 1px solid rgba(0, 210, 255, 0.3) !important;
+}
+.holiday-cosmonautics .section-heading h2,
+.holiday-cosmonautics .project-info h3,
+.holiday-cosmonautics .blog-card h3 a {
+    color: #64d8ff !important;
+}
+.holiday-cosmonautics .action-btn.accent {
+    background-color: #00d2ff !important;
+    color: #031022 !important;
+}
+.holiday-cosmonautics .about-avatar {
+    border-color: #00d2ff !important;
+}
+.holiday-cosmonautics .card-content-scroll::-webkit-scrollbar-thumb {
+    background-color: #00d2ff;
 }
 
-.holiday-aprilfools .header-logo::after {
-    content: ' 🃏';
-}
 
 /* ==========================================================================
-   Responsive
+   Responsive Adaptations
    ========================================================================== */
 @media (max-width: 768px) {
     .holiday-banner {
@@ -371,13 +661,10 @@
         right: 12px;
         left: 12px;
     }
-
     .holiday-banner-content {
         min-width: unset;
     }
-
     .holiday-banner-emoji {
-        font-size: 24px;
+        font-size: 26px;
     }
 }
-
