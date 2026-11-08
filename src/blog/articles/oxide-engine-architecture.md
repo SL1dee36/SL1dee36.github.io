@@ -1,6 +1,6 @@
 Title: Oxide Engine: Анатомия, компромиссы и инженерный ад создания 2D/3D рантайма на Rust
 Date: October 25, 2026
-Tags: Rust, GameDev, Engine, OpenGL, ECS, Physics, XPBD, C-ABI, Postmortem
+Tags: Rust, GameDev, Engine, OpenGL, ECS, Physics, XPBD, C-ABI
 Categories: Game Development, Systems Programming, Architecture
 
 ![Oxide Engine Architecture](img/oxide-architecture.png)
