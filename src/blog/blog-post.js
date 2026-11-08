@@ -50,6 +50,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 postTitleHeader.textContent = postData.title;
                 postMetaHeader.innerHTML = `<p>${postData.date} | Categories: ${postData.categories.join(', ')}</p>`;
                 markdownContainer.innerHTML = marked.parse(postData.body);
+                if (window.Prism) {
+                    Prism.highlightAllUnder(markdownContainer);
+                }
             })
             .catch(error => {
                 markdownContainer.innerHTML = `<p>Error loading post: ${error.message}</p>`;
@@ -59,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
         markdownContainer.innerHTML = "<p>Post not found.</p>";
     }
 
-    backButton.addEventListener('click', () => {
-        window.location.href = '../../index.html';
-    });
+    if (backButton) {
+        backButton.addEventListener('click', () => {
+            window.location.href = '../../index.html';
+        });
+    }
 });

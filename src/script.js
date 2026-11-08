@@ -42,7 +42,13 @@ document.addEventListener('DOMContentLoaded', () => {
     const skillsContainer = document.querySelector('.skills-grid');
     const contactsContainer = document.querySelector('.contacts-list');
 
-    let currentView = 'main';
+    function getViewFromHash() {
+        const hash = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+        const validViews = ['main', 'best', 'blog', 'about'];
+        return validViews.includes(hash) ? hash : 'main';
+    }
+
+    let currentView = getViewFromHash();
     let blogLoaded = false;
 
     function updateProjectsCount() {
@@ -75,8 +81,22 @@ document.addEventListener('DOMContentLoaded', () => {
     window.addEventListener('resize', alignBreadcrumbToCard);
     alignBreadcrumbToCard();
 
-    function switchView(viewName) {
+    function switchView(viewName, updateHash = true) {
+        const validViews = ['main', 'best', 'blog', 'about'];
+        if (!validViews.includes(viewName)) {
+            viewName = 'main';
+        }
         currentView = viewName;
+
+        if (updateHash) {
+            const currentHash = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+            const targetHash = viewName === 'main' ? '' : `#${viewName}`;
+            if (viewName === 'main' && currentHash) {
+                history.pushState(null, '', window.location.pathname + window.location.search);
+            } else if (viewName !== 'main' && currentHash !== viewName) {
+                history.pushState(null, '', targetHash);
+            }
+        }
 
         const allNavButtons = document.querySelectorAll('.side-nav-btn');
         allNavButtons.forEach(btn => {
@@ -115,6 +135,11 @@ document.addEventListener('DOMContentLoaded', () => {
         alignBreadcrumbToCard();
     }
 
+    window.addEventListener('popstate', () => {
+        if (searchBar) searchBar.value = '';
+        switchView(getViewFromHash(), false);
+    });
+
     function filterContent(query) {
         const term = query.toLowerCase().trim();
         const currentProjectItems = document.querySelectorAll('.project-item');
@@ -125,7 +150,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (viewAbout) viewAbout.classList.remove('visible');
             if (breadcrumbText) breadcrumbText.textContent = 'search results';
         } else {
-            switchView(currentView);
+            switchView(currentView, false);
             return;
         }
 
@@ -305,7 +330,7 @@ document.addEventListener('DOMContentLoaded', () => {
             if (changed) {
                 data.projects = sortProjectsByRecent(data.projects);
                 renderProjectList(data.projects);
-                switchView(currentView);
+                switchView(currentView, false);
             }
         }
     }
@@ -350,32 +375,32 @@ document.addEventListener('DOMContentLoaded', () => {
         currentSideNavBtns.forEach(btn => {
             btn.onclick = () => {
                 if (searchBar) searchBar.value = '';
-                switchView(btn.dataset.view);
+                switchView(btn.dataset.view, true);
             };
         });
 
-        switchView(currentView);
+        switchView(getViewFromHash(), false);
         updateProjectsCount();
     };
 
     if (homeLogo) {
         homeLogo.addEventListener('click', () => {
             if (searchBar) searchBar.value = '';
-            switchView('main');
+            switchView('main', true);
         });
     }
 
     if (breadcrumbBtn) {
         breadcrumbBtn.addEventListener('click', () => {
             if (searchBar) searchBar.value = '';
-            switchView('main');
+            switchView('main', true);
         });
     }
 
     if (avatarBtn) {
         avatarBtn.addEventListener('click', () => {
             if (searchBar) searchBar.value = '';
-            switchView('about');
+            switchView('about', true);
         });
     }
 

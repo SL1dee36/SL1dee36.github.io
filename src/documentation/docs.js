@@ -32,6 +32,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 .then(markdown => {
                     if (window.marked) {
                         markdownContainer.innerHTML = marked.parse(markdown);
+                        if (window.Prism) {
+                            Prism.highlightAllUnder(markdownContainer);
+                        }
                     } else {
                         markdownContainer.textContent = markdown;
                     }
@@ -51,10 +54,12 @@ document.addEventListener('DOMContentLoaded', () => {
 
     if (backButton) {
         backButton.addEventListener('click', () => {
-            if (window.parent && window.parent !== window && window.parent.ModView) {
+            if (githubLink) {
+                window.open(githubLink, '_blank', 'noopener,noreferrer');
+            } else if (window.parent && window.parent !== window && window.parent.ModView) {
                 window.parent.ModView.close();
             } else {
-                window.location.href = 'https://raw.githubusercontent.com/${username}/${repo}';
+                window.history.back();
             }
         });
     }
