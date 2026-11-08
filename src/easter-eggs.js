@@ -3,6 +3,17 @@
  * Six hidden surprises for the portfolio site
  */
 (function () {
+    'use strict';
+
+    // Global triggers for manual activation from DevTools console
+    window.triggerUFO = function () {
+        if (typeof launchUFO === 'function') launchUFO();
+    };
+    window.launchUFO = window.triggerUFO;
+    try {
+        globalThis.triggerUFO = window.triggerUFO;
+        globalThis.launchUFO = window.triggerUFO;
+    } catch (e) {}
 
     /* ======================================================================
        1. KONAMI CODE → Matrix Rain
@@ -112,12 +123,12 @@
         'ufo': {
             message: '🛸 UNIDENTIFIED FLYING OBJECT DETECTED\nSector: Deep Sky 36\nTractor beam: online\n\nAbduction in progress... 👽',
             color: '#DFFFB3',
-            action: () => triggerUFO()
+            action: () => window.triggerUFO()
         },
         'alien': {
             message: '👽 Transmission intercepted:\n"Greetings, human. We are taking a sample."\n\n🛸 Saucer incoming...',
             color: '#DFFFB3',
-            action: () => triggerUFO()
+            action: () => window.triggerUFO()
         }
     };
 
