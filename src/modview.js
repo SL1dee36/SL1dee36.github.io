@@ -306,18 +306,19 @@
                     doc.addEventListener('click', (e) => {
                         const a = e.target.closest('a');
                         if (!a) return;
-                        const href = a.getAttribute('href');
-                        if (!href || href.startsWith('#') || href.startsWith('javascript:')) return;
+                        const rawHref = a.getAttribute('href');
+                        if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
 
-                        const isExternal = href.startsWith('http://') || 
-                                           href.startsWith('https://') || 
-                                           href.startsWith('//') || 
+                        const fullHref = a.href || rawHref;
+                        const isExternal = fullHref.startsWith('http://') || 
+                                           fullHref.startsWith('https://') || 
+                                           fullHref.startsWith('//') || 
                                            (a.hostname && a.hostname !== window.location.hostname);
 
                         if (isExternal) {
                             e.preventDefault();
                             e.stopPropagation();
-                            window.open(a.href, '_blank', 'noopener,noreferrer');
+                            window.open(fullHref, '_blank', 'noopener,noreferrer');
                         }
                     }, true);
                 }

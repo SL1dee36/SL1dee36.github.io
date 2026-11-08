@@ -13,6 +13,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     let username = '';
     let repo = '';
+    let activeBranch = 'main';
 
     if (githubLink) {
         const match = githubLink.match(/github\.com\/([^\/]+)\/([^\/]+)/);
@@ -29,6 +30,53 @@ document.addEventListener('DOMContentLoaded', () => {
         githubBtn.style.display = 'none';
     }
 
+    // Global click interceptor to NEVER let the iframe navigate and get 404
+    document.addEventListener('click', (e) => {
+        const a = e.target.closest('a');
+        if (!a) return;
+
+        // Header button opens directly via target="_blank"
+        if (a.id === 'github-link-btn' || a.classList.contains('github-action-btn')) {
+            return;
+        }
+
+        const rawHref = a.getAttribute('href');
+        if (!rawHref) return;
+
+        // In-page hash scrolling
+        if (rawHref.startsWith('#')) {
+            const targetId = rawHref.slice(1);
+            const targetElem = document.getElementById(targetId) || document.querySelector(`[name="${targetId}"]`);
+            if (targetElem) {
+                e.preventDefault();
+                targetElem.scrollIntoView({ behavior: 'smooth' });
+            }
+            return;
+        }
+
+        if (rawHref.startsWith('mailto:') || rawHref.startsWith('javascript:')) return;
+
+        // Prevent iframe internal navigation that causes 404
+        e.preventDefault();
+        e.stopPropagation();
+
+        let finalUrl = rawHref;
+
+        // If it's a relative path in markdown (e.g. docs/ru/index.md, src/core/, LICENSE-MIT)
+        if (!rawHref.startsWith('http://') && !rawHref.startsWith('https://') && !rawHref.startsWith('//')) {
+            if (username && repo) {
+                const cleanPath = rawHref.replace(/^\.?\//, '');
+                const isDir = cleanPath.endsWith('/') || !cleanPath.includes('.');
+                const type = isDir ? 'tree' : 'blob';
+                finalUrl = `https://github.com/${username}/${repo}/${type}/${activeBranch}/${cleanPath}`;
+            } else if (githubLink) {
+                finalUrl = `${githubLink.replace(/\/$/, '')}/blob/main/${rawHref.replace(/^\.?\//, '')}`;
+            }
+        }
+
+        window.open(finalUrl, '_blank', 'noopener,noreferrer');
+    }, true);
+
     if (username && repo) {
         const branches = ['main', 'master'];
 
@@ -40,6 +88,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 return;
             }
             const branch = branches[index];
+            activeBranch = branch;
             const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/README.md`;
 
             fetch(readmeURL)
@@ -55,7 +104,7 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (window.marked) {
                         markdownContainer.innerHTML = marked.parse(markdown);
 
-                        // Ensure all links open in a new tab, and rewrite relative markdown links to GitHub
+                        // Ensure all links point to GitHub and open in new tab
                         markdownContainer.querySelectorAll('a').forEach(a => {
                             const rawHref = a.getAttribute('href');
                             if (!rawHref) return;
@@ -65,7 +114,11 @@ document.addEventListener('DOMContentLoaded', () => {
 
                             if (!rawHref.startsWith('http://') && !rawHref.startsWith('https://') && !rawHref.startsWith('#') && !rawHref.startsWith('mailto:')) {
                                 const cleanPath = rawHref.replace(/^\.?\//, '');
-                                a.href = `https://github.com/${username}/${repo}/blob/${branch}/${cleanPath}`;
+                                const isDir = cleanPath.endsWith('/') || !cleanPath.includes('.');
+                                const type = isDir ? 'tree' : 'blob';
+                                const fullUrl = `https://github.com/${username}/${repo}/${type}/${activeBranch}/${cleanPath}`;
+                                a.setAttribute('href', fullUrl);
+                                a.href = fullUrl;
                             }
                         });
 
@@ -74,7 +127,7 @@ document.addEventListener('DOMContentLoaded', () => {
                             const rawSrc = img.getAttribute('src');
                             if (rawSrc && !rawSrc.startsWith('http://') && !rawSrc.startsWith('https://') && !rawSrc.startsWith('data:')) {
                                 const cleanSrc = rawSrc.replace(/^\.?\//, '');
-                                img.src = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/${cleanSrc}`;
+                                img.src = `https://raw.githubusercontent.com/${username}/${repo}/${activeBranch}/${cleanSrc}`;
                             }
                         });
 
