@@ -122,7 +122,7 @@ export class ItemDrop {
         // 3. Интеграция позиции и коллизии с блоками мира
         this.stepPhysics(dt);
 
-        // 4. Проверка опоры (если блок под предметом сломали — начинаем падать)
+        // 4. Проверка опоры (если блок под предметом сломали - начинаем падать)
         if (this.isGrounded) {
             const groundCheckY = Math.floor(this.position.y - 0.05);
             if (!this.world.isSolid(Math.floor(this.position.x), groundCheckY, Math.floor(this.position.z))) {

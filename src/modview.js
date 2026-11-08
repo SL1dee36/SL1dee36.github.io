@@ -1,5 +1,5 @@
 /**
- * ModView — Slime Modal Preview & Documentation Viewer (с поддержкой плавного Fullscreen)
+ * ModView - Slime Modal Preview & Documentation Viewer (с поддержкой плавного Fullscreen)
  */
 (function () {
     const style = document.createElement('style');

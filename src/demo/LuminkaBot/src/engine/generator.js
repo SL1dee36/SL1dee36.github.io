@@ -87,7 +87,7 @@
           else if (fish.id === 7 || fish.id === 19 || fish.id === 21) weight = 3.5; // Красноперка, Голавль, Уклейка
           else if (fam === "bottom_giants") weight = 0.2;
         } else {
-          // Поплавок — классика для карповых и мирных всех горизонтов
+          // Поплавок - классика для карповых и мирных всех горизонтов
           if (fam === "cyprinids") weight = 3.5;
           else if (fam === "predators" && (fish.id === 38 || fish.id === 41)) weight = 2.0; // Окунь, Ерш
         }

@@ -189,7 +189,7 @@
           const winAmount = Math.floor(currentBet * opt.mult);
           awardWin(winAmount, 18);
           if (statusBanner) {
-            statusBanner.textContent = `🎉 ВЫИГРЫШ: +${winAmount} C! (Выпало ${sum} ${isDouble ? '— ДУБЛЬ!' : ''})`;
+            statusBanner.textContent = `🎉 ВЫИГРЫШ: +${winAmount} C! (Выпало ${sum} ${isDouble ? '- ДУБЛЬ!' : ''})`;
             statusBanner.className = "dice-status-banner status-win";
           }
           if (window.sound && window.sound.playSuccess) window.sound.playSuccess();

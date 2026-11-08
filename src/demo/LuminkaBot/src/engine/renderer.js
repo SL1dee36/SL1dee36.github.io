@@ -462,7 +462,7 @@ function drawAlpineMountains(ctx, w, waterTop, baseDepth = waterTop + 55) {
   const centerX = w * 0.5;
   const originX = centerX - refW * 0.5;
 
-  // 2. Средний ярус гор (Midground Alpine Peaks) — широкие величественные седловины и отроги
+  // 2. Средний ярус гор (Midground Alpine Peaks) - широкие величественные седловины и отроги
   const midPeaks = [
     {
       summit: { x: originX + refW * 0.33, y: waterTop * 0.32 },
@@ -493,7 +493,7 @@ function drawAlpineMountains(ctx, w, waterTop, baseDepth = waterTop + 55) {
   ctx.fillStyle = midHaze;
   ctx.fillRect(-80, waterTop * 0.48, w + 160, waterTop * 0.30);
 
-  // 3. Главные доминирующие альпийские пики (Foreground Dominant Massif) — монументальные массивы
+  // 3. Главные доминирующие альпийские пики (Foreground Dominant Massif) - монументальные массивы
   const mainPeaks = [
     {
       summit: { x: originX + refW * 0.16, y: waterTop * 0.34 },
@@ -1491,7 +1491,7 @@ function render(timestamp) {
       ctx.arc(celestialBody.x, celestialBody.y, celestialBody.radius, 0, Math.PI * 2);
       ctx.fill();
 
-      // Если Луна — лунные моря
+      // Если Луна - лунные моря
       if (celestialBody.type === "moon") {
         ctx.fillStyle = "#e2d87e";
         ctx.beginPath();

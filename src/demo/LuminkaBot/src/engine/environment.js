@@ -231,7 +231,7 @@ class EnvironmentManager {
         p.x += p.wind * dt;
         p.y += p.speed * dt;
 
-        // Если капля достигла воды — создаем кружок на поверхности
+        // Если капля достигла воды - создаем кружок на поверхности
         const surfaceY = (typeof getWaterSurfaceY === "function")
           ? getWaterSurfaceY(p.x, 0, 1.0)
           : waterTop;

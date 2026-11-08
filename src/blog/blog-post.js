@@ -46,7 +46,7 @@ document.addEventListener('DOMContentLoaded', () => {
             })
             .then(markdown => {
                 const postData = parseMarkdownPost(markdown);
-                document.title = postData.title;
+                document.title = 'Blog';
                 postTitleHeader.textContent = postData.title;
                 postMetaHeader.innerHTML = `<p>${postData.date} | Categories: ${postData.categories.join(', ')}</p>`;
                 markdownContainer.innerHTML = marked.parse(postData.body);
