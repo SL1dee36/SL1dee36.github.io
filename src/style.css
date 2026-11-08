@@ -159,6 +159,26 @@ button svg {
     background-color: #d7fca7;
 }
 
+.search-kbd {
+    position: absolute;
+    right: 14px;
+    background: rgba(64, 77, 45, 0.14);
+    color: var(--color-lime-text);
+    padding: 3px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: 600;
+    letter-spacing: 0.5px;
+    font-family: inherit;
+    pointer-events: none;
+    transition: opacity 0.2s ease;
+}
+
+#search-bar:focus ~ .search-kbd,
+#search-bar:not(:placeholder-shown) ~ .search-kbd {
+    opacity: 0;
+}
+
 .header-avatar-btn {
     width: 52px;
     height: 52px;
@@ -344,6 +364,56 @@ button svg {
     font-size: 14px;
     font-weight: 500;
     color: var(--color-text-muted);
+}
+
+.filter-chips-bar {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.filter-chip {
+    background-color: var(--color-item-bg);
+    border: 1px solid var(--color-item-border);
+    color: var(--color-text-muted);
+    padding: 6px 14px;
+    border-radius: var(--radius-pill);
+    font-family: var(--font-main);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    user-select: none;
+    transition: all 0.18s cubic-bezier(0.25, 1, 0.5, 1);
+}
+
+.filter-chip:hover {
+    background-color: #e8ebe1;
+    color: var(--color-text-dark);
+    transform: translateY(-1px);
+}
+
+.filter-chip.active {
+    background-color: var(--color-lime);
+    color: var(--color-lime-text);
+    border-color: transparent;
+    font-weight: 600;
+}
+
+.live-demo-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.3px;
+    text-transform: uppercase;
+    background: var(--color-lime);
+    color: var(--color-lime-text);
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-left: 8px;
+    vertical-align: middle;
 }
 
 /* --- Project Card Item --- */
@@ -657,6 +727,20 @@ button svg {
         height: 44px;
         font-size: 14px;
         padding: 0 16px 0 44px;
+    }
+
+    .search-kbd {
+        display: none;
+    }
+
+    .filter-chips-bar {
+        gap: 6px;
+        margin-bottom: 14px;
+    }
+
+    .filter-chip {
+        font-size: 12px;
+        padding: 5px 11px;
     }
 
     .header-avatar-btn {

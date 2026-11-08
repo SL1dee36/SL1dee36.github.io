@@ -279,6 +279,13 @@
         expandIcon.innerHTML = ICONS.expand;
         expandBtn.title = 'Toggle Fullscreen';
 
+        // Normalize documentation path to prevent any 404
+        if (url.includes('docs.html') && !url.startsWith('src/documentation/') && !url.startsWith('http')) {
+            const queryIndex = url.indexOf('?');
+            const query = queryIndex !== -1 ? url.substring(queryIndex) : '';
+            url = 'src/documentation/docs.html' + query;
+        }
+
         badge.textContent = isDocs ? 'Docs' : 'Demo';
         titleText.textContent = title;
 
@@ -290,6 +297,12 @@
                     const parsedUrl = new URL(url, window.location.href);
                     const gh = parsedUrl.searchParams.get('githubLink');
                     if (gh) externalUrl = gh;
+                } catch (e) {}
+            } else if (url.includes('projectName=')) {
+                try {
+                    const parsedUrl = new URL(url, window.location.href);
+                    const pn = parsedUrl.searchParams.get('projectName');
+                    if (pn) externalUrl = 'https://github.com/SL1dee36/' + pn;
                 } catch (e) {}
             }
             externalBtn.href = externalUrl;
@@ -303,22 +316,74 @@
             try {
                 const doc = iframe.contentDocument || iframe.contentWindow?.document;
                 if (doc) {
+                    // Safe guard: prevent any unhandled link from navigating the iframe
                     doc.addEventListener('click', (e) => {
                         const a = e.target.closest('a');
                         if (!a) return;
+
                         const rawHref = a.getAttribute('href');
-                        if (!rawHref || rawHref.startsWith('#') || rawHref.startsWith('javascript:')) return;
 
-                        const fullHref = a.href || rawHref;
-                        const isExternal = fullHref.startsWith('http://') || 
-                                           fullHref.startsWith('https://') || 
-                                           fullHref.startsWith('//') || 
-                                           (a.hostname && a.hostname !== window.location.hostname);
-
-                        if (isExternal) {
+                        // Header button click fallback
+                        if (a.id === 'github-link-btn' || a.classList.contains('github-action-btn')) {
                             e.preventDefault();
                             e.stopPropagation();
-                            window.open(fullHref, '_blank', 'noopener,noreferrer');
+                            let dest = '';
+                            try {
+                                const p = new URLSearchParams(iframe.contentWindow?.location.search || url.split('?')[1] || '');
+                                dest = p.get('githubLink') || (p.get('projectName') ? 'https://github.com/SL1dee36/' + p.get('projectName') : '');
+                            } catch (err) {}
+                            if (!dest && url.includes('githubLink=')) {
+                                dest = new URLSearchParams(url.split('?')[1] || '').get('githubLink');
+                            }
+                            if (dest) {
+                                window.open(dest, '_blank', 'noopener,noreferrer');
+                            }
+                            return;
+                        }
+
+                        if (!rawHref || rawHref === '#') {
+                            e.preventDefault();
+                            return;
+                        }
+
+                        // In-page hash jump
+                        if (rawHref.startsWith('#')) {
+                            const targetId = rawHref.slice(1);
+                            const targetElem = doc.getElementById(targetId) || doc.querySelector(`[name="${targetId}"]`);
+                            if (targetElem) {
+                                e.preventDefault();
+                                targetElem.scrollIntoView({ behavior: 'smooth' });
+                            }
+                            return;
+                        }
+
+                        if (rawHref.startsWith('mailto:') || rawHref.startsWith('javascript:')) return;
+
+                        // NEVER allow iframe to navigate to an external or relative page
+                        e.preventDefault();
+                        e.stopPropagation();
+
+                        let targetUrl = a.href || rawHref;
+
+                        // Resolve relative markdown links in documentation against the GitHub repository
+                        if (url.includes('docs.html') && !rawHref.startsWith('http://') && !rawHref.startsWith('https://') && !rawHref.startsWith('//')) {
+                            try {
+                                const p = new URLSearchParams(iframe.contentWindow?.location.search || url.split('?')[1] || '');
+                                const gh = p.get('githubLink') || (p.get('projectName') ? 'https://github.com/SL1dee36/' + p.get('projectName') : '');
+                                if (gh) {
+                                    const match = gh.match(/github\.com\/([^\/]+)\/([^\/]+)/);
+                                    const u = match ? match[1] : 'SL1dee36';
+                                    const r = match ? match[2].replace(/\.git$/, '') : (p.get('projectName') || 'oxide');
+                                    const clean = rawHref.replace(/^\.?\//, '');
+                                    const isDir = clean.endsWith('/') || !clean.includes('.');
+                                    const type = isDir ? 'tree' : 'blob';
+                                    targetUrl = `https://github.com/${u}/${r}/${type}/main/${clean}`;
+                                }
+                            } catch (err) {}
+                        }
+
+                        if (targetUrl) {
+                            window.open(targetUrl, '_blank', 'noopener,noreferrer');
                         }
                     }, true);
                 }

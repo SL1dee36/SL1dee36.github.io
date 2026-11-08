@@ -35,8 +35,17 @@ document.addEventListener('DOMContentLoaded', () => {
         const a = e.target.closest('a');
         if (!a) return;
 
-        // Header button opens directly via target="_blank"
+        // Header button opens directly to GitHub
         if (a.id === 'github-link-btn' || a.classList.contains('github-action-btn')) {
+            e.preventDefault();
+            e.stopPropagation();
+            let dest = githubLink || urlParams.get('githubLink');
+            if (!dest && projectName) {
+                dest = `https://github.com/SL1dee36/${projectName}`;
+            }
+            if (dest) {
+                window.open(dest, '_blank', 'noopener,noreferrer');
+            }
             return;
         }
 
@@ -78,18 +87,32 @@ document.addEventListener('DOMContentLoaded', () => {
     }, true);
 
     if (username && repo) {
-        const branches = ['main', 'master'];
+        const repoUrl = githubLink || `https://github.com/${username}/${repo}`;
+        const targets = [
+            { branch: 'main', file: 'README.md' },
+            { branch: 'main', file: 'readme.md' },
+            { branch: 'master', file: 'README.md' },
+            { branch: 'master', file: 'readme.md' }
+        ];
 
         function tryFetchReadme(index) {
-            if (index >= branches.length) {
+            if (index >= targets.length) {
                 if (markdownContainer) {
-                    markdownContainer.innerHTML = '<p style="color: #ff8080;">README not found for this repository.</p>';
+                    markdownContainer.innerHTML = `
+                        <div style="text-align: center; padding: 48px 20px; background: #f4f6f0; border-radius: 16px; margin-top: 24px; border: 1px solid #e2e6db;">
+                            <h3 style="margin-bottom: 10px; color: #191c1c; font-size: 18px;">Documentation on GitHub</h3>
+                            <p style="color: #5c6061; margin-bottom: 22px; font-size: 14px;">The source documentation for ${projectName || repo} is maintained directly in the repository.</p>
+                            <a href="${repoUrl}" target="_blank" rel="noopener noreferrer" class="github-action-btn" style="display: inline-flex; align-items: center; gap: 8px; background-color: #DFFFB3; color: #404D2D; border-radius: 64px; padding: 9px 22px; font-weight: 600; text-decoration: none;">
+                                <span>Open ${projectName || repo} on GitHub ↗</span>
+                            </a>
+                        </div>
+                    `;
                 }
                 return;
             }
-            const branch = branches[index];
-            activeBranch = branch;
-            const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/${branch}/README.md`;
+            const current = targets[index];
+            activeBranch = current.branch;
+            const readmeURL = `https://raw.githubusercontent.com/${username}/${repo}/${current.branch}/${current.file}`;
 
             fetch(readmeURL)
                 .then(response => {
